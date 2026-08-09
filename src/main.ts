@@ -939,7 +939,10 @@ async function boot() {
         };
       },
     });
-  document.getElementById('fly-btn')?.addEventListener('click', startFlight);
+  document.addEventListener('click', (ev) => {
+    const target = ev.target as Element | null;
+    if (target?.closest('#fly-btn')) startFlight();
+  });
 
   // ── recording director: guided takes, hands-free via the gesture seed ──
   let latestNorm: LandmarkPoint[] | null = null;
