@@ -272,17 +272,35 @@ export class FlightTuner {
       this.statusEl.appendChild(line1);
       if (!d.senderConnected) {
         const hint = document.createElement("div");
+        const rootUrl = new URL("/", window.location.href).href;
         hint.textContent =
-          "PosePuppet isn't reaching this page. BroadcastChannel is " +
-          "origin-scoped — a different port is a different origin. Run " +
-          "`npm run arcade` at the repo root, open PosePuppet, then " +
-          "⌘K → \"fly\" (serves this game same-origin at /flight/).";
+          window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+            ? "PosePuppet is not reaching this page. BroadcastChannel is origin-scoped; a different port is a different origin. Run `npm run arcade` at the repo root, open PosePuppet, then Command-K -> fly."
+            : `PosePuppet is not reaching this page. Open ${rootUrl}, allow camera, then click Fly so the tracker can stream body controls to this tab.`;
         Object.assign(hint.style, {
           color: "#f0938a",
           whiteSpace: "normal",
           marginTop: "2px",
         } as CSSStyleDeclaration);
         this.statusEl.appendChild(hint);
+
+        if (window.location.protocol === "https:") {
+          const launcher = document.createElement("button");
+          launcher.type = "button";
+          launcher.textContent = "Open PosePuppet tracker";
+          Object.assign(launcher.style, {
+            marginTop: "6px",
+            padding: "5px 8px",
+            border: "1px solid rgba(240, 147, 138, 0.55)",
+            borderRadius: "6px",
+            background: "rgba(240, 147, 138, 0.12)",
+            color: "#ffd8d4",
+            cursor: "pointer",
+            font: "inherit",
+          } as CSSStyleDeclaration);
+          launcher.onclick = () => window.open(rootUrl, "bodyarcade-posepuppet");
+          this.statusEl.appendChild(launcher);
+        }
       }
       this.statusEl.style.color = d.active
         ? "#8fe3c0"
