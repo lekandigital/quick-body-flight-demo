@@ -33,7 +33,7 @@ export interface Config {
 // ~100x smaller than the pixel-space classics, so beta is ~100x larger than
 // the textbook 0.007 to get the same speed-adaptive behavior.
 const DEFAULTS: Config = {
-  theme: 'dark',
+  theme: 'light', // glass build: the bright showcase stage
   mode: 'character',
   handPuppet: 'beaky',
   mirror: true,
@@ -44,7 +44,7 @@ const DEFAULTS: Config = {
   slerpRate: 28,
   relaxSec: 0.7,
   model: 'full',
-  avatar: 'astronaut', // CC0, redistributable — woody is local-only (Gate 1)
+  avatar: 'ual2f', // glass build: the CC0 Quaternius mannequin from the demo video
   bodyMode: 'upper',
   rootMotion: true,
   wristGain: 1.25,
@@ -58,7 +58,7 @@ const DEFAULTS: Config = {
   autoCam: true,
 };
 
-const KEY = 'posepuppet-config-v3';
+const KEY = 'bodyarcade-glass-config-v1';
 
 function load(): Config {
   try {

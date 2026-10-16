@@ -76,12 +76,15 @@ function flightStatic(): Plugin {
 }
 
 export default defineConfig({
+  // BODYARCADE_BASE: the path the app is served from (soarlabs build: /bodyarcade/)
+  base: process.env.BODYARCADE_BASE ?? '/',
   plugins: [flightStatic()],
   resolve: {
     alias: {
       '@bodyarcade/body-input': fileURLToPath(
         new URL('./packages/body-input/src/index.ts', import.meta.url),
       ),
+      '@bodyarcade/glass': fileURLToPath(new URL('./packages/glass/src/index.ts', import.meta.url)),
     },
   },
   server: {

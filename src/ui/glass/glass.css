@@ -1,0 +1,698 @@
+/* BodyArcade glass UI — layered over styles.css (body.glass-ui).
+   Materials are @creatorem/web-glass-effect's (see glass.ts); the tint is the
+   upstream demo's Tailwind fill: bg-white/20, hover bg-white/35, text-black/80.
+   Every existing control keeps its id and behaviour; only the chrome changes. */
+
+.glass-ui {
+  --glass-fill: rgba(255, 255, 255, 0.2);
+  --glass-fill-hover: rgba(255, 255, 255, 0.35);
+  --glass-fill-on: rgba(255, 255, 255, 0.62);
+  --glass-hair: rgba(255, 255, 255, 0.55);
+  --glass-hair-dark: rgba(10, 20, 40, 0.1);
+  --gink: rgba(0, 0, 0, 0.8);
+  --gink-2: rgba(0, 0, 0, 0.6);
+  --gink-3: rgba(0, 0, 0, 0.44);
+  --accent: #1f56e0;
+  --live: #0a8f6a;
+  --stage-fallback: linear-gradient(180deg, #7fb9f5 0%, #c9e3ff 45%, #eaf3ff 78%, #f5f8ff 100%);
+  --gap: 16px;
+  --bar-h: 56px;
+  --radius-panel: 28px;
+}
+[data-theme="dark"] .glass-ui,
+.glass-ui[data-theme="dark"] {
+  --glass-fill: rgba(255, 255, 255, 0.08);
+  --glass-fill-hover: rgba(255, 255, 255, 0.16);
+  --glass-fill-on: rgba(255, 255, 255, 0.24);
+  --glass-hair: rgba(255, 255, 255, 0.16);
+  --glass-hair-dark: rgba(255, 255, 255, 0.08);
+  --gink: rgba(244, 248, 255, 0.92);
+  --gink-2: rgba(244, 248, 255, 0.68);
+  --gink-3: rgba(244, 248, 255, 0.46);
+  --accent: #8fb6ff;
+  --live: #6ee7b7;
+  --stage-fallback: linear-gradient(180deg, #0d1b33 0%, #1f3a63 45%, #3b5d8c 78%, #56769f 100%);
+}
+
+/* the plate primitive itself lives in @bodyarcade/glass (injected); the
+   tint variables above feed it */
+
+/* ── page ────────────────────────────────────────────────────────── */
+body.glass-ui {
+  background: var(--stage-fallback);
+  color: var(--gink);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+body.glass-ui::before,
+body.glass-ui::after { display: none; } /* no grain/vignette over the airy stage */
+.glass-ui :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.glass-ui button {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gink);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  transition: color 0.18s, background-color 0.18s, box-shadow 0.18s;
+}
+.glass-ui button:hover { color: var(--gink); border-color: transparent; }
+.glass-ui button:disabled { opacity: 0.45; cursor: not-allowed; }
+.glass-ui button.active,
+.glass-ui button[aria-pressed="true"] { background: transparent; color: var(--gink); box-shadow: none; }
+
+.glass-ui .split {
+  position: fixed;
+  inset: 0;
+  display: block;
+  z-index: 0;
+}
+.glass-ui .stage-pane {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+}
+.glass-ui #stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* the camera pipeline keeps running; the person is shown as their model */
+.glass-ui .camera-pane {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 160px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+  border: 0;
+  background: none;
+}
+
+.glass-ui .stage-label {
+  top: calc(var(--gap) + var(--bar-h) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--gink-3);
+  white-space: nowrap;
+}
+.glass-ui .stage-label b { color: var(--gink-2); text-shadow: none; font-weight: 500; }
+[data-theme="light"] .glass-ui .stage-label b { color: var(--gink-2); }
+
+/* ── link state (connected / disconnected) ───────────────────────── */
+.link-chip {
+  position: absolute;
+  left: var(--gap);
+  bottom: var(--gap);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 18px 11px 15px;
+  border-radius: 22px;
+  min-width: 190px;
+  color: var(--gink);
+  cursor: default;
+}
+.link-chip[data-state="disconnected"][data-retry] { cursor: pointer; }
+.link-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: var(--gink-3);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+.link-chip[data-state="connected"] .link-dot { background: var(--live); animation: link-pulse 2.4s ease-in-out infinite; }
+.link-chip[data-state="disconnected"] .link-dot { background: #d93a4f; }
+.link-chip[data-state="starting"] .link-dot { background: #e39b1b; }
+@keyframes link-pulse { 50% { box-shadow: 0 0 0 6px rgba(10, 143, 106, 0.12); } }
+.link-text { display: flex; flex-direction: column; gap: 1px; line-height: 1.2; }
+.link-text b { font-size: 13px; font-weight: 600; letter-spacing: -0.005em; }
+.link-text small { font-size: 11px; color: var(--gink-2); }
+
+/* ── top bar ─────────────────────────────────────────────────────── */
+.glass-ui #topbar {
+  position: fixed;
+  top: var(--gap);
+  left: var(--gap);
+  right: var(--gap);
+  height: var(--bar-h);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 9px 0 22px;
+  border: 0;
+  border-radius: 28px;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.glass-ui .brand { display: flex; align-items: center; gap: 12px; }
+.glass-ui .brand-name {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  font-size: 23px;
+  letter-spacing: -0.035em;
+  color: var(--gink);
+}
+.glass-ui .kbd {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 19px;
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--gink-2);
+  border: 0;
+}
+.glass-ui .modes {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px var(--glass-hair-dark);
+}
+[data-theme="dark"] .glass-ui .modes { background: rgba(255, 255, 255, 0.06); }
+.glass-ui .modes button {
+  border: 0;
+  padding: 7px 15px;
+  color: var(--gink-2);
+}
+.glass-ui .modes button:hover { color: var(--gink); background: rgba(255, 255, 255, 0.22); }
+.glass-ui .modes button[aria-pressed="true"] {
+  color: var(--gink);
+  background: var(--glass-fill-on);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+}
+
+.glass-ui #net-receipt {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--live);
+  text-shadow: none;
+}
+.glass-ui #net-receipt::before { background: var(--live); box-shadow: none; }
+.glass-ui #net-receipt.dirty { color: #b36b00; }
+
+.glass-ui .controls { display: flex; gap: 6px; align-items: center; }
+.glass-ui .controls > button {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 19px;
+  font-size: 12px;
+}
+.glass-ui #theme-btn,
+.glass-ui #panel-toggle { width: 38px; padding: 0; font-size: 15px; }
+.glass-ui #record-btn { color: #c41f3e; border: 0; }
+.glass-ui #record-btn.recording { background: transparent; color: #c41f3e; box-shadow: none; }
+.glass-ui #record-btn.recording > .glass-plate { background: rgba(255, 77, 106, 0.28); }
+
+/* ── experiences (left) ─────────────────────────────────────────── */
+.experiences {
+  position: fixed;
+  left: var(--gap);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
+  width: 250px;
+  padding: 18px 14px 14px;
+  border-radius: var(--radius-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.exp-hdr {
+  padding: 0 6px 6px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  color: var(--gink);
+}
+.glass-ui .fly-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 22px;
+  background: none;
+  color: var(--gink);
+  text-align: left;
+  box-shadow: none;
+}
+.glass-ui .fly-card:hover { border: 0; box-shadow: none; }
+.glass-ui .fly-card-glyph {
+  width: 36px;
+  height: 36px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+  color: var(--gink);
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+[data-theme="dark"] .glass-ui .fly-card-glyph { background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.glass-ui .fly-card-text b { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.glass-ui .fly-card-text small {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  letter-spacing: 0;
+  color: var(--gink-2);
+}
+
+/* ── right rail ─────────────────────────────────────────────────── */
+.glass-ui .rail {
+  position: fixed;
+  right: var(--gap);
+  top: calc(var(--gap) * 2 + var(--bar-h));
+  bottom: calc(var(--gap) * 2 + var(--bar-h));
+  width: 292px;
+  z-index: 15;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  overflow: hidden;
+  display: block;
+}
+.glass-ui .rail-scroll {
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 4px;
+  scrollbar-width: thin;
+}
+.glass-ui .rail-sec { border: 0; padding: 4px 0 8px; }
+.glass-ui .rail-sec + .rail-sec { border-top: 1px solid var(--glass-hair-dark); }
+.glass-ui .rail-hdr {
+  padding: 10px 18px 8px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gink);
+}
+.glass-ui .rail-hdr > span:last-child { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--gink-3); }
+.glass-ui .rail-val,
+.glass-ui .rail-val.mem { color: var(--gink-2); text-shadow: none; }
+
+.glass-ui .cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px;
+  border: 0;
+}
+.glass-ui .card {
+  border: 0;
+  border-radius: 18px;
+  padding: 11px 11px 10px;
+  min-height: 0;
+  gap: 4px;
+  background: none;
+  text-align: left;
+}
+.glass-ui .card:hover { background: none; }
+.glass-ui .card.on { background: none; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.glass-ui .card.on > .glass-plate { background: var(--glass-fill-on); }
+.glass-ui .card .preview { height: 26px; justify-content: flex-start; font-size: 17px; color: var(--gink-2); }
+.glass-ui .card.on .preview { color: var(--accent); text-shadow: none; }
+.glass-ui .card .nm { font-size: 12.5px; font-weight: 600; color: var(--gink); }
+.glass-ui .card .chip {
+  align-self: flex-start;
+  font-family: var(--sans);
+  font-size: 9.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--gink-2);
+}
+[data-theme="dark"] .glass-ui .card .chip { background: rgba(255, 255, 255, 0.1); }
+.glass-ui .card .chip.ok { color: var(--live); }
+.glass-ui .card .chip.exp { color: #6d3fd6; }
+.glass-ui .card .chip.warn { color: #9a5b00; }
+.glass-ui .card-note { font-size: 10.5px; color: var(--gink-3); }
+
+.glass-ui .rail-slider { padding: 0 18px 6px; }
+.glass-ui .rail-slider-marks {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gink-3);
+}
+.glass-ui input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  accent-color: var(--accent);
+}
+.glass-ui input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 0 0 1px var(--glass-hair-dark);
+}
+.glass-ui input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18), inset 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+.glass-ui input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.45); }
+.glass-ui input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
+
+.glass-ui .loop-list { padding: 4px 18px 6px; }
+.glass-ui .loop-row { font-family: var(--sans); font-size: 11.5px; color: var(--gink-2); }
+.glass-ui .loop-row button { padding: 3px 9px; font-size: 11px; background: rgba(255, 255, 255, 0.35); }
+.glass-ui .loop-row .play { color: #6d3fd6; }
+.glass-ui .loop-empty { font-family: var(--sans); font-size: 11px; color: var(--gink-3); letter-spacing: 0; }
+
+.glass-ui .coach-card { padding: 0 18px 8px; }
+.glass-ui .coach-eyebrow { font-family: var(--sans); font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; color: #a35f00; }
+.glass-ui .coach-eyebrow::after { background: var(--glass-hair-dark); }
+.glass-ui .coach-card p { font-size: 12.5px; color: var(--gink-2); }
+.glass-ui .coach-action {
+  margin: 10px 0 0;
+  padding: 7px 14px;
+  font-size: 12px;
+  color: var(--gink);
+  border: 0;
+}
+.glass-ui .coach-action:hover { background: none; color: var(--gink); }
+
+.glass-ui .privacy-line {
+  margin-top: auto;
+  padding: 12px 18px 10px;
+  font-family: var(--sans);
+  font-size: 10.5px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--gink-3);
+  border-top: 1px solid var(--glass-hair-dark);
+}
+
+/* ── take bar (bottom) ───────────────────────────────────────────── */
+.glass-ui #takebar {
+  position: fixed;
+  left: 50%;
+  bottom: var(--gap);
+  transform: translateX(-50%);
+  width: min(780px, calc(100vw - 2 * var(--gap)));
+  height: var(--bar-h);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 28px;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-family: var(--sans);
+}
+.glass-ui .tb-cell { border: 0; padding: 0 4px; gap: 6px; color: var(--gink-2); font-size: 11px; letter-spacing: 0.06em; }
+.glass-ui .tb-right { border: 0; margin-left: auto; padding-right: 14px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--gink-3); }
+.glass-ui .tb-btn {
+  height: 40px;
+  padding: 0 15px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--gink);
+  border: 0;
+}
+.glass-ui .tb-btn:hover { color: var(--gink); }
+.glass-ui .tb-btn.on,
+.glass-ui .tb-btn.ghost.on,
+.glass-ui .tb-btn.ghost:hover { color: #6d3fd6; text-shadow: none; }
+.glass-ui .chain { padding: 0 6px; gap: 0; font-family: var(--mono); }
+.glass-ui .chain .node { font-size: 9.5px; padding: 3px 6px; color: var(--accent); text-shadow: none; }
+.glass-ui .chain .node.dim { color: var(--gink-3); }
+.glass-ui .chain .node.bad { color: #c41f3e; text-shadow: none; }
+.glass-ui .chain .sep { color: var(--gink-3); opacity: 0.6; }
+
+/* ── engineering panel (⚙ / d) ──────────────────────────────────── */
+.glass-ui #panel {
+  position: fixed;
+  right: var(--gap);
+  top: calc(var(--gap) * 2 + var(--bar-h));
+  bottom: auto;
+  z-index: 30;
+  width: 300px;
+  max-height: calc(100vh - 2 * (var(--gap) * 2 + var(--bar-h)));
+  padding: 16px 18px;
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--gink);
+  gap: 9px;
+}
+.glass-ui #panel::before {
+  content: "Engineering";
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--gink);
+  border-bottom: 1px solid var(--glass-hair-dark);
+  padding-bottom: 9px;
+}
+.glass-ui .panel-row > span { font-size: 11.5px; text-transform: none; letter-spacing: 0; color: var(--gink-2); }
+.glass-ui .panel-slider input { width: 110px; }
+.glass-ui .panel-slider em { color: var(--gink-2); font-family: var(--mono); font-size: 10.5px; }
+.glass-ui #panel button { padding: 6px 12px; font-size: 11.5px; background: rgba(255, 255, 255, 0.35); }
+.glass-ui #panel button:hover { background: rgba(255, 255, 255, 0.55); }
+[data-theme="dark"] .glass-ui #panel button { background: rgba(255, 255, 255, 0.1); }
+.glass-ui #panel select,
+.glass-ui .controls select {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  border: 0;
+  border-radius: 10px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--gink);
+}
+.glass-ui #panel input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+.glass-ui .ppc-chip { border: 0; border-radius: 999px; padding: 1px 7px; background: rgba(255, 255, 255, 0.4); color: var(--gink-2); font-family: var(--mono); }
+.glass-ui .ppc-chip.pred { color: var(--accent); }
+
+/* ── stage overlays ─────────────────────────────────────────────── */
+.glass-ui .countdown {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border-radius: 75px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  font-size: 64px;
+  color: var(--gink);
+  text-shadow: none;
+  background: none;
+  z-index: 14;
+}
+.glass-ui .countdown.done { font-size: 15px; font-weight: 500; }
+
+.glass-ui .shot-overlay {
+  top: calc(var(--gap) * 2 + var(--bar-h) + 30px);
+  padding: 14px 26px 16px;
+  border-radius: 26px;
+  z-index: 14;
+}
+.glass-ui .shot-overlay .so-eyebrow { font-family: var(--sans); font-weight: 600; font-size: 11px; letter-spacing: 0.08em; color: var(--accent); text-shadow: none; }
+.glass-ui .shot-overlay .so-line,
+[data-theme="light"] .glass-ui .shot-overlay .so-line {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  color: var(--gink);
+  text-shadow: none;
+}
+
+/* ── palette (⌘K) — the bottom bar with its search field focused ─── */
+.glass-ui .palette {
+  background: rgba(20, 40, 70, 0.14);
+  padding-top: 13vh;
+  z-index: 100;
+}
+.glass-ui .palette-box {
+  width: min(560px, 92vw);
+  border: 0;
+  border-radius: 28px;
+  background: none;
+  box-shadow: none;
+  overflow: hidden;
+  padding: 8px;
+}
+.glass-ui .palette-input {
+  font-family: var(--sans);
+  font-size: 15px;
+  letter-spacing: 0;
+  padding: 12px 18px;
+  margin-bottom: 4px;
+  border: 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 0 0 1px var(--glass-hair-dark);
+  color: var(--gink);
+}
+.glass-ui .palette-input::placeholder { color: var(--gink-3); }
+.glass-ui .palette-list { max-height: 360px; }
+.glass-ui .palette-list li {
+  font-family: var(--sans);
+  font-size: 13px;
+  letter-spacing: 0;
+  color: var(--gink-2);
+  border: 0;
+  border-radius: 14px;
+  padding: 9px 14px;
+}
+.glass-ui .palette-list li:hover { background: rgba(255, 255, 255, 0.3); }
+.glass-ui .palette-list li.on { background: var(--glass-fill-on); color: var(--gink); box-shadow: none; }
+.glass-ui .palette-list kbd { font-family: var(--mono); border: 0; border-radius: 6px; background: rgba(255, 255, 255, 0.45); padding: 2px 6px; }
+
+/* ── onboarding ──────────────────────────────────────────────────── */
+.glass-ui .onboarding {
+  background: rgba(20, 40, 70, 0.16);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.glass-ui .ob-box {
+  border: 0;
+  border-radius: 32px;
+  background: none;
+  padding: 34px 36px 28px;
+}
+.glass-ui .ob-box::before { display: none; }
+.glass-ui .ob-title {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+  font-size: clamp(28px, 3vw, 36px);
+  letter-spacing: -0.035em;
+  color: var(--gink);
+}
+.glass-ui .ob-title em { font-style: normal; font-weight: 400; color: var(--gink-2); }
+.glass-ui .ob-row { border-top: 1px solid var(--glass-hair-dark); }
+.glass-ui .ob-label { font-family: var(--sans); font-weight: 600; font-size: 11px; letter-spacing: 0.04em; text-transform: none; color: var(--gink); }
+.glass-ui .ob-row p { color: var(--gink-2); }
+.glass-ui .ob-start { padding: 11px 22px; font-size: 13px; font-weight: 600; color: var(--gink); background: none; border: 0; box-shadow: none; }
+
+/* ── recording: chrome steps back ────────────────────────────────── */
+body.glass-ui.recording .rail,
+body.glass-ui.recording .experiences,
+body.glass-ui.recording #topbar .modes,
+body.glass-ui.recording #topbar .kbd,
+body.glass-ui.recording #topbar #net-receipt { opacity: 0.18; pointer-events: none; transition: opacity 0.25s; }
+body.glass-ui.recording #takebar { background: none; }
+
+/* ── body-input tuner host (b) ──────────────────────────────────── */
+.glass-ui #bi-tuner-host { border-radius: 22px; padding: 10px; }
+
+/* ── in-game layer: game + model view + close ───────────────────── */
+.ba-play {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #02050b;
+}
+.ba-play iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ba-pip {
+  position: absolute;
+  left: var(--gap);
+  bottom: var(--gap);
+  z-index: 2;
+  width: clamp(170px, 17vw, 250px);
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  pointer-events: none;
+}
+.ba-pip canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity 0.3s, filter 0.3s; }
+.ba-pip[data-state="disconnected"] canvas,
+.ba-pip[data-state="starting"] canvas { opacity: 0.35; filter: grayscale(1); }
+.ba-pip .link-chip {
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  min-width: 0;
+  padding: 7px 13px 7px 11px;
+  gap: 8px;
+  border-radius: 16px;
+  white-space: nowrap;
+}
+.ba-pip .link-text small { display: none; }
+.ba-pip .link-text b { font-size: 11.5px; }
+.ba-pip .link-dot { width: 7px; height: 7px; }
+.ba-close {
+  position: absolute;
+  top: var(--gap);
+  right: var(--gap);
+  z-index: 3;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+  color: rgba(0, 0, 0, 0.8);
+  background: none;
+  cursor: pointer;
+}
+/* over the game the glass sits on a live, busy scene: keep the ink white */
+.ba-play { --glass-fill: rgba(255, 255, 255, 0.14); --glass-fill-hover: rgba(255, 255, 255, 0.3); --gink: #fff; --gink-2: rgba(255, 255, 255, 0.82); --gink-3: rgba(255, 255, 255, 0.6); }
+.ba-play .ba-close { color: #fff; }
+.ba-play .link-chip { color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
+
+/* ── narrow screens: keep everything, stack it ──────────────────── */
+@media (max-width: 1100px) {
+  .glass-ui .rail { width: 260px; }
+  .experiences { width: 224px; }
+  .glass-ui .chain .node b + span,
+  .glass-ui .chain .sep { display: none; }
+}
+@media (max-width: 900px) {
+  .glass-ui { --gap: 10px; }
+  .glass-ui #topbar { gap: 8px; padding: 0 6px 0 16px; overflow-x: auto; }
+  .glass-ui .brand-name { font-size: 19px; }
+  .glass-ui #net-receipt { display: none; }
+  .glass-ui .rail { display: none; } /* reachable via ⌘K + the ⚙ panel, as before */
+  .experiences { top: auto; transform: none; bottom: calc(var(--gap) * 2 + var(--bar-h)); width: auto; right: var(--gap); flex-direction: row; flex-wrap: wrap; padding: 10px; }
+  .exp-hdr { width: 100%; font-size: 15px; padding: 2px 6px 0; }
+  .glass-ui .fly-card { flex: 1 1 140px; }
+  .link-chip { bottom: auto; top: calc(var(--gap) * 2 + var(--bar-h)); }
+  .glass-ui .chain { display: none; }
+}

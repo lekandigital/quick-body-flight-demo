@@ -9,6 +9,18 @@ import { ProgressionManager } from "./game/ProgressionManager";
 // BodyArcade: upstream's Vercel Web Analytics removed — no analytics, no
 // telemetry, no network beacons (BodyArcade non-negotiable).
 
+// BodyArcade: embedded under the tracker page, the game's fullscreen asks
+// (lobby GO, HUD button) go to the parent, which fullscreens the game AND the
+// player's model view together. Fullscreening this frame alone would cover it.
+if (window.parent !== window) {
+  const relay = function (this: Element): Promise<void> {
+    window.parent.postMessage({ t: "bodyarcade.fullscreen" }, window.location.origin);
+    return Promise.resolve();
+  };
+  Element.prototype.requestFullscreen = relay;
+  (Element.prototype as Element & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen = relay;
+}
+
 if (import.meta.env.DEV) {
   const params = new URLSearchParams(window.location.search);
   if (params.has("clearSave")) {

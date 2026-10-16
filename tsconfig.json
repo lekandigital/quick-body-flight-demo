@@ -13,8 +13,9 @@
     "useDefineForClassFields": true,
     "types": ["vite/client"],
     "paths": {
-      "@bodyarcade/body-input": ["./packages/body-input/src/index.ts"]
+      "@bodyarcade/body-input": ["./packages/body-input/src/index.ts"],
+      "@bodyarcade/glass": ["./packages/glass/src/index.ts"]
     }
   },
-  "include": ["src", "packages/body-input/src"]
+  "include": ["src", "packages/body-input/src", "packages/glass/src"]
 }

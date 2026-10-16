@@ -137,6 +137,11 @@ export class Retargeter {
   // squash-and-stretch state (expressiveness)
   private scaleBase = new THREE.Vector3(1, 1, 1);
   private squash = 0;
+  // demo-video clone change (NOT upstream): whole-figure yaw. The chest used to
+  // carry the entire torso turn (up to 65°) against fixed hips, so a side turn
+  // twisted/stretched the mesh at the waist. The root now takes most of the yaw.
+  private rootYaw = 0;
+  private rootYawTarget = 0;
 
   // face-touch: per-avatar geometry captured at bind + per-side engagement
   private armLen = { left: { upper: 0.26, fore: 0.24 }, right: { upper: 0.26, fore: 0.24 } };
@@ -165,6 +170,8 @@ export class Retargeter {
   bind(avatar: Avatar): void {
     this.avatar = avatar;
     this.states.clear();
+    avatar.object.rotation.y = 0; // demo-video clone change: rest is captured unrotated
+    this.rootYaw = this.rootYawTarget = 0;
     avatar.object.updateWorldMatrix(true, true);
     this.rootRest.copy(avatar.object.position);
     this.scaleBase.copy(avatar.object.scale);
@@ -515,6 +522,9 @@ export class Retargeter {
     tmpE.y = THREE.MathUtils.clamp(tmpE.y, -MAX_YAW, MAX_YAW);
     tmpE.x = THREE.MathUtils.clamp(tmpE.x, -MAX_PITCH, MAX_PITCH);
     tmpE.z = THREE.MathUtils.clamp(tmpE.z, -MAX_LEAN, MAX_LEAN);
+    // demo-video clone change: the root turns with her (eased in tick); the
+    // chest's world target is unchanged, so only ~15% of the yaw remains as twist
+    this.rootYawTarget = tmpE.y * 0.85;
     tmpQ1.setFromEuler(tmpE);
 
     // desired world = qBody ⊗ restWorld → parent-local
@@ -844,6 +854,14 @@ export class Retargeter {
    *  Hand bones use slightly slower slerp for a natural wrist lag. */
   tick(dt: number): void {
     this.idleT += dt;
+    // demo-video clone change: ease the whole-figure yaw (relaxes to 0 when the
+    // torso isn't tracked)
+    if (this.avatar) {
+      const chestSt = this.states.get('chest');
+      if (chestSt && !chestSt.confident) this.rootYawTarget *= Math.exp(-dt / 0.5);
+      this.rootYaw += (this.rootYawTarget - this.rootYaw) * (1 - Math.exp(-dt / 0.09));
+      this.avatar.object.rotation.y = this.rootYaw;
+    }
     const k = 1 - Math.exp(-config.slerpRate * dt);
     const kHand = 1 - Math.exp(-config.slerpRate * 0.7 * dt); // wrist lag
     const kDecay = 1 - Math.exp(-dt / config.relaxSec);

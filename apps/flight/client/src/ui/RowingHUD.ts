@@ -10,6 +10,7 @@
  * derived from the RowDebugState the controls already expose.
  */
 import type { RowDebugState } from "../input/rowControls";
+import { glassify } from "@bodyarcade/glass";
 
 export class RowingHUD {
   private container: HTMLDivElement;
@@ -45,6 +46,10 @@ export class RowingHUD {
     this.statusEl = this.container.querySelector(".rowing-hud-status")!;
     this.hintEl = this.container.querySelector(".rowing-hud-hint")!;
     this.injectStyles();
+    // BodyArcade glass: the strip is the showcase's bottom bar, the hint a panel
+    glassify(this.container.querySelector<HTMLElement>(".rowing-hud-strip")!, "bar");
+    glassify(this.hintEl, "panel");
+    this.hintEl.dataset.empty = "1";
   }
 
   /** Once per frame while the boat is active. */
@@ -80,10 +85,10 @@ export class RowingHUD {
     this.statusEl.dataset.tone = tone;
     const now = performance.now();
     if (hint) {
-      this.hintEl.textContent = hint;
+      this.setHint(hint);
       this.hintUntil = now + 1200;
     } else if (now > this.hintUntil) {
-      this.hintEl.textContent = "";
+      this.setHint("");
     }
   }
 
@@ -112,6 +117,18 @@ export class RowingHUD {
       return ["IDLE", "info", "seated? hold a T-pose for a moment to recalibrate"];
     }
     return ["IDLE", "info", null];
+  }
+
+  /** the hint carries a glass plate child, so write text without clobbering it */
+  private setHint(text: string) {
+    let node = this.hintEl.lastChild;
+    if (!node || node.nodeType !== Node.TEXT_NODE) {
+      node = document.createTextNode("");
+      this.hintEl.appendChild(node);
+    }
+    if (node.textContent !== text) node.textContent = text;
+    if (text) delete this.hintEl.dataset.empty;
+    else this.hintEl.dataset.empty = "1";
   }
 
   private firePulse(strength: number) {
@@ -154,16 +171,18 @@ export class RowingHUD {
         z-index: 12;
         transition: opacity 0.2s ease;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        /* glass over a live scene: lighter tint, white ink */
+        --glass-fill: rgba(255, 255, 255, 0.14);
+        --glass-fill-hover: rgba(255, 255, 255, 0.24);
       }
       .rowing-hud-strip {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 7px 14px;
-        border-radius: 999px;
-        background: rgba(10, 16, 24, 0.55);
-        backdrop-filter: blur(6px);
-        color: rgba(255, 255, 255, 0.92);
+        padding: 10px 18px;
+        border-radius: 22px;
+        color: #fff;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
         font-size: 12px;
         letter-spacing: 0.04em;
       }
@@ -229,12 +248,13 @@ export class RowingHUD {
       .rowing-hud-status[data-tone="info"] { color: rgba(255, 255, 255, 0.8); }
       .rowing-hud-hint {
         font-size: 11px;
-        color: rgba(255, 255, 255, 0.75);
-        background: rgba(10, 16, 24, 0.45);
-        border-radius: 8px;
-        padding: 3px 10px;
+        color: #fff;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+        border-radius: 14px;
+        padding: 5px 12px;
         min-height: 17px;
       }
+      .rowing-hud-hint[data-empty] { visibility: hidden; }
       @media (prefers-reduced-motion: reduce) {
         .rowing-hud-pulse-hit { animation: none; }
       }

@@ -17,7 +17,7 @@ export function createPalette(commands: Command[]): void {
   overlay.id = 'palette';
   overlay.className = 'palette hidden';
   overlay.innerHTML = `
-    <div class="palette-box" role="dialog" aria-label="command palette">
+    <div class="palette-box" data-glass="bar" role="dialog" aria-label="command palette">
       <input class="palette-input" type="text" placeholder="type a command…" aria-label="filter commands" />
       <ul class="palette-list" role="listbox"></ul>
     </div>`;

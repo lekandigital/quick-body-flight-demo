@@ -54,6 +54,13 @@ fallbacks.
   movable finger geometry; Erika has a real 40-bone articulated hand rig —
   fist/open/point verified closing correctly in-app before approval.
 
+### CHOSEN: "Female Mannequin" (Quaternius, Universal Animation Library 2) — default avatar of the glass build, 2026-10-16
+- **File:** `public/avatars/rigged/ual2f/Mannequin_F.glb` (committed; 1.4 MB, rigged glTF, loaded as-is by `src/rig/rigged.ts` — no conversion, no auto-rigging)
+- **sha256:** `2ee6cc3fe888d9b144afa8cc4b2ab7bfc5d13a0d5b7548df777f61f64ad65fa6` (identical to the pack's file)
+- **Source:** "Universal Animation Library 2 [Standard]" by Quaternius — https://opengameart.org/content/universal-animation-library-2 (also quaternius.com)
+- **License:** CC0 1.0 (OpenGameArt listing `licenses: ["CC0"]`; `License.txt` in the pack). Attribution not required; credited anyway: "Mannequin by Quaternius, CC0".
+- **Why:** the model from the BodyArcade demo video (Lekan's pick: female, non-anime, cleanest rig of the candidates).
+
 ### 1. 100Avatars series (Polygonal Mind) — APPROVED
 - **Source:** [open-source-avatars registry](https://github.com/ToxSam/open-source-avatars) / [opensourceavatars.com](https://www.opensourceavatars.com/en/gallery)
 - **License:** CC0 1.0 — registry states "Our own free avatars, no attribution needed"; 300+ VRM avatars

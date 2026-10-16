@@ -54,6 +54,7 @@ export function createDirector(deps: DirectorDeps): Director {
   const overlay = document.createElement('div');
   overlay.id = 'shot-overlay';
   overlay.className = 'shot-overlay hidden';
+  overlay.dataset.glass = 'panel';
   overlay.innerHTML = `
     <div class="so-eyebrow" id="so-eyebrow"></div>
     <div class="so-line serif" id="so-line"></div>`;

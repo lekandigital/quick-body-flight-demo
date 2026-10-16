@@ -19,9 +19,10 @@ export function createOnboarding(): { show(): void } {
 
   const box = document.createElement('div');
   box.className = 'ob-box';
+  box.dataset.glass = 'panel';
   const title = document.createElement('h1');
   title.className = 'ob-title serif';
-  title.innerHTML = 'A puppet that <em>mirrors you</em>';
+  title.innerHTML = 'A body that <em>mirrors yours</em>';
   box.append(title);
 
   for (const [label, text] of STEPS) {
@@ -40,7 +41,8 @@ export function createOnboarding(): { show(): void } {
   actions.className = 'ob-actions';
   const start = document.createElement('button');
   start.className = 'ob-start';
-  start.textContent = 'Start puppeteering';
+  start.dataset.glass = 'navButton';
+  start.textContent = 'Start';
   start.onclick = dismiss;
   actions.append(start);
   box.append(actions);

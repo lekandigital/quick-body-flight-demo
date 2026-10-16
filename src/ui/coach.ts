@@ -38,6 +38,7 @@ export function createCoach(): Coach {
       if (action) {
         actionBtn = document.createElement('button');
         actionBtn.className = 'coach-action';
+        actionBtn.dataset.glass = 'navButton';
         actionBtn.textContent = action.label;
         actionBtn.onclick = () => {
           action.run();

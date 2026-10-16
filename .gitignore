@@ -94,3 +94,6 @@ permissions.local.md
 !apps/flight/**/*.webp
 !apps/flight/**/*.glb
 !apps/flight/**/*.gltf
+
+# built static sites (scripts/build-bodyarcade.mjs)
+deploy/

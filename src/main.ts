@@ -5,6 +5,7 @@ import '@fontsource-variable/inter/index.css';
 import '@fontsource-variable/jetbrains-mono/index.css';
 import '@fontsource-variable/fraunces/index.css';
 import './styles.css';
+import './ui/glass/glass.css';
 
 import * as THREE from 'three';
 import { startCamera, startVideoFile, watchLayout, layoutOverlay, setMirrored } from './camera';
@@ -24,7 +25,10 @@ import { saveLoop, listLoops, loadLoop, deleteLoop } from './memory/store';
 import { createIntentDetector } from './gesture/intent';
 import { createBodyInputAdapter, type BodyInputAdapter } from './bodyinput/adapter';
 import type { BodyTracking, TrackingState } from '@bodyarcade/body-input';
-import { openFlight, defaultFlightUrl } from './bodyinput/flightBridge';
+import { openFlight, defaultFlightUrl, activeExperience } from './bodyinput/flightBridge';
+import { glassifyAll, watchGlass } from '@bodyarcade/glass';
+import { createLink } from './ui/link';
+import { asset } from './base';
 import { createDirector } from './director/director';
 import { TAKE_SCRIPTS } from './director/scripts';
 import type { HandPuppetId } from './hand/types';
@@ -110,6 +114,12 @@ async function boot() {
   const stageCanvas = document.getElementById('stage') as HTMLCanvasElement;
   const overlayCtx = overlay.getContext('2d')!;
 
+  // glass chrome: every [data-glass] element now and later
+  glassifyAll();
+  watchGlass();
+  // link state replaces the camera view: is the model following someone?
+  const link = createLink(document.getElementById('link-state')!);
+
   // theme before anything paints; persisted via the config store
   document.documentElement.dataset.theme = config.theme;
   onConfigChange((key) => {
@@ -173,19 +183,24 @@ async function boot() {
   // theme toggle (persisted)
   const themeBtn = document.createElement('button');
   themeBtn.id = 'theme-btn';
+  themeBtn.dataset.glass = 'navButton';
   themeBtn.textContent = '◐';
   themeBtn.title = 'toggle light/dark theme (t)';
   themeBtn.onclick = () => setConfig('theme', config.theme === 'dark' ? 'light' : 'dark');
   document.getElementById('controls')!.append(themeBtn);
   // ?src=file plays the fixture mp4 directly (manual eval without fake cam)
   const videoSrc =
-    params.get('video') ?? (evalFixture && params.get('src') === 'file' ? `/fixtures/${evalFixture}.mp4` : null);
+    params.get('video') ?? (evalFixture && params.get('src') === 'file' ? asset(`/fixtures/${evalFixture}.mp4`) : null);
 
   const els = { video, overlay, pane };
   const hud = createChain();
   const coach = createCoach();
   const receipt = createReceipt();
   const stage = createStage(stageCanvas);
+  stage.setTheme(config.theme);
+  onConfigChange((key) => {
+    if (key === 'theme') stage.setTheme(config.theme);
+  });
   const handMode = createHandMode();
   stage.scene.add(handMode.object);
   handMode.object.visible = false;
@@ -200,7 +215,7 @@ async function boot() {
   const vfx = createVfx();
   stage.scene.add(vfx.object);
   let cameraOwned = 0; // replay/poster hold the camera while > 0
-  const autoCam = createAutoCam(stage.camera, () => cameraOwned > 0);
+  const autoCam = createAutoCam(stage.camera, () => cameraOwned > 0, () => stage.framing());
 
   let avatar: Avatar = createRobot();
   stage.scene.add(avatar.object);
@@ -499,8 +514,10 @@ async function boot() {
     countdownActive = true;
     const el = document.createElement('div');
     el.className = 'countdown';
+    el.dataset.glass = 'panel';
     el.textContent = '3';
-    pane.appendChild(el);
+    // the camera view is gone — count down over the model instead
+    (document.getElementById('stage-pane') ?? pane).appendChild(el);
     let n = 3;
     const timer = setInterval(() => {
       n--;
@@ -511,6 +528,7 @@ async function boot() {
       clearInterval(timer);
       retargeter.calibrate();
       el.textContent = 'calibrated ✓';
+      el.classList.add('done');
       setTimeout(() => {
         el.remove();
         countdownActive = false;
@@ -603,6 +621,7 @@ async function boot() {
   }
   const avatarBtn = document.createElement('button');
   avatarBtn.id = 'avatar-btn';
+  avatarBtn.dataset.glass = 'navButton';
   const avatarLabel = () => {
     avatarBtn.textContent = `avatar: ${getAvatarDef(config.avatar).label}`;
   };
@@ -721,27 +740,112 @@ async function boot() {
     return; // skip camera, detector, eval, recording
   }
 
+  // ── body-input protocol: derived signals for BodyArcade consumers ──
+  // (landmarks go in here and only here; transports carry BodySignal only)
+  // Wired before the camera starts: the experiences open even while the
+  // camera is unavailable — the game falls back to its keyboard controls and
+  // the model view says Disconnected.
+  const bodyInput = createBodyInputAdapter();
+  (window as unknown as { __BI: BodyInputAdapter }).__BI = bodyInput;
+
+  // in-game model view: the stage canvas moves into the glass window over
+  // the game (where the camera view used to be) and renders transparent
+  const pipDeps = {
+    enterPip: (host: HTMLElement) => {
+      cameraOwned++;
+      stage.setHost(host);
+      stage.setPip(true);
+    },
+    exitPip: () => {
+      stage.setPip(false);
+      stage.setHost(null);
+      stage.setTreatment(config.mode === 'hand' ? 'hand' : 'character');
+      cameraOwned = Math.max(0, cameraOwned - 1);
+    },
+    attachLink: (el: HTMLElement) => link.attach(el),
+  };
+
+  // Flight: the game swaps PosePuppet to the lite model while it runs
+  // (approved feel; Fly's torso-scale axes are robust to lite).
+  const startFlight = () =>
+    openFlight(
+      bodyInput,
+      {
+        ...pipDeps,
+        useLiteModel: () => {
+          const prev = config.model;
+          if (prev !== 'lite') setConfig('model', 'lite');
+          return () => {
+            if (prev !== 'lite' && config.model === 'lite') setConfig('model', prev);
+          };
+        },
+      },
+      defaultFlightUrl(),
+      'flight',
+    );
+
+  // Rowing: same game, boat vehicle, stroke input — ?row starts straight on
+  // the water. Rowing keeps the FULL pose model: stroke detection reads wrist
+  // DEPTH, and the lite model's z collapses when the hands work near the
+  // frame edge — measured on the chest-up seated crop: cycle amplitude 0.112
+  // arm lengths under lite (below the 0.15 stroke bar, 2/13 strokes) vs 0.252
+  // under full (13/13).
+  const rowUrl = () => {
+    const base = defaultFlightUrl();
+    return `${base}${base.includes('?') ? '&' : '?'}row`;
+  };
+  const startRow = () => openFlight(bodyInput, pipDeps, rowUrl(), 'rowing');
+
+  // delegated: survives any re-render of the buttons (live-demo fix 6a3e9d8)
+  document.addEventListener('click', (ev) => {
+    const t = ev.target as Element | null;
+    if (t?.closest('#fly-btn')) startFlight();
+    else if (t?.closest('#row-btn')) startRow();
+  });
+  // deep links + Back/Forward: …/bodyarcade/#flight, #rowing
+  const openFromHash = () => {
+    const h = location.hash.slice(1);
+    if (h === 'flight' && activeExperience() !== 'flight') startFlight();
+    else if (h === 'rowing' && activeExperience() !== 'rowing') startRow();
+  };
+  window.addEventListener('popstate', openFromHash);
+  openFromHash();
+
   watchLayout(els);
   setMirrored(els, config.mirror);
 
-  try {
-    if (videoSrc) {
-      await startVideoFile(video, videoSrc);
-      hud.setLive(false);
-      hud.setCam(`FILE ${video.videoWidth}×${video.videoHeight}`);
-    } else {
-      await startCamera(video);
-      hud.setLive(true);
-      hud.setCam(`LIVE ${video.videoWidth}×${video.videoHeight}`);
+  // the model appears while the camera prompt is up, not after it
+  const initialAvatar = config.avatar !== 'robot' ? setAvatar(config.avatar) : Promise.resolve();
+
+  link.set('starting', 'Connecting', videoSrc ? 'opening the video…' : 'waiting for camera access…');
+  for (;;) {
+    try {
+      if (videoSrc) {
+        await startVideoFile(video, videoSrc);
+        hud.setLive(false);
+        hud.setCam(`FILE ${video.videoWidth}×${video.videoHeight}`);
+      } else {
+        await startCamera(video);
+        hud.setLive(true);
+        hud.setCam(`LIVE ${video.videoWidth}×${video.videoHeight}`);
+      }
+      statusEl.classList.add('hidden');
+      window.__PP.videoReady = true;
+      window.__PP.cameraError = null;
+      layoutOverlay(els);
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      window.__PP.cameraError = msg;
+      statusEl.textContent = `camera unavailable: ${msg} — allow camera access and reload`;
+      // no camera, no body to follow: say so, and retry on click
+      await new Promise<void>((resolve) =>
+        link.set('disconnected', 'Disconnected', 'no camera — allow access, then click to retry', () => {
+          link.set('starting', 'Connecting', 'waiting for camera access…');
+          resolve();
+        }),
+      );
     }
-    statusEl.classList.add('hidden');
-    window.__PP.videoReady = true;
-    layoutOverlay(els);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    window.__PP.cameraError = msg;
-    statusEl.textContent = `camera unavailable: ${msg} — allow camera access and reload`;
-    return;
   }
 
   const recorder = createRecorder({
@@ -769,6 +873,7 @@ async function boot() {
   document.body.append(fileInput);
   const fileBtn = document.createElement('button');
   fileBtn.id = 'video-file-btn';
+  fileBtn.dataset.glass = 'navButton';
   fileBtn.textContent = 'load video';
   let fileMode = false;
   fileBtn.onclick = () => {
@@ -803,8 +908,9 @@ async function boot() {
 
   // settle the initial avatar before detection/eval starts, so eval mode
   // measures the avatar it claims to measure
-  if (config.avatar !== 'robot') await setAvatar(config.avatar);
+  await initialAvatar;
 
+  link.set('starting', 'Connecting', 'loading the pose model…');
   statusEl.textContent = 'loading pose model…';
   statusEl.classList.remove('hidden');
   const detector = await createDetector(modelVariant);
@@ -853,7 +959,8 @@ async function boot() {
     // stage flips to replay framing IMMEDIATELY (the ghost build awaits
     // VRM loads); slow-mo from a side angle, trails via tight echoes
     avatar.object.visible = false;
-    stage.camera.position.set(2.6, 1.45, 1.6);
+    const k = stage.framing().pos.z / 3.2; // side angle, scaled to the lens
+    stage.camera.position.set(2.6 * k, 1.45, 1.6 * k);
     stage.camera.lookAt(0, 1.0, 0);
     await ghosts.start(loop, config.avatar, {
       echoes: 3,
@@ -935,53 +1042,6 @@ async function boot() {
     await saveLoop(loop);
     void refreshLoopList();
   }
-
-  // ── body-input protocol: derived signals for BodyArcade consumers ──
-  // (landmarks go in here and only here; transports carry BodySignal only)
-  const bodyInput = createBodyInputAdapter();
-  (window as unknown as { __BI: BodyInputAdapter }).__BI = bodyInput;
-
-  // BodyArcade Flight entry: opens the game (same-origin /flight/) with
-  // body signals streaming; PosePuppet drops to the lite model and pauses
-  // its stage renderer while the game window is open (perf budget).
-  const startFlight = () =>
-    openFlight(bodyInput, {
-      setStageSuspended: (v) => stage.setSuspended(v),
-      useLiteModel: () => {
-        const prev = config.model;
-        if (prev !== 'lite') setConfig('model', 'lite');
-        return () => {
-          if (prev !== 'lite' && config.model === 'lite') setConfig('model', prev);
-        };
-      },
-    });
-  document.addEventListener('click', (ev) => {
-    const target = ev.target as Element | null;
-    if (target?.closest('#fly-btn')) startFlight();
-  });
-
-  // BodyArcade Rowing entry: same game, boat vehicle, stroke input —
-  // ?row starts straight on the water (companion mode identical to Fly).
-  const rowUrl = () => {
-    const base = defaultFlightUrl();
-    return `${base}${base.includes('?') ? '&' : '?'}row`;
-  };
-  // Rowing keeps the FULL pose model (unlike Fly): stroke detection reads
-  // wrist DEPTH, and the lite model's z collapses when the hands work near
-  // the frame edge — measured on the chest-up seated crop: cycle amplitude
-  // 0.112 arm lengths under lite (below the 0.15 stroke bar, 2/13 strokes)
-  // vs 0.252 under full (13/13). Gate-2 live seated propulsion died exactly
-  // this way. The stage stays suspended — that is the real GPU budget win;
-  // Fly's torso-scale axes are robust to lite and keep it (approved feel).
-  const startRow = () =>
-    openFlight(
-      bodyInput,
-      {
-        setStageSuspended: (v) => stage.setSuspended(v),
-      },
-      rowUrl(),
-    );
-  document.getElementById('row-btn')?.addEventListener('click', startRow);
 
   // ── recording director: guided takes, hands-free via the gesture seed ──
   let latestNorm: LandmarkPoint[] | null = null;
@@ -1090,10 +1150,11 @@ async function boot() {
           const t = Math.min((performance.now() - t0) / 900, 1);
           const e = t * t * (3 - 2 * t);
           const ang = e * 0.5;
-          const r = config.mode === 'hand' ? 2.1 : 3.2;
-          const y = config.mode === 'hand' ? 1.15 : 1.3;
+          const fr = stage.framing();
+          const r = fr.pos.z;
+          const y = fr.pos.y;
           cam.position.set(Math.sin(ang) * r, y, Math.cos(ang) * r);
-          cam.lookAt(0, config.mode === 'hand' ? 1.05 : 1.0, 0);
+          cam.lookAt(fr.look);
           if (t < 1) requestAnimationFrame(step);
           else res();
         };
@@ -1215,6 +1276,7 @@ async function boot() {
         if (!host) {
           host = document.createElement('div');
           host.id = 'bi-tuner-host';
+          host.dataset.glass = 'panel';
           host.style.cssText = 'position:fixed;right:12px;bottom:64px;z-index:40;';
           document.body.append(host);
         }
@@ -1426,6 +1488,7 @@ async function boot() {
         const card = document.createElement('button');
         card.className = 'card' + (def.id === config.handPuppet ? ' on' : '');
         card.dataset.puppet = def.id;
+        card.dataset.glass = 'navButton';
         const preview = document.createElement('div');
         preview.className = 'preview';
         preview.textContent = def.glyph;
@@ -1487,6 +1550,15 @@ async function boot() {
       hud.tick(window.__PP.lastDetectionAt, window.__PP.videoReady);
       updatePpcStates(continuity.states());
       visibilityCoach(performance.now());
+
+      // link state: connected while detections are fresh (< 1 s)
+      const tNow = performance.now();
+      const hand = config.mode === 'hand';
+      const fresh = hand
+        ? tNow - handMode.lastDetectionAt() < 1000
+        : tNow - window.__PP.lastDetectionAt < 1000;
+      if (fresh) link.set('connected', 'Connected', hand ? 'following your hand' : 'following your body');
+      else link.set('disconnected', 'Disconnected', hand ? 'show a hand to the camera' : 'step into view of the camera');
 
       const fps = detector.poseFps();
       const live = window.__PP.videoReady && performance.now() - window.__PP.lastDetectionAt < 1500;

@@ -92,6 +92,7 @@ function toggle(key: keyof Config & ('mirror' | 'smoothing' | 'rootMotion' | 'pp
 export function createPanel(rig?: PanelRigApi): void {
   const host = document.createElement('div');
   host.id = 'panel';
+  host.dataset.glass = 'panel';
   host.classList.add('hidden');
 
   const fullBody = document.createElement('input');
@@ -208,6 +209,7 @@ export function createPanel(rig?: PanelRigApi): void {
   if (!btn) {
     btn = document.createElement('button');
     btn.id = 'panel-toggle';
+    btn.dataset.glass = 'navButton';
     btn.textContent = '⚙';
     btn.title = 'settings (d)';
     document.getElementById('controls')!.append(btn);

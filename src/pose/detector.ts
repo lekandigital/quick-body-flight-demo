@@ -4,6 +4,7 @@
 
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 import type { PoseFrame } from './types';
+import { asset } from '../base';
 
 export type ModelVariant = 'full' | 'lite';
 
@@ -17,10 +18,10 @@ export interface PoseDetector {
 }
 
 async function buildLandmarker(variant: ModelVariant, delegate: 'GPU' | 'CPU') {
-  const fileset = await FilesetResolver.forVisionTasks('/mediapipe-wasm');
+  const fileset = await FilesetResolver.forVisionTasks(asset('/mediapipe-wasm'));
   return PoseLandmarker.createFromOptions(fileset, {
     baseOptions: {
-      modelAssetPath: `/models/pose_landmarker_${variant}.task`,
+      modelAssetPath: asset(`/models/pose_landmarker_${variant}.task`),
       delegate,
     },
     runningMode: 'VIDEO',

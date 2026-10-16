@@ -17,6 +17,8 @@ interface CardDef {
 }
 
 const CARDS: CardDef[] = [
+  { id: 'ual2f', label: 'mannequin', glyph: '◇', chip: 'Full body', chipClass: 'ok',
+    note: 'CC0 · Quaternius — the demo-video model' },
   // honest labels (Gate-3 live findings): neither default avatar has
   // movable finger geometry; the robot's face-touch reads reach-to-collar
   { id: 'robot', label: 'robot', glyph: '◼', chip: 'Fingers not supported', chipClass: 'warn',
@@ -45,6 +47,7 @@ export function createAvatarCards(): void {
     const card = document.createElement('button');
     card.className = 'card';
     card.dataset.avatar = def.id;
+    card.dataset.glass = 'navButton';
 
     const preview = document.createElement('div');
     preview.className = 'preview';

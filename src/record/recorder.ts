@@ -291,6 +291,7 @@ export function createRecorder(deps: Deps): Recorder {
 export function createRecordButton(recorder: Recorder): void {
   const btn = document.createElement('button');
   btn.id = 'record-btn';
+  btn.dataset.glass = 'navButton';
   const idle = 'rec 15s';
   btn.textContent = idle;
   btn.title = 'record a 15 s composite .webm (stays on this machine)';

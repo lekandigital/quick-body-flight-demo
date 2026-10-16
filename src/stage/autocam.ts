@@ -17,7 +17,12 @@ const BASES = {
   hand: { pos: new THREE.Vector3(0, 1.15, 2.1), look: new THREE.Vector3(0, 1.05, 0) },
 };
 
-export function createAutoCam(camera: THREE.PerspectiveCamera, isLocked: () => boolean): AutoCam {
+export function createAutoCam(
+  camera: THREE.PerspectiveCamera,
+  isLocked: () => boolean,
+  /** resting framing of the current stage look (showcase sits further back) */
+  framing?: () => { pos: THREE.Vector3; look: THREE.Vector3 },
+): AutoCam {
   // spring state
   let leanX = 0;
   let leanVel = 0;
@@ -30,7 +35,7 @@ export function createAutoCam(camera: THREE.PerspectiveCamera, isLocked: () => b
   return {
     tick(dt, rootX, energy, tracking) {
       if (!config.autoCam || isLocked()) return;
-      const base = BASES[config.mode === 'hand' ? 'hand' : 'character'];
+      const base = framing?.() ?? BASES[config.mode === 'hand' ? 'hand' : 'character'];
 
       // lean-with-me: critically damped spring toward a fraction of root x
       const targetLean = THREE.MathUtils.clamp(rootX * 0.4, -0.35, 0.35);

@@ -1,0 +1,9 @@
+{
+  "name": "@bodyarcade/glass",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Liquid glass for plain DOM — @creatorem/web-glass-effect's LiquidGlass/LiquidFilter ported without React. Shared by the tracker page and the game.",
+  "license": "MIT",
+  "main": "src/index.ts"
+}

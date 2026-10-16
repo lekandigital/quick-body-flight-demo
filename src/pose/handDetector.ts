@@ -4,6 +4,7 @@
 // load same-origin; nothing touches the network.
 
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
+import { asset } from '../base';
 
 export interface HandPoint {
   x: number;
@@ -62,10 +63,10 @@ export interface HandDetector {
 }
 
 async function buildLandmarker(delegate: 'GPU' | 'CPU') {
-  const fileset = await FilesetResolver.forVisionTasks('/mediapipe-wasm');
+  const fileset = await FilesetResolver.forVisionTasks(asset('/mediapipe-wasm'));
   return HandLandmarker.createFromOptions(fileset, {
     baseOptions: {
-      modelAssetPath: '/models/hand_landmarker.task',
+      modelAssetPath: asset('/models/hand_landmarker.task'),
       delegate,
     },
     runningMode: 'VIDEO',

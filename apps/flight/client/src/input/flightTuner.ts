@@ -1,6 +1,7 @@
 import type { BodyFlightControls } from "./bodyControls";
 import { BODY_PROFILES } from "./bodyControls";
 import type { RowingControls } from "./rowControls";
+import { glassify } from "@bodyarcade/glass";
 
 /**
  * BodyArcade original: flight-side control tuner overlay.
@@ -102,16 +103,18 @@ export class FlightTuner {
   private mount(host: HTMLElement) {
     const el = document.createElement("div");
     el.id = "flight-tuner";
+    el.style.setProperty("--glass-fill", "rgba(255, 255, 255, 0.14)");
+    glassify(el, "panel");
     Object.assign(el.style, {
       position: "fixed",
       top: "12px",
       right: "12px",
       width: "280px",
-      padding: "10px 12px",
-      background: "rgba(10, 14, 22, 0.88)",
-      border: "1px solid rgba(160, 200, 255, 0.35)",
-      borderRadius: "8px",
-      color: "#cfe4ff",
+      padding: "14px 16px",
+      // BodyArcade glass panel (the showcase's bottom-bar material)
+      borderRadius: "22px",
+      color: "#fff",
+      textShadow: "0 1px 6px rgba(0, 0, 0, 0.35)",
       font: "11px/1.5 ui-monospace, 'JetBrains Mono', Menlo, monospace",
       zIndex: "400",
       pointerEvents: "auto",
@@ -321,7 +324,8 @@ export class FlightTuner {
       this.statusEl.appendChild(line1);
       if (!d.senderConnected) {
         const hint = document.createElement("div");
-        const rootUrl = new URL("/", window.location.href).href;
+        // the tracker page is one level up from the game (…/bodyarcade/ ← …/bodyarcade/flight/)
+        const rootUrl = new URL("../", window.location.href).href;
         hint.textContent =
           window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
             ? "PosePuppet is not reaching this page. BroadcastChannel is origin-scoped; a different port is a different origin. Run `npm run arcade` at the repo root, open PosePuppet, then Command-K -> fly."
