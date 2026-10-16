@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>BodyArcade renderer comparison lab</title>
+<style>body{margin:16px;background:#101217;color:#e8edf4;font:14px system-ui}fieldset{display:flex;flex-wrap:wrap;gap:12px;border:1px solid #485062;margin-bottom:12px}label{display:grid;gap:4px}button,select,input{font:inherit;padding:7px}canvas{display:block;max-width:100%;height:auto}pre{white-space:pre-wrap}a{color:#9fd4ff}</style>
+<h1>Renderer comparison lab</h1><p>Development only. Fixed camera and animation time; no webcam or tracking. Credits remain below the render.</p>
+<fieldset><label>Background<select id="scene"></select></label><label>Viewport<select id="viewport"><option>960x600</option><option>390x844</option><option>1920x1080</option></select></label><label>Capture label<input id="label" value="baseline" pattern="[a-z0-9-]+"></label><button id="render">Render</button><button id="capture">Save capture</button><button id="batch">Capture all scenes</button><button id="stress">Switch stress check</button></fieldset>
+<canvas id="render-canvas"></canvas><p id="credit"></p><pre id="status">Starting…</pre><script type="module" src="/src/dev/renderer-lab.ts"></script></html>

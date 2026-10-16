@@ -16,17 +16,17 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
+import { SSRPass } from 'three/examples/jsm/postprocessing/SSRPass.js';
+import { clone as cloneScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { backgroundMaterial, findViewerChannels, type ViewerChannels } from './backgroundMaterials';
+import { BACKGROUND_QUALITY, type BackgroundQuality } from './backgroundQuality';
+import { useTiledTexture } from './tiledTexture';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import type { BackgroundDef, BackgroundPart } from './backgrounds';
 import { asset } from '../base';
 
 type V3 = [number, number, number];
-interface SfChannel {
-  factor?: number;
-  color?: V3;
-  type?: string;
-  hasTexture?: boolean;
-}
+type TextureOverride = {spec:NonNullable<BackgroundPart['textureOverrides']>[number];texture:THREE.Texture;right:THREE.Texture|null};
 interface SfLight {
   type: 'DIRECTION' | 'POINT' | 'SPOT' | 'HEMI' | 'NONE';
   enable: boolean;
@@ -47,7 +47,7 @@ export interface SfSettings {
   environment?: { uid: string; enable: boolean; exposure: number; rotation: number; lightIntensity: number; backgroundExposure: number; blur: number; brightness?: number };
   background?: { enable: 'environment' | 'color' | 'ambient' | 'image' | string; color: V3 };
   postProcess?: Record<string, Record<string, unknown> & { enable?: boolean }>;
-  materials: Record<string, Record<string, SfChannel>>;
+  materials: Record<string, ViewerChannels>;
 }
 
 /** tone map (ACES ≈ Sketchfab "filmic"), exposure, brightness / contrast /
@@ -71,7 +71,7 @@ const GradeShader = {
     uniform float exposure, filmic, brightness, contrast, saturation, vignette, vignetteHardness;
     varying vec2 vUv;
     vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
-    vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
+    vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(max(c, vec3(0.0)), vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
     void main() {
       vec4 t = texture2D(tDiffuse, vUv);
       vec3 c = t.rgb * exposure;
@@ -82,7 +82,7 @@ const GradeShader = {
       float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
       c = mix(vec3(l), c, saturation);
       vec2 d = vUv - 0.5;
-      float v = smoothstep(0.8, 0.8 - 0.6 * (1.0 - vignetteHardness), length(d) * 1.414);
+      float v = 1.0 - smoothstep(0.8 - 0.6 * (1.0 - vignetteHardness), 0.8, length(d) * 1.414);
       c *= mix(1.0, v, vignette);
       gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
     }`,
@@ -90,14 +90,8 @@ const GradeShader = {
 
 const loader = new GLTFLoader();
 loader.setMeshoptDecoder(MeshoptDecoder);
-const gltfCache = new Map<string, Promise<GLTF>>();
 const settingsCache = new Map<string, Promise<SfSettings | null>>();
-const envCache = new Map<string, Promise<THREE.Texture>>();
 
-function loadGltf(file: string): Promise<GLTF> {
-  if (!gltfCache.has(file)) gltfCache.set(file, loader.loadAsync(asset(`/backgrounds/${file}`)));
-  return gltfCache.get(file)!;
-}
 function loadSettings(file: string): Promise<SfSettings | null> {
   const key = file.replace(/\.glb$/, '');
   if (!settingsCache.has(key)) {
@@ -126,14 +120,68 @@ export class BackgroundRenderer {
   private dirty = true;
   private sinceRender = 1;
   private token = 0;
+  private disposed = false;
+  private templates = new Map<string, Promise<GLTF>>();
+  private environments = new Map<string, Promise<{ source: THREE.Texture; target: THREE.WebGLRenderTarget }>>();
+  private precisionTextures = new Map<string, Promise<THREE.Texture>>();
+  private instanceTextures = new Set<THREE.Texture>();
+  private materials = new Set<THREE.Material>();
+  private mirrors: Reflector[] = [];
+  private roots: THREE.Object3D[] = [];
+  private renderPass: RenderPass;
+  private ssr: SSRPass | null = null;
+  private quality: BackgroundQuality = 'maximum';
+  private fitRadius = 0;
+  private authoredDistance = 0;
+  private renderer: THREE.WebGLRenderer;
+  readonly hdrSupported: boolean;
+
+  private loadGltf(file: string, sourceUrl?: string): Promise<GLTF> {
+    const url=sourceUrl ?? asset(`/backgrounds/${file}`);
+    if (!this.templates.has(url)) {
+      const promise = loader.loadAsync(url).catch((error) => {
+        this.templates.delete(url); throw error;
+      });
+      this.templates.set(url, promise);
+    }
+    return this.templates.get(url)!;
+  }
+
+  private precisionTexture(url:string):Promise<THREE.Texture> {
+    if(!this.precisionTextures.has(url)) this.precisionTextures.set(url,import('./precisionTexture').then(({loadPrecisionTexture})=>loadPrecisionTexture(url)).catch((error)=>{this.precisionTextures.delete(url);throw error;}));
+    return this.precisionTextures.get(url)!;
+  }
+
+  private sourceTexture(url:string):Promise<THREE.Texture> {
+    if(!this.precisionTextures.has(url)) this.precisionTextures.set(url,new THREE.TextureLoader().loadAsync(url).then((t)=>{
+      t.colorSpace=THREE.SRGBColorSpace; t.flipY=false;
+      const cap=this.renderer.capabilities.maxTextureSize;
+      if(t.image.width>cap || t.image.height>cap) {t.dispose();throw new Error(`Original ${t.image.width}×${t.image.height} exceeds this GPU's ${cap}px texture limit`);}
+      return t;
+    }).catch((error)=>{this.precisionTextures.delete(url);throw error;}));
+    return this.precisionTextures.get(url)!;
+  }
+
+  private bindTexture(texture:THREE.Texture, original:THREE.Texture, flipY=original.flipY):THREE.Texture {
+    const replacement=texture.clone();
+    replacement.channel=original.channel;replacement.wrapS=original.wrapS;replacement.wrapT=original.wrapT;
+    replacement.offset.copy(original.offset);replacement.repeat.copy(original.repeat);
+    replacement.center.copy(original.center);replacement.rotation=original.rotation;
+    replacement.flipY=flipY;replacement.matrix.copy(original.matrix);replacement.matrixAutoUpdate=original.matrixAutoUpdate;
+    replacement.needsUpdate=true;this.instanceTextures.add(replacement);return replacement;
+  }
 
   constructor(renderer: THREE.WebGLRenderer) {
+    this.renderer = renderer;
+    this.hdrSupported = renderer.extensions.has('EXT_color_buffer_float');
     this.pmrem = new THREE.PMREMGenerator(renderer);
     this.scene.add(this.camera); // camera-attached lights hang off it
-    const target = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+    const target = new THREE.WebGLRenderTarget(1, 1, { type: this.hdrSupported ? THREE.HalfFloatType : THREE.UnsignedByteType });
+    if (!this.hdrSupported) console.warn('Background HDR targets are unavailable on this device; highlights are limited to LDR.');
     this.composer = new EffectComposer(renderer, target);
     this.composer.renderToScreen = false;
-    this.composer.addPass(new RenderPass(this.scene, this.camera));
+    this.renderPass = new RenderPass(this.scene, this.camera);
+    this.composer.addPass(this.renderPass);
     this.gtao = new GTAOPass(this.scene, this.camera, 1, 1);
     this.gtao.enabled = false;
     this.composer.addPass(this.gtao);
@@ -153,12 +201,45 @@ export class BackgroundRenderer {
   }
 
   setSize(w: number, h: number): void {
+    if (w <= 0 || h <= 0) return;
+    this.camera.aspect = w / h;
+    this.fitView();
+    this.camera.updateProjectionMatrix();
     this.composer.setPixelRatio(1);
     this.composer.setSize(w, h);
-    this.gtao.setSize(w, h);
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
     this.dirty = true;
+  }
+
+  private fitView(): void {
+    if (!this.fitRadius) return;
+    const vertical = THREE.MathUtils.degToRad(this.camera.fov / 2);
+    const limiting = Math.min(vertical, Math.atan(Math.tan(vertical) * this.camera.aspect));
+    const distance = Math.max(this.authoredDistance, this.fitRadius * 1.08 / Math.sin(limiting));
+    this.base.pos.sub(this.base.target).setLength(distance).add(this.base.target);
+    this.camera.position.copy(this.base.pos); this.camera.lookAt(this.base.target);
+  }
+
+  setQuality(quality: BackgroundQuality): void {
+    this.quality = quality;
+    const samples = Math.min(BACKGROUND_QUALITY[quality].samples, this.renderer.capabilities.maxSamples);
+    for (const target of [this.composer.renderTarget1, this.composer.renderTarget2]) {
+      if (target.samples !== samples) { target.samples = samples; target.dispose(); }
+    }
+    this.updateFiltering(); this.dirty = true;
+  }
+
+  private updateFiltering(): void {
+    const anisotropy = Math.min(BACKGROUND_QUALITY[this.quality].anisotropy, this.renderer.capabilities.getMaxAnisotropy());
+    for(const texture of this.instanceTextures) if(texture.anisotropy!==anisotropy) {texture.anisotropy=anisotropy;texture.needsUpdate=true;}
+    this.scene.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.material) return;
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        for (const value of Object.values(material)) if (value?.isTexture && value.anisotropy !== anisotropy) {
+          value.anisotropy = anisotropy; value.needsUpdate = true;
+        }
+      }
+    });
   }
 
   clear(): void {
@@ -168,55 +249,114 @@ export class BackgroundRenderer {
   }
 
   private reset(): void {
+    if (this.ssr) { this.composer.removePass(this.ssr); this.ssr.dispose(); this.ssr.ssrMaterial.dispose(); this.ssr = null; }
+    this.renderPass.enabled = true;
+    for (const mixer of this.mixers) { mixer.stopAllAction(); mixer.uncacheRoot(mixer.getRoot()); }
+    for (const mirror of this.mirrors) { mirror.removeFromParent(); mirror.geometry.dispose(); mirror.dispose(); }
+    for (const material of this.materials) material.dispose();
+    for (const texture of this.instanceTextures) texture.dispose();
+    this.instanceTextures.clear();
+    for (const root of this.roots) root.traverse((object) => {
+      if ((object as THREE.SkinnedMesh).isSkinnedMesh) (object as THREE.SkinnedMesh).skeleton.dispose();
+    });
+    this.materials.clear(); this.mirrors = []; this.roots = [];
     for (const c of [...this.scene.children]) if (c !== this.camera) this.scene.remove(c);
     for (const c of [...this.camera.children]) this.camera.remove(c);
     this.mixers = [];
     this.spinners = [];
     this.scene.environment = null;
     this.scene.background = null;
+    this.scene.environmentIntensity = this.scene.backgroundIntensity = 1;
+    this.scene.environmentRotation.set(0, 0, 0); this.scene.backgroundRotation.set(0, 0, 0);
+    this.fitRadius = this.authoredDistance = 0;
+    this.bloom.enabled = this.gtao.enabled = false;
+    const u = this.grade.uniforms;
+    u.exposure.value = u.saturation.value = 1;
+    u.filmic.value = u.brightness.value = u.contrast.value = u.vignette.value = 0;
   }
 
   async load(def: BackgroundDef): Promise<void> {
+    if (this.disposed) throw new Error('BackgroundRenderer was disposed');
     const token = ++this.token;
-    const parts = await Promise.all(
-      def.parts.map(async (p) => ({ p, g: await loadGltf(p.file), s: await loadSettings(p.file) })),
-    );
-    if (token !== this.token) return;
-    this.reset();
-    this.def = def;
-    // the scene's "lead" part supplies the viewer settings (camera, lights, post)
+    const quality=this.quality;
+    const parts = await Promise.all(def.parts.map(async (part) => {
+      const p=import.meta.env.DEV && quality==='maximum' ? await (await import('./originalAssets')).originalPart(part) : part;
+      const [g,s,texture]=await Promise.all([this.loadGltf(p.file,p.sourceUrl),loadSettings(p.file),p.emissiveTextureUrl?this.precisionTexture(p.emissiveTextureUrl):null]);
+      const overrides=await Promise.all((p.textureOverrides??[]).map(async (spec)=>{
+        const tiled=spec.tiles && (spec.maxDimension??0)>this.renderer.capabilities.maxTextureSize;
+        const [texture,right]=await Promise.all([this.sourceTexture(tiled?spec.tiles!.leftUrl:spec.url),tiled?this.sourceTexture(spec.tiles!.rightUrl):null]);
+        return {spec,texture,right};
+      }));
+      return {p,g,s,texture,overrides};
+    }));
+    if (token !== this.token || this.disposed) return;
     const lead = parts.find((x) => x.p.lead) ?? parts[parts.length - 1];
-    for (const { p, g, s } of parts) this.addPart(p, g, s);
-    if (lead.s) await this.applyView(lead.g, lead.s, lead.p);
-    if (token !== this.token) return;
+    if (!lead) throw new Error('A background must contain at least one part');
+    // All asynchronous preparation finishes BEFORE replacing the live scene.
+    // An old environment response can no longer overwrite a newer selection.
+    const env = lead.s?.environment;
+    const needsEnv = env && ((env.enable && lead.s?.shading?.type !== 'shadeless') || lead.s?.background?.enable === 'environment');
+    const preparedEnv = needsEnv ? await this.envTexture(env.uid) : null;
+    if (token !== this.token || this.disposed) return;
+    this.reset();
+    for (const { p, g, s, texture, overrides } of parts) this.addPart(p, g, s, texture, overrides);
+    const root = this.roots[parts.indexOf(lead)];
+    if (lead.s) this.applyView(root, lead.s, lead.p, preparedEnv);
+    this.updateFiltering();
+    this.def = def;
+    this.sinceRender = 1;
     this.dirty = true;
   }
 
-  private addPart(p: BackgroundPart, g: GLTF, s: SfSettings | null): void {
-    const root = g.scene;
-    root.position.set(0, 0, 0);
-    root.rotation.set(0, 0, 0);
-    root.scale.setScalar(1);
+  private addPart(p: BackgroundPart, g: GLTF, s: SfSettings | null, texture:THREE.Texture|null, overrides:TextureOverride[]): void {
+    const root = cloneScene(g.scene);
+    this.roots.push(root);
+    const materialClones = new Map<THREE.Material, THREE.Material>();
     const shadeless = s?.shading?.type === 'shadeless' || !!p.unlit;
     root.traverse((o) => {
       const pts = o as THREE.Points;
       if (pts.isPoints) {
         pts.material = new THREE.PointsMaterial({
-          size: p.pointSize ?? (s?.shading?.pointSize ?? 1) * 0.0012,
-          sizeAttenuation: true,
+          // Sketchfab's pointSize is in pixels; a world-size override is
+          // explicitly opt-in. The old .0012 scale made every point clamp
+          // to a single hard pixel before bloom could produce any haze.
+          size: p.pointSize ?? s?.shading?.pointSize ?? 1,
+          sizeAttenuation: p.pointSize !== undefined,
           vertexColors: !!pts.geometry.getAttribute('color'),
           map: spriteTexture(),
           transparent: true,
           depthWrite: false,
           blending: THREE.AdditiveBlending,
         });
+        this.materials.add(pts.material as THREE.Material);
         return;
       }
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       mesh.frustumCulled = !p.sky;
       const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      const next = mats.map((m) => convertMaterial(m as THREE.MeshStandardMaterial, s?.materials[m.name] ?? null, shadeless, !!p.sky));
+      const next = mats.map((m) => {
+        if (!materialClones.has(m)) {
+          const copy = backgroundMaterial(m, findViewerChannels(m.name, s?.materials ?? {}), shadeless, !!p.sky);
+          const physical=copy as THREE.MeshStandardMaterial;
+          if(texture && physical.emissiveMap) {
+            physical.emissiveMap=this.bindTexture(texture,physical.emissiveMap);
+          }
+          for(const override of overrides) if(override.spec.material===m.name && physical[override.spec.slot]) {
+            const original=physical[override.spec.slot]!;
+            physical[override.spec.slot]=this.bindTexture(override.texture,original,override.spec.flipY);
+            if(override.right && override.spec.tiles) {
+              const right=this.bindTexture(override.right,original,override.spec.flipY);
+              physical[override.spec.slot]!.wrapS=right.wrapS=THREE.ClampToEdgeWrapping;
+              useTiledTexture(physical,override.spec.slot,right,override.spec.tiles.innerWidth,override.spec.tiles.gutter);
+              physical.userData.fullResolutionTextures ??= {};
+              physical.userData.fullResolutionTextures[override.spec.slot]=[override.spec.maxDimension,(override.texture.image as {height:number}).height];
+            }
+          }
+          this.materials.add(copy); materialClones.set(m, copy);
+        }
+        return materialClones.get(m)!;
+      });
       mesh.material = Array.isArray(mesh.material) ? next : next[0];
       if (p.sky) mesh.renderOrder = -10;
     });
@@ -253,12 +393,13 @@ export class BackgroundRenderer {
     mirror.rotation.x = -Math.PI / 2;
     mirror.position.set(spec.at[0], spec.at[1], spec.at[2]);
     root.add(mirror);
+    this.mirrors.push(mirror);
   }
 
-  private async applyView(g: GLTF, s: SfSettings, p: BackgroundPart): Promise<void> {
-    g.scene.updateMatrixWorld(true);
+  private applyView(root: THREE.Object3D, s: SfSettings, p: BackgroundPart, environment: THREE.Texture | null): void {
+    root.updateMatrixWorld(true);
     // Sketchfab's viewer space (Z-up) → this glTF's space: the export's root
-    const M = g.scene.getObjectByName('Sketchfab_model')?.matrixWorld.clone() ?? new THREE.Matrix4();
+    const M = root.getObjectByName('Sketchfab_model')?.matrixWorld.clone() ?? new THREE.Matrix4();
     const rot = new THREE.Matrix4().extractRotation(M);
     const scale = new THREE.Vector3().setFromMatrixScale(M).x;
 
@@ -266,9 +407,23 @@ export class BackgroundRenderer {
     this.base.pos.set(...s.camera.position).applyMatrix4(M);
     this.base.target.set(...s.camera.target).applyMatrix4(M);
     this.camera.fov = p.fov ?? s.camera.fov;
+    this.authoredDistance = this.base.pos.distanceTo(this.base.target);
+    if (p.fitMaterial) {
+      const sphere = new THREE.Sphere();
+      root.traverse((object) => {
+        const mesh = object as THREE.Mesh;
+        if (!mesh.isMesh || !(Array.isArray(mesh.material) ? mesh.material : [mesh.material]).some((m) => m.name === p.fitMaterial)) return;
+        mesh.geometry.computeBoundingSphere();
+        if (mesh.geometry.boundingSphere) sphere.copy(mesh.geometry.boundingSphere).applyMatrix4(mesh.matrixWorld);
+      });
+      if (sphere.radius > 0) {
+        this.fitRadius = sphere.radius; this.fitView();
+      }
+    }
     const span = this.base.pos.distanceTo(this.base.target) || 1;
     this.camera.near = Math.max(span * 0.001, 0.01);
     this.camera.far = span * 400 + 1000;
+    this.camera.up.set(0, 0, 1).transformDirection(M);
     this.camera.position.copy(this.base.pos);
     this.camera.lookAt(this.base.target);
     this.camera.updateProjectionMatrix();
@@ -331,8 +486,7 @@ export class BackgroundRenderer {
     // environment (image-based light) + background
     const env = s.environment;
     if (env?.enable && s.shading?.type !== 'shadeless') {
-      const tex = await this.envTexture(env.uid);
-      this.scene.environment = tex;
+      this.scene.environment = environment;
       this.scene.environmentIntensity = env.exposure * env.lightIntensity * (p.envScale ?? 0.1);
       this.scene.environmentRotation.set(0, env.rotation, 0);
     }
@@ -340,7 +494,7 @@ export class BackgroundRenderer {
     if (bgMode === 'color' || bgMode === 'ambient') {
       this.scene.background = new THREE.Color(...(s.background!.color as V3)).convertSRGBToLinear();
     } else if (bgMode === 'environment' && env) {
-      this.scene.background = await this.envTexture(env.uid);
+      this.scene.background = environment;
       this.scene.backgroundIntensity = env.backgroundExposure;
       this.scene.backgroundBlurriness = Math.min(0.5, env.blur + 0.05);
       this.scene.backgroundRotation.set(0, env.rotation, 0);
@@ -367,20 +521,64 @@ export class BackgroundRenderer {
     this.bloom.radius = (bl.radius ?? 0.5) * 0.6;
     this.bloom.threshold = p.bloomThreshold ?? 0.65 + 0.35 * (bl.threshold ?? 0.8);
     this.gtao.enabled = !!(pp.ssao as { enable?: boolean } | undefined)?.enable && !p.noAO;
+    const ao = pp.ssao as { radius?: number; intensity?: number } | undefined;
+    if (this.gtao.enabled) {
+      this.gtao.updateGtaoMaterial({ radius: (ao?.radius ?? 1) * scale, screenSpaceRadius: false });
+      this.gtao.blendIntensity = ao?.intensity ?? 1;
+    }
+    if (p.reflections && this.hdrSupported) {
+      const selects: THREE.Mesh[] = [];
+      root.traverse((object) => {
+        const mesh = object as THREE.Mesh;
+        if (mesh.isMesh && (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).some((m) => p.reflections!.materials.includes(m.name) && !m.transparent)) selects.push(mesh);
+      });
+      if (selects.length) {
+        const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+        this.ssr = new SSRPass({ renderer: this.renderer, scene: this.scene, camera: this.camera, width: size.x, height: size.y, selects, groundReflector: null });
+        this.ssr.opacity = p.reflections.opacity ?? .6;
+        this.ssr.maxDistance = p.reflections.maxDistance ?? span * 10;
+        this.ssr.thickness = p.reflections.thickness ?? span * .01;
+        this.renderPass.enabled = false;
+        this.composer.insertPass(this.ssr, 1);
+      }
+    }
   }
 
-  private envTexture(uid: string): Promise<THREE.Texture> {
-    if (!envCache.has(uid)) {
-      envCache.set(
-        uid,
-        new THREE.TextureLoader().loadAsync(asset(`/backgrounds/env/${uid}.jpg`)).then((t) => {
-          t.mapping = THREE.EquirectangularReflectionMapping;
-          t.colorSpace = THREE.SRGBColorSpace;
-          return this.pmrem.fromEquirectangular(t).texture;
-        }),
-      );
+  private async envTexture(uid: string): Promise<THREE.Texture> {
+    if (!this.environments.has(uid)) {
+      const promise = new THREE.TextureLoader().loadAsync(asset(`/backgrounds/env/${uid}.jpg`)).then((source) => {
+        source.mapping = THREE.EquirectangularReflectionMapping;
+        source.colorSpace = THREE.SRGBColorSpace;
+        const target = this.pmrem.fromEquirectangular(source);
+        return { source, target };
+      }).catch((error) => { this.environments.delete(uid); throw error; });
+      this.environments.set(uid, promise);
     }
-    return envCache.get(uid)!;
+    return (await this.environments.get(uid)!).target.texture;
+  }
+
+  /** Release renderer-owned GPU resources; cached asset templates stay immutable. */
+  dispose(): void {
+    this.clear(); this.disposed = true;
+    for (const template of this.templates.values()) void template.then((g) => {
+      const geometries = new Set<THREE.BufferGeometry>();
+      const materials = new Set<THREE.Material>();
+      const textures = new Set<THREE.Texture>();
+      for (const scene of g.scenes) scene.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (mesh.geometry) geometries.add(mesh.geometry);
+        if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) materials.add(m);
+      });
+      for (const material of materials) for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+      for (const geometry of geometries) geometry.dispose();
+      for (const material of materials) material.dispose();
+      for (const texture of textures) { texture.dispose(); if (typeof ImageBitmap !== 'undefined' && texture.image instanceof ImageBitmap) texture.image.close(); }
+    }).catch(() => {});
+    for (const environment of this.environments.values()) void environment.then(({ source, target }) => { source.dispose(); target.dispose(); }).catch(() => {});
+    for(const texture of this.precisionTextures.values()) void texture.then((t)=>t.dispose()).catch(()=>{});
+    this.precisionTextures.clear();
+    this.templates.clear(); this.environments.clear();
+    this.pmrem.dispose(); this.gtao.dispose(); this.gtao.blendMaterial.dispose(); this.bloom.dispose(); this.grade.dispose(); this.composer.dispose();
   }
 
   /** advance animations + camera drift; re-render when anything moved */
@@ -403,7 +601,7 @@ export class BackgroundRenderer {
       moving = true;
     }
     this.sinceRender += dt;
-    if (!this.dirty && !(moving && this.sinceRender >= 1 / 30)) return;
+    if (!this.dirty && !(moving && this.sinceRender + 1e-6 >= 1 / BACKGROUND_QUALITY[this.quality].fps)) return;
     this.sinceRender = 0;
     this.dirty = false;
     this.composer.render(dt);
@@ -428,93 +626,4 @@ function spriteTexture(): THREE.CanvasTexture {
   g.fillRect(0, 0, 64, 64);
   sprite = new THREE.CanvasTexture(c);
   return sprite;
-}
-
-/** glTF material + the viewer's channel settings → a three material */
-function convertMaterial(
-  src: THREE.MeshStandardMaterial,
-  ch: Record<string, SfChannel> | null,
-  shadeless: boolean,
-  sky: boolean,
-): THREE.Material {
-  const opacity = ch?.Opacity;
-  const transparent = !!opacity || src.transparent;
-  const blending = opacity?.type === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending;
-  const side = sky ? THREE.BackSide : src.side;
-  if (shadeless) {
-    return new THREE.MeshBasicMaterial({
-      map: src.map ?? src.emissiveMap ?? null,
-      color: src.map || src.emissiveMap ? 0xffffff : src.color,
-      transparent,
-      opacity: opacity?.factor ?? src.opacity,
-      blending,
-      side,
-      depthWrite: !sky && blending !== THREE.AdditiveBlending,
-      toneMapped: false,
-    });
-  }
-  const m = new THREE.MeshPhysicalMaterial({
-    map: src.map,
-    color: src.color.clone(),
-    normalMap: src.normalMap,
-    normalScale: src.normalScale.clone(),
-    roughnessMap: src.roughnessMap,
-    metalnessMap: src.metalnessMap,
-    roughness: src.roughness,
-    metalness: src.metalness,
-    aoMap: src.aoMap,
-    emissiveMap: src.emissiveMap,
-    emissive: src.emissive.clone(),
-    emissiveIntensity: src.emissiveIntensity,
-    alphaMap: src.alphaMap,
-    transparent,
-    opacity: src.opacity,
-    side,
-    blending,
-    depthWrite: !sky && blending !== THREE.AdditiveBlending,
-  });
-  m.name = src.name;
-  if (!ch) return m;
-  const albedo = ch.AlbedoPBR ?? ch.DiffusePBR;
-  if (albedo) {
-    if (albedo.color && !albedo.hasTexture) m.color.setRGB(...albedo.color).convertSRGBToLinear();
-    m.color.multiplyScalar(albedo.factor ?? 1);
-  }
-  const emit = ch.EmitColor;
-  if (emit) {
-    if (!emit.hasTexture && emit.color) {
-      m.emissive.setRGB(...emit.color).convertSRGBToLinear();
-      m.emissiveMap = null;
-    } else if (emit.hasTexture && !m.emissiveMap) {
-      m.emissiveMap = src.map;
-      m.emissive.set(0xffffff);
-    } else if (emit.hasTexture) {
-      m.emissive.set(0xffffff);
-    }
-    m.emissiveIntensity = emit.factor ?? 1;
-  }
-  if (opacity) {
-    m.opacity = opacity.factor ?? 1;
-    if (opacity.type === 'refraction') {
-      m.transmission = 1 - (opacity.factor ?? 0.5);
-      m.transparent = true;
-    }
-  }
-  if (ch.MetalnessPBR && !ch.MetalnessPBR.hasTexture) m.metalness = ch.MetalnessPBR.factor ?? m.metalness;
-  if (ch.RoughnessPBR && !ch.RoughnessPBR.hasTexture) m.roughness = ch.RoughnessPBR.factor ?? m.roughness;
-  if (ch.GlossinessPBR && !ch.GlossinessPBR.hasTexture) m.roughness = 1 - (ch.GlossinessPBR.factor ?? 0.5);
-  // spec-gloss (the hangar): strong white specular on a dark diffuse = a polished dielectric
-  if (ch.SpecularPBR) {
-    const sp = ch.SpecularPBR.factor ?? 0.5;
-    m.metalness = 0;
-    m.specularIntensity = Math.min(1, sp * 2);
-    m.reflectivity = Math.min(1, sp);
-  }
-  if (ch.ClearCoat) {
-    m.clearcoat = ch.ClearCoat.factor ?? 0;
-    m.clearcoatRoughness = 0.04;
-  }
-  if (ch.NormalMap && m.normalMap) m.normalScale.setScalar(ch.NormalMap.factor ?? 1);
-  if (ch.AOPBR && m.aoMap) m.aoMapIntensity = ch.AOPBR.factor ?? 1;
-  return m;
 }

@@ -1,0 +1,162 @@
+{
+  "id": "corridor",
+  "viewport": [
+    960,
+    600
+  ],
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "hdrSupported": true,
+  "camera": {
+    "position": [
+      -3.4387099639926375,
+      1.1593868375651744,
+      0.2729926268815641
+    ],
+    "target": [
+      5.192690068407387,
+      1.004243027965253,
+      -0.3779200075129949
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 45
+  },
+  "memory": {
+    "geometries": 19,
+    "textures": 27
+  },
+  "materials": [
+    {
+      "name": "01_-_Default",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.5,
+      "metalness": 1,
+      "emissiveIntensity": 2.2190780159812302,
+      "normalScale": [
+        1,
+        1
+      ],
+      "emissiveTexture": {
+        "width": 4096,
+        "height": 4096,
+        "type": 1009,
+        "colorSpace": "srgb"
+      },
+      "baseTexture": {
+        "width": 4096,
+        "height": 4096
+      }
+    },
+    {
+      "name": "01_-_Default",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.5,
+      "metalness": 1,
+      "emissiveIntensity": 2.2190780159812302,
+      "normalScale": [
+        1,
+        1
+      ],
+      "emissiveTexture": {
+        "width": 4096,
+        "height": 4096,
+        "type": 1009,
+        "colorSpace": "srgb"
+      },
+      "baseTexture": {
+        "width": 4096,
+        "height": 4096
+      }
+    },
+    {
+      "name": "Material_187",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "emissiveIntensity": 0,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_186",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "emissiveIntensity": 0,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_190",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "emissiveIntensity": 0,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_189",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "emissiveIntensity": 0,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_191",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "emissiveIntensity": 0,
+      "normalScale": [
+        1,
+        -1
+      ]
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    0.20000000018626451,
+    0,
+    0.10000000009313226,
+    0,
+    0,
+    0.3000000002793968
+  ],
+  "renderer": "WebKit WebGL"
+}

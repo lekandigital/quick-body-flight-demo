@@ -1,0 +1,58 @@
+[
+  {
+    "file": "sketchfab-thumbs-originals.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T17:16:23.455Z",
+    "sha256": "44d0dc9584dfdb0fe05ac2a6f2c73b5da56c14f489e9c4bbdf32fd815f32cb13",
+    "originalCapturePathSuffix": "scratchpad/sketchfab-thumbs/originals.png"
+  },
+  {
+    "file": "refimages-refs.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T17:26:47.090Z",
+    "sha256": "79e68871c6b4f6b60c4ec5dd147d3ca84dad3fb83760cdd23014e759bca3f12a",
+    "originalCapturePathSuffix": "scratchpad/refimages/refs.png"
+  },
+  {
+    "file": "sf1-pairs.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T17:37:16.252Z",
+    "sha256": "05c6b7580b04e32146ed8ffad5d647cab1cd64d72f5088f0ffacd1fa0bb967bd",
+    "originalCapturePathSuffix": "glass/sf1/pairs.png"
+  },
+  {
+    "file": "sf1-pairs2.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T17:37:33.453Z",
+    "sha256": "2c70f9c09e8279a0c3d0ade7b7ed479d58ba3cb380ff735c2ddb3c5be2adab09",
+    "originalCapturePathSuffix": "glass/sf1/pairs2.png"
+  },
+  {
+    "file": "sfembed-api-pair.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T18:04:12.672Z",
+    "sha256": "04c1bf33e95747916257f60f686acb8212ff937190d48f147d7f85a81b44bac0",
+    "originalCapturePathSuffix": "glass/sfembed/api-pair.png"
+  },
+  {
+    "file": "sfembed-api-pair2.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T18:04:54.597Z",
+    "sha256": "75994823dd815bc03f9d015ccfcd33672bf1564874d2e61d022e6d5df7a15303",
+    "originalCapturePathSuffix": "glass/sfembed/api-pair2.png"
+  },
+  {
+    "file": "sfembed-api-corridorm.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T18:22:05.748Z",
+    "sha256": "7bf8d5da4cedc507c1bd64ec48bfe21497c80177e46fdc7a3c6b558c90ec880c",
+    "originalCapturePathSuffix": "glass/sfembed/api-corridorm.png"
+  },
+  {
+    "file": "sfembed-api-hangar.png",
+    "source": "Claude transcript; original capture from Sketchfab or mixed comparison contact sheet; see filename",
+    "timestamp": "2026-10-16T18:24:03.855Z",
+    "sha256": "8fddc0736dccd6b0a4dd7ce7883488c23ea76c9350325da7635954e53f68550a",
+    "originalCapturePathSuffix": "glass/sfembed/api-hangar.png"
+  }
+]

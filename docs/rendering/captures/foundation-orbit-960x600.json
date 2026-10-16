@@ -1,0 +1,130 @@
+{
+  "id": "orbit",
+  "viewport": [
+    960,
+    600
+  ],
+  "camera": {
+    "position": [
+      -1772.1044128390274,
+      2358.3712272670905,
+      4797.09706858104
+    ],
+    "target": [
+      -21.589069105288377,
+      90.68476808563692,
+      29.389368483762112
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 1
+  },
+  "memory": {
+    "geometries": 6,
+    "textures": 24
+  },
+  "materials": [
+    {
+      "name": "phong1",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 1,
+      "metalness": 0.37260061166542024,
+      "emissiveIntensity": 1.5979455094881103,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "phong1",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 1,
+      "metalness": 0.37260061166542024,
+      "emissiveIntensity": 1.5979455094881103,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "lambert6",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0.6,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "lambert6",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0.6,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "lambert7",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 0.25,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0.6,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0.7550830247645453,
+      "emissiveIntensity": 0,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "lambert7",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 0.25,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0.6,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0.7550830247645453,
+      "emissiveIntensity": 0,
+      "normalScale": [
+        1,
+        -1
+      ]
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    0.4000000001396984,
+    0,
+    0,
+    0,
+    0,
+    0.09999999986030161
+  ],
+  "renderer": "WebKit WebGL"
+}

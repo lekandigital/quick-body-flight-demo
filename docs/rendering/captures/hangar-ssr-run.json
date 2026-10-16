@@ -1,0 +1,176 @@
+{
+  "results": [
+    {
+      "id": "hangar",
+      "viewport": [
+        960,
+        600
+      ],
+      "camera": {
+        "position": [
+          -5.448551122983995,
+          -2.4170041002755887,
+          13.907760506717366
+        ],
+        "target": [
+          -4.562517874852374,
+          -2.4462799891523863,
+          10.321698123021358
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "memory": {
+        "geometries": 19,
+        "textures": 35
+      },
+      "materials": [
+        {
+          "name": "Walls",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0.4,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            0.1,
+            0.1
+          ]
+        },
+        {
+          "name": "Chrome",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Window",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 0.5,
+          "depthWrite": false,
+          "side": 0,
+          "roughness": 0.16200000000000003,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Floor",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Lights",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0.8211145618000169,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 2.9026361519236215,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "LightGlassCover",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 0.3834586315888604,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0.7470177871865296,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Doors",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 0.2232794305242984,
+          "normalScale": [
+            0.15047109059761488,
+            0.15047109059761488
+          ]
+        },
+        {
+          "name": "Backdrop",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 0,
+          "roughness": 1,
+          "metalness": 0,
+          "ior": 1000,
+          "transmission": 0,
+          "emissiveIntensity": 2.9026361519236215,
+          "normalScale": [
+            1,
+            -1
+          ]
+        }
+      ],
+      "shaderErrors": [],
+      "state": "saved",
+      "file": "docs/rendering/captures/hangar-ssr-hangar-960x600.png",
+      "frameMs": [
+        3.2999999998137355,
+        2.300000000046566,
+        2.300000000046566,
+        2.199999999953434,
+        1.1999999999534339,
+        1.4000000001396984
+      ]
+    }
+  ],
+  "errors": [],
+  "softwareRenderer": true
+}

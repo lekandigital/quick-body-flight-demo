@@ -1,0 +1,156 @@
+{
+  "id": "earth",
+  "viewport": [
+    390,
+    844
+  ],
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "hdrSupported": true,
+  "camera": {
+    "position": [
+      -2.999027563200745,
+      3.171422033854068,
+      1.9765060279222937
+    ],
+    "target": [
+      3.3500800078431786e-7,
+      3.350080007843176e-7,
+      3.350080007843179e-7
+    ],
+    "up": [
+      0,
+      0.9999999999999999,
+      4.440892098500627e-16
+    ],
+    "fov": 60
+  },
+  "memory": {
+    "geometries": 20,
+    "textures": 21
+  },
+  "materials": [
+    {
+      "name": "TERRE",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.55,
+      "metalness": 1,
+      "emissiveIntensity": 4.5,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "NUAGES",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.2,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 0.84,
+      "metalness": 1,
+      "emissiveIntensity": 3.5,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "material",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.01,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 1,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "material_3",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.01,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 1,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "material",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.01,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 1,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "material",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.01,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 1,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "material",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.01,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 1,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "material_7",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.01,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 1,
+      "metalness": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    1.2999999998137355,
+    1,
+    0.6000000000931323,
+    0.6000000000931323,
+    0.5999999998603016,
+    0.5
+  ],
+  "renderer": "WebKit WebGL"
+}

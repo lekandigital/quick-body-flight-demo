@@ -1,0 +1,91 @@
+{
+  "id": "gallery",
+  "viewport": [
+    960,
+    600
+  ],
+  "camera": {
+    "position": [
+      45.1535988062107,
+      6.7871396155734764,
+      1.1987932024578594
+    ],
+    "target": [
+      26.85451866880905,
+      7.178893718313245,
+      0.5459822367985029
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 45
+  },
+  "memory": {
+    "geometries": 18,
+    "textures": 25
+  },
+  "materials": [
+    {
+      "name": "Material.001",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "Material.006",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "Material.004",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "Material.003",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "Material.002",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "Material",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "light.001",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    0.10000000009313226,
+    0.09999999986030161,
+    0,
+    0,
+    0.10000000009313226,
+    0
+  ],
+  "renderer": "WebKit WebGL"
+}

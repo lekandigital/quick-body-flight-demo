@@ -1,0 +1,84 @@
+{
+  "id": "nebula",
+  "viewport": [
+    960,
+    600
+  ],
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "hdrSupported": true,
+  "camera": {
+    "position": [
+      -21.918694623886978,
+      0.5436967240485917,
+      -2.892704352003957
+    ],
+    "target": [
+      0.00003417968749985789,
+      -0.00003662109375213164,
+      0.00006591796874744203
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 45
+  },
+  "memory": {
+    "geometries": 4,
+    "textures": 4
+  },
+  "materials": [
+    {
+      "name": "Material",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.8335263497945898,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "emissiveIntensity": 2.118101693262303,
+      "normalScale": [
+        1,
+        -1
+      ],
+      "emissiveTexture": {
+        "width": 1024,
+        "height": 512,
+        "type": 1009,
+        "colorSpace": "srgb"
+      }
+    },
+    {
+      "name": "Material",
+      "type": "MeshStandardMaterial",
+      "opacity": 0.8335263497945898,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "emissiveIntensity": 2.118101693262303,
+      "normalScale": [
+        1,
+        -1
+      ],
+      "emissiveTexture": {
+        "width": 1024,
+        "height": 512,
+        "type": 1009,
+        "colorSpace": "srgb"
+      }
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    0.20000000018626451,
+    0.10000000009313226,
+    0.10000000009313226,
+    0.09999999962747097,
+    0,
+    0
+  ],
+  "renderer": "WebKit WebGL"
+}

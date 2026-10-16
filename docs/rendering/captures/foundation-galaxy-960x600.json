@@ -1,0 +1,56 @@
+{
+  "id": "galaxy",
+  "viewport": [
+    960,
+    600
+  ],
+  "camera": {
+    "position": [
+      -0.3090983692835508,
+      0.7119659192949861,
+      -0.0025087785878725923
+    ],
+    "target": [
+      4.172325134277344e-7,
+      4.172325134277345e-7,
+      -5.960464477539061e-7
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 45
+  },
+  "memory": {
+    "geometries": 12,
+    "textures": 7
+  },
+  "materials": [
+    {
+      "name": "material",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 1,
+      "metalness": 1,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    0.39999999990686774,
+    0.10000000009313226,
+    0.09999999986030161,
+    0,
+    0.10000000009313226,
+    0
+  ],
+  "renderer": "WebKit WebGL"
+}

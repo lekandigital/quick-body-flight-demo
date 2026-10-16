@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { BackgroundDef } from './backgrounds';
 import { BackgroundRenderer } from './backgroundRenderer';
+import { BACKGROUND_QUALITY, isBackgroundQuality, type BackgroundQuality } from './backgroundQuality';
 
 export interface Stage {
   scene: THREE.Scene;
@@ -33,6 +34,8 @@ export interface Stage {
   /** Swap the 3D background (null = the CSS sky). Resolves once it shows. */
   setBackground(def: BackgroundDef | null): Promise<void>;
   backgroundId(): string | null;
+  setBackgroundQuality(quality: BackgroundQuality): void;
+  backgroundQuality(): BackgroundQuality;
   /** the current background wants a slow camera drift */
   hasDrift(): boolean;
   /** put the camera on framing() now (drift without the auto-director) */
@@ -89,6 +92,13 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
 
   // the active 3D background — read by the camera code below, so declared first
   let bgDef: BackgroundDef | null = null;
+  let quality: BackgroundQuality = 'maximum';
+  try {
+    const saved = localStorage.getItem('bodyarcade-background-quality');
+    if (isBackgroundQuality(saved)) quality = saved;
+  } catch { /* private browsing can disable storage */ }
+  const requestedQuality=new URLSearchParams(location.search).get('quality');
+  if(isBackgroundQuality(requestedQuality)) quality=requestedQuality;
 
   // ── showcase look (from the demo video; default in the glass build) ─────
   // A bright gradient backdrop, soft floor glow + contact shadow, no grid, a
@@ -191,6 +201,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   // camera and studio light — so a scene can look exactly like its Sketchfab
   // view without moving the avatar's framing.
   const bgRenderer = new BackgroundRenderer(renderer);
+  bgRenderer.setQuality(quality);
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; // the avatar's soft fill over 3D scenes
   const quadMat = new THREE.ShaderMaterial({
@@ -228,7 +239,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   /** 1× pixels under 3D backgrounds and in the model view (GPU headroom for
    *  the pose model); up to 2× on the plain sky */
   function applyPixelRatio(): void {
-    renderer.setPixelRatio(pip || bgDef ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(pip ? 1 : bgDef ? BACKGROUND_QUALITY[quality].resolution(window.devicePixelRatio) : Math.min(window.devicePixelRatio, 2));
     resize();
   }
 
@@ -260,7 +271,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     const h = parent.clientHeight;
     if (w === 0 || h === 0) return;
     renderer.setSize(w, h, false);
-    bgRenderer.setSize(w, h);
+    const size = renderer.getDrawingBufferSize(new THREE.Vector2());
+    bgRenderer.setSize(size.x, size.y);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
@@ -279,7 +291,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   function loop(now: number) {
     // ≤ 30 fps in the model view and over 3D backgrounds: the pose model shares
     // this GPU, and starving it breaks the controls (measured at 2× density)
-    if ((pip || bgDef) && now - last < 1000 / 31) {
+    const limit = pip ? 30 : bgDef ? BACKGROUND_QUALITY[quality].fps : Infinity;
+    if (now - last < 1000 / limit - .5) {
       requestAnimationFrame(loop);
       return;
     }
@@ -373,6 +386,12 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     canvas,
     setBackground,
     backgroundId: () => bgDef?.id ?? null,
+    backgroundQuality: () => quality,
+    setBackgroundQuality(value) {
+      quality = value; bgRenderer.setQuality(value); applyPixelRatio();
+      if (import.meta.env.DEV && bgDef) void bgRenderer.load(bgDef).catch((e) => console.warn('Background source quality switch failed',e));
+      try { localStorage.setItem('bodyarcade-background-quality', value); } catch { /* optional persistence */ }
+    },
     hasDrift: () => false, // the background camera drifts, not the avatar's
     applyFraming() {
       const f = api.framing();

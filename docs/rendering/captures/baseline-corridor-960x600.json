@@ -1,0 +1,154 @@
+{
+  "id": "corridor",
+  "viewport": [
+    960,
+    600
+  ],
+  "camera": {
+    "position": [
+      -3.4387099639926375,
+      1.1593868375651744,
+      0.2729926268815641
+    ],
+    "target": [
+      5.192690068407387,
+      1.004243027965253,
+      -0.3779200075129949
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "fov": 45
+  },
+  "memory": {
+    "geometries": 19,
+    "textures": 27
+  },
+  "materials": [
+    {
+      "name": "01_-_Default",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.5,
+      "metalness": 1,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        1
+      ]
+    },
+    {
+      "name": "01_-_Default",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.5,
+      "metalness": 1,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        1
+      ]
+    },
+    {
+      "name": "Material_187",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_186",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_187",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_187",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Material_187",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8929713596497552,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    0,
+    0.10000000009313226,
+    0.19999999995343387,
+    0,
+    0,
+    0
+  ],
+  "renderer": "WebKit WebGL"
+}

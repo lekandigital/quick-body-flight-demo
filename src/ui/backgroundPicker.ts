@@ -5,12 +5,14 @@
 
 import type { Stage } from '../stage/scene';
 import { BACKGROUNDS, SKY_ID, backgroundById, type Credit } from '../stage/backgrounds';
+import { isBackgroundQuality, type BackgroundQuality } from '../stage/backgroundQuality';
 
 export interface BackgroundPicker {
   current(): string;
   pick(id: string): void;
   next(): void;
   ids(): string[];
+  quality(value:BackgroundQuality):void;
 }
 
 const ALL = BACKGROUNDS;
@@ -24,6 +26,17 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
   const host = document.getElementById('bg-cards');
   const count = document.getElementById('bg-count');
   const credit = document.getElementById('bg-credit');
+  let qualitySelect:HTMLSelectElement|null=null;
+  if (host) {
+    const label = document.createElement('label'); label.className = 'background-quality';
+    label.textContent = 'Quality ';
+    const select = document.createElement('select'); select.setAttribute('aria-label', 'Background quality');
+    for (const [value, title] of [['maximum', 'Maximum'], ['balanced', 'Balanced'], ['mobile', 'Mobile']]) select.add(new Option(title, value));
+    select.value = stage.backgroundQuality();
+    qualitySelect=select;
+    select.onchange = () => { if (isBackgroundQuality(select.value)) api.quality(select.value); };
+    label.append(select); host.before(label);
+  }
   if (count) count.textContent = String(ALL.length).padStart(2, '0');
   let current = '';
   const cards = new Map<string, HTMLButtonElement>();
@@ -69,6 +82,7 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
   }
 
   const api: BackgroundPicker = {
+    quality(value) {stage.setBackgroundQuality(value);if(qualitySelect) qualitySelect.value=value;},
     current: () => current,
     ids: () => ALL.map((d) => d.id),
     pick(id) {

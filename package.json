@@ -26,6 +26,7 @@
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@mediapipe/tasks-vision": "^0.10.35",
     "@pixiv/three-vrm": "^3.5.3",
+    "fast-png": "^6.4.0",
     "three": "^0.184.0"
   },
   "devDependencies": {

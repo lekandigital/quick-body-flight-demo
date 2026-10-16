@@ -2,6 +2,8 @@ import { defineConfig, type Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
+import { renderingCapture } from './tools/rendering/capturePlugin';
+import { originalAssets } from './tools/rendering/originalAssetsPlugin';
 
 const FLIGHT_DIST = fileURLToPath(new URL('./apps/flight/client/dist', import.meta.url));
 
@@ -78,7 +80,7 @@ function flightStatic(): Plugin {
 export default defineConfig({
   // BODYARCADE_BASE: the path the app is served from (soarlabs build: /bodyarcade/)
   base: process.env.BODYARCADE_BASE ?? '/',
-  plugins: [flightStatic()],
+  plugins: [flightStatic(), renderingCapture(), originalAssets()],
   resolve: {
     alias: {
       '@bodyarcade/body-input': fileURLToPath(

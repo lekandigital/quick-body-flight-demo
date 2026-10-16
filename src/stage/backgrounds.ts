@@ -43,6 +43,15 @@ export interface BackgroundPart {
   /** world lights point the other way (calibration) */
   flipLights?: boolean;
   noAO?: boolean;
+  /** Explicit source assets, served only by the local development bridge. */
+  sourceUrl?: string;
+  emissiveTextureUrl?: string;
+  textureOverrides?: Array<{material:string;slot:'map'|'emissiveMap';url:string;flipY?:boolean;maxDimension?:number;
+    tiles?:{leftUrl:string;rightUrl:string;innerWidth:number;gutter:number}}>;
+  /** Fit this material's geometry without changing the authored viewing angle. */
+  fitMaterial?: string;
+  /** Screen-space reflections on the actual named opaque surfaces. */
+  reflections?: { materials: string[]; opacity?: number; maxDistance?: number; thickness?: number };
 }
 
 export interface BackgroundDef {
@@ -84,13 +93,13 @@ export const LIBRARY: BackgroundDef[] = [
   },
   {
     id: 'space', label: 'Need some space?', glyph: '✺', kind: 'space', tone: 'dark', floor: false, drift: 'dolly',
-    parts: [{ file: 'space.glb', spin: 0.01 }],
+    parts: [{ file: 'space.glb', spin: 0.01, bloomThreshold: 0 }],
     credits: [{ title: 'Need some space?', author: 'Loïc Norgeot', authorUrl: 'https://sketchfab.com/norgeotloic', source: 'https://sketchfab.com/3d-models/need-some-space-d6521362b37b48e3a82bce4911409303' }],
   },
   {
     id: 'earth', label: 'Earth', glyph: '◐', kind: 'space', tone: 'dark', floor: false,
     drift: null, // the model turns on its own
-    parts: [{ file: 'earth-agullo.glb', animate: true }],
+    parts: [{ file: 'earth-agullo.glb', animate: true, fitMaterial: 'TERRE' }],
     credits: [{ title: 'EARTH', author: 'Stéphane Agullo', authorUrl: 'https://sketchfab.com/sa3d', source: 'https://sketchfab.com/3d-models/earth-5ce4b1465c83432d9bb7e3c30232c02b' }],
   },
   {
@@ -101,7 +110,8 @@ export const LIBRARY: BackgroundDef[] = [
   {
     id: 'hangar', label: 'Sci-fi hangar', glyph: '▭', kind: 'indoor', tone: 'dark', floor: true,
     drift: null, // the Earth outside the window rotates on its own
-    parts: [{ file: 'hangar.glb', animate: true, mirrorFloor: { size: 80, at: [0, -4.12, 0], material: 'Floor', floorOpacity: 0.55 } }],
+    parts: [{ file: 'hangar.glb', animate: true, envScale: .3, lightScale: .4, bloomScale: .6,
+      reflections: { materials: ['Floor'], maxDistance: 44, thickness: .05 } }],
     credits: [{ title: 'Sci-Fi Hanger', author: 'dylanheyes', authorUrl: 'https://sketchfab.com/dylanheyes', source: 'https://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c' }],
   },
   {
@@ -123,7 +133,9 @@ export const LIBRARY: BackgroundDef[] = [
  * build (keep its LIVE_BACKGROUNDS in step with this list).
  */
 export const LIVE_IDS = ['galaxy', 'nebula'];
-export const BACKGROUNDS: BackgroundDef[] = LIBRARY.filter((b) => LIVE_IDS.includes(b.id));
+export const BACKGROUNDS: BackgroundDef[] = import.meta.env.DEV && new URLSearchParams(location.search).get('backgrounds') === 'all'
+  ? LIBRARY
+  : LIBRARY.filter((b) => LIVE_IDS.includes(b.id));
 
 /** The sky option (the moving-grid backdrop): not offered in production; the fallback if a scene fails to load. */
 export const SKY_DEF = { id: SKY_ID, label: 'Sky', glyph: '☁', kind: 'sky' as const, tone: 'light' as const };

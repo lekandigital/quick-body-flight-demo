@@ -1,0 +1,51 @@
+{
+  "id": "space",
+  "viewport": [
+    960,
+    600
+  ],
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "hdrSupported": true,
+  "camera": {
+    "position": [
+      1.0174579248398166,
+      2.027580277807106,
+      -1.4223919090520416
+    ],
+    "target": [
+      1.471854549334694,
+      1.3397235401344074,
+      -1.4785699995975425
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 105.3448275862
+  },
+  "memory": {
+    "geometries": 3,
+    "textures": 14
+  },
+  "materials": [
+    {
+      "name": "",
+      "type": "PointsMaterial",
+      "opacity": 1,
+      "depthWrite": false,
+      "side": 0
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    1.4000000001396984,
+    0.6999999999534339,
+    1.8999999999068677,
+    0.6000000000931323,
+    0.6000000000931323,
+    0.6999999999534339
+  ],
+  "renderer": "WebKit WebGL"
+}

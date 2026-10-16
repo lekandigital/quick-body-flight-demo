@@ -1,0 +1,10 @@
+{
+  "galaxy": {
+    "baselineFoundationMeanAbsoluteDifference": 0.0,
+    "meaning": "Same camera, same assets, same output size. This checks preservation, not parity with Sketchfab."
+  },
+  "nebula": {
+    "baselineFoundationMeanAbsoluteDifference": 0.0,
+    "meaning": "Same camera, same assets, same output size. This checks preservation, not parity with Sketchfab."
+  }
+}

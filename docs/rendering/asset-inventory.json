@@ -1,0 +1,3233 @@
+{
+  "archive": "sketchfab-originals.zip",
+  "archiveBytes": 488363375,
+  "archiveSha256": "7bc71e80f276d3a61bf9558a6463551bcf659a73f8811e6f54dac700da6b5add",
+  "originals": {
+    "3dbackgrounds/vr_exhibition_gallery_baked.glb": {
+      "bytes": 5343892,
+      "sha256": "457e66b5a790b69fa639656e11aadd8e0494278ae62979b5bfd6a87773a902b9",
+      "asset": {
+        "extras": {
+          "author": "ida61xq (https://sketchfab.com/ida61xq)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/vr-exhibition-gallery-baked-ee6f3b0d9db14b62a1b3aeef04315313",
+          "title": "VR exhibition gallery baked"
+        },
+        "generator": "Sketchfab-12.82.3",
+        "version": "2.0"
+      },
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "name": "Material.001",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.14000622753052508,
+              0.14000622753052508,
+              0.14000622753052508,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.5
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material.006",
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 0
+            },
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.532599533773839
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material.004",
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 1
+            },
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.5
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material.003",
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 2
+            },
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.5
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material.002",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.018377254147345274,
+              0.018377254147345274,
+              0.018377254147345274,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.5
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.8,
+              0.8,
+              0.8,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.5
+          }
+        },
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "name": "light.001",
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.0
+          }
+        }
+      ],
+      "images": [
+        {
+          "bufferView": 3,
+          "mimeType": "image/png",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "PNG",
+          "mode": "L"
+        },
+        {
+          "bufferView": 4,
+          "mimeType": "image/png",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "PNG",
+          "mode": "L"
+        },
+        {
+          "bufferView": 5,
+          "mimeType": "image/png",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "PNG",
+          "mode": "L"
+        }
+      ],
+      "meshCount": 7,
+      "primitiveCount": 7,
+      "vertices": 15669,
+      "indexCount": 28032,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 0
+    },
+    "3dbackgrounds/earth (1).glb": {
+      "bytes": 64273192,
+      "sha256": "76f210da6b363db569a9c33e8659288c8981b9b97208ca54c7c5479fad309f87",
+      "asset": {
+        "extras": {
+          "author": "AirStudios (https://sketchfab.com/sebbe613)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/earth-5f9c35be31a047928eace8b415a8ee3a",
+          "title": "Earth"
+        },
+        "generator": "Sketchfab-12.68.0",
+        "version": "2.0"
+      },
+      "extensionsUsed": [
+        "KHR_materials_transmission"
+      ],
+      "extensionsRequired": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissiveTexture": {
+            "index": 1
+          },
+          "name": "phong1",
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 0
+            },
+            "metallicFactor": 0.37260061166542024
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "name": "lambert6",
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 2
+            },
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.6
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "extensions": {
+            "KHR_materials_transmission": {
+              "transmissionFactor": 0.7550830247645453
+            }
+          },
+          "name": "lambert7",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.14229999999999987,
+              0.35230000000000006,
+              0.6794999999999991,
+              0.25
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.6
+          }
+        }
+      ],
+      "images": [
+        {
+          "bufferView": 3,
+          "mimeType": "image/jpeg",
+          "dimensions": [
+            8192,
+            4096
+          ],
+          "format": "JPEG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 4,
+          "mimeType": "image/jpeg",
+          "dimensions": [
+            8192,
+            4096
+          ],
+          "format": "JPEG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 5,
+          "mimeType": "image/png",
+          "dimensions": [
+            8192,
+            4096
+          ],
+          "format": "PNG",
+          "mode": "LA"
+        }
+      ],
+      "meshCount": 6,
+      "primitiveCount": 6,
+      "vertices": 325308,
+      "indexCount": 1797120,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0",
+          "TEXCOORD_1"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0",
+          "TEXCOORD_1"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0",
+          "TEXCOORD_1"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0",
+          "TEXCOORD_1"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 0
+    },
+    "3dbackgrounds/spaceship_corridor.glb": {
+      "bytes": 35701076,
+      "sha256": "9d78b7c2501241e35e562b540c7836869338d9b97a570f3d7e9520cf6508a130",
+      "asset": {
+        "extras": {
+          "author": "the_table (https://sketchfab.com/the_table)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/spaceship-corridor-1cdd1db557b8428892af4773bdada913",
+          "title": "Spaceship Corridor"
+        },
+        "generator": "Sketchfab-12.63.0",
+        "version": "2.0"
+      },
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissiveTexture": {
+            "index": 2
+          },
+          "name": "01_-_Default",
+          "normalTexture": {
+            "index": 3
+          },
+          "occlusionTexture": {
+            "index": 1
+          },
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 0
+            },
+            "metallicRoughnessTexture": {
+              "index": 1
+            },
+            "roughnessFactor": 0.5
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_187",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_186",
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_190",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_189",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_191",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        }
+      ],
+      "images": [
+        {
+          "bufferView": 4,
+          "mimeType": "image/png",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 5,
+          "mimeType": "image/png",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "format": "PNG",
+          "mode": "L"
+        },
+        {
+          "bufferView": 6,
+          "mimeType": "image/png",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 7,
+          "mimeType": "image/png",
+          "dimensions": [
+            4096,
+            4096
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 7,
+      "primitiveCount": 7,
+      "vertices": 120296,
+      "indexCount": 376713,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 0
+    },
+    "3dbackgrounds/sci-fi_hanger.glb": {
+      "bytes": 2789784,
+      "sha256": "81efecbf8d40b22684d2f7f34e1514316a362a18e5c09fe9e8c743833b6a6b55",
+      "asset": {
+        "extras": {
+          "author": "dylanheyes (https://sketchfab.com/dylanheyes)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c",
+          "title": "Sci-Fi Hanger"
+        },
+        "generator": "Sketchfab-14.10.0",
+        "version": "2.0"
+      },
+      "extensionsUsed": [
+        "KHR_materials_pbrSpecularGlossiness"
+      ],
+      "extensionsRequired": [
+        "KHR_materials_pbrSpecularGlossiness"
+      ],
+      "materials": [
+        {
+          "doubleSided": true,
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "diffuseTexture": {
+                "index": 0
+              },
+              "glossinessFactor": 0.6,
+              "specularFactor": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          },
+          "name": "Walls",
+          "normalTexture": {
+            "index": 1,
+            "scale": 0.1
+          }
+        },
+        {
+          "doubleSided": true,
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                0.8,
+                0.8,
+                0.8,
+                1.0
+              ],
+              "glossinessFactor": 1.0,
+              "specularFactor": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          },
+          "name": "Chrome"
+        },
+        {
+          "alphaMode": "BLEND",
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                0.8,
+                0.8,
+                0.8,
+                0.5
+              ],
+              "glossinessFactor": 0.838,
+              "specularFactor": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          },
+          "name": "Window"
+        },
+        {
+          "doubleSided": true,
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "glossinessFactor": 1.0,
+              "specularFactor": [
+                0.7620633856996343,
+                0.7620633856996343,
+                0.7620633856996343
+              ]
+            }
+          },
+          "name": "Floor"
+        },
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            1.0,
+            0.28402411542980915,
+            0.17156313300420642
+          ],
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                0.8,
+                0.8,
+                0.8,
+                1.0
+              ],
+              "glossinessFactor": 0.1788854381999832,
+              "specularFactor": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "name": "Lights"
+        },
+        {
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                0.0,
+                0.0,
+                0.0,
+                0.3834586315888604
+              ],
+              "glossinessFactor": 0.2529822128134704,
+              "specularFactor": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "name": "LightGlassCover"
+        },
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.2232794305242984,
+            0.2232794305242984,
+            0.2232794305242984
+          ],
+          "emissiveTexture": {
+            "index": 2
+          },
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                0.0,
+                0.0,
+                0.0,
+                1.0
+              ],
+              "diffuseTexture": {
+                "index": 2
+              },
+              "glossinessFactor": 1.0,
+              "specularFactor": [
+                0.442,
+                0.442,
+                0.442
+              ]
+            }
+          },
+          "name": "Doors",
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.15047109059761488
+          }
+        },
+        {
+          "emissiveFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissiveTexture": {
+            "index": 4
+          },
+          "extensions": {
+            "KHR_materials_pbrSpecularGlossiness": {
+              "diffuseFactor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "diffuseTexture": {
+                "index": 4
+              },
+              "glossinessFactor": 0.0,
+              "specularFactor": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "name": "Backdrop"
+        }
+      ],
+      "images": [
+        {
+          "bufferView": 7,
+          "mimeType": "image/png",
+          "dimensions": [
+            512,
+            256
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 8,
+          "mimeType": "image/png",
+          "dimensions": [
+            512,
+            256
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 9,
+          "mimeType": "image/jpeg",
+          "dimensions": [
+            512,
+            512
+          ],
+          "format": "JPEG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 10,
+          "mimeType": "image/png",
+          "dimensions": [
+            512,
+            512
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 11,
+          "mimeType": "image/png",
+          "dimensions": [
+            1024,
+            512
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 8,
+      "primitiveCount": 8,
+      "vertices": 3148,
+      "indexCount": 13590,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0",
+          "TEXCOORD_1"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0",
+          "TEXCOORD_1"
+        ]
+      ],
+      "animations": 1
+    },
+    "3dbackgrounds/need_some_space.glb": {
+      "bytes": 1401564,
+      "sha256": "3221aa683cb19b2f696953255dafbf08d1f2259e16b7d3082912d6dfabc6d0cf",
+      "asset": {
+        "extras": {
+          "author": "Lo\u00efc Norgeot (https://sketchfab.com/norgeotloic)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/need-some-space-d6521362b37b48e3a82bce4911409303",
+          "title": "Need some space?"
+        },
+        "generator": "Sketchfab-12.63.0",
+        "version": "2.0"
+      },
+      "extensionsUsed": [
+        "KHR_materials_unlit"
+      ],
+      "extensionsRequired": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "extensions": {
+            "KHR_materials_unlit": {}
+          },
+          "name": "Scene_-_Root",
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0.0
+          }
+        }
+      ],
+      "images": [],
+      "meshCount": 1,
+      "primitiveCount": 1,
+      "vertices": 50000,
+      "indexCount": 0,
+      "primitiveModes": [
+        0
+      ],
+      "attributes": [
+        [
+          "COLOR_0",
+          "POSITION"
+        ]
+      ],
+      "animations": 0
+    },
+    "3dbackgrounds/spaceship_corridor (1).glb": {
+      "bytes": 9039420,
+      "sha256": "339a0a92eb959be2fb03d694c7f0b0cc48ea80520048936c97bc960655965dd4",
+      "asset": {
+        "extras": {
+          "author": "the_table (https://sketchfab.com/the_table)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/spaceship-corridor-1cdd1db557b8428892af4773bdada913",
+          "title": "Spaceship Corridor"
+        },
+        "generator": "Sketchfab-12.63.0",
+        "version": "2.0"
+      },
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissiveTexture": {
+            "index": 2
+          },
+          "name": "01_-_Default",
+          "normalTexture": {
+            "index": 3
+          },
+          "occlusionTexture": {
+            "index": 1
+          },
+          "pbrMetallicRoughness": {
+            "baseColorTexture": {
+              "index": 0
+            },
+            "metallicRoughnessTexture": {
+              "index": 1
+            },
+            "roughnessFactor": 0.5
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_187",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_186",
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_190",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_189",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        },
+        {
+          "doubleSided": true,
+          "name": "Material_191",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1.0
+            ],
+            "metallicFactor": 0.0,
+            "roughnessFactor": 0.8929713596497552
+          }
+        }
+      ],
+      "images": [
+        {
+          "bufferView": 4,
+          "mimeType": "image/png",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 5,
+          "mimeType": "image/png",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "PNG",
+          "mode": "L"
+        },
+        {
+          "bufferView": 6,
+          "mimeType": "image/png",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 7,
+          "mimeType": "image/png",
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 7,
+      "primitiveCount": 7,
+      "vertices": 120296,
+      "indexCount": 376713,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 0
+    },
+    "3dbackgrounds/inside_galaxy_skybox_hdri_360_panorama.glb": {
+      "bytes": 6865260,
+      "sha256": "861a1923cc0c033e96277e2739bfbfade3914fc19232aedfdd023dc9d7ddda88",
+      "asset": {
+        "extras": {
+          "author": "Aliaksandr.melas (https://sketchfab.com/alexandr.melas)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/inside-galaxy-skybox-hdri-360-panorama-96183eed1ae2425baddb75ca92103f87",
+          "title": "Inside Galaxy Skybox HDRI 360 panorama"
+        },
+        "generator": "Sketchfab-15.33.0",
+        "version": "2.0"
+      },
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissiveTexture": {
+            "index": 0
+          },
+          "name": "material",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "images": [
+        {
+          "bufferView": 3,
+          "mimeType": "image/png",
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 1,
+      "primitiveCount": 1,
+      "vertices": 559,
+      "indexCount": 2880,
+      "primitiveModes": [
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 0
+    },
+    "3dbackgrounds/earth.glb": {
+      "bytes": 72398160,
+      "sha256": "488e0a3de4eded38bd5c1efbd42d3d4480e8cf239b746e069c7378b635fe6078",
+      "asset": {
+        "extras": {
+          "author": "St\u00e9phane Agullo (https://sketchfab.com/sa3d)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/earth-5ce4b1465c83432d9bb7e3c30232c02b",
+          "title": "EARTH"
+        },
+        "generator": "Sketchfab-12.68.0",
+        "version": "2.0"
+      },
+      "extensionsUsed": [],
+      "extensionsRequired": [],
+      "materials": [
+        {
+          "doubleSided": true,
+          "emissiveFactor": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "emissiveTexture": {
+            "index": 2
+          },
+          "name": "TERRE",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.45,
+              0.45,
+              0.45,
+              1.0
+            ],
+            "baseColorTexture": {
+              "index": 0
+            },
+            "metallicRoughnessTexture": {
+              "index": 1
+            },
+            "roughnessFactor": 0.55
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "emissiveFactor": [
+            0.0532298004,
+            0.14320318915,
+            0.50444964815
+          ],
+          "name": "NUAGES",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              1.0,
+              1.0,
+              1.0,
+              0.2
+            ],
+            "baseColorTexture": {
+              "index": 3
+            },
+            "roughnessFactor": 0.84
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "emissiveFactor": [
+            0.1216681152,
+            0.3273215752,
+            1.0
+          ],
+          "name": "material",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ],
+            "metallicFactor": 0.0
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "emissiveFactor": [
+            0.1216681152,
+            0.3273215752,
+            1.0
+          ],
+          "name": "material_3",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ],
+            "metallicFactor": 0.0
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "emissiveFactor": [
+            0.1216681152,
+            0.3273215752,
+            1.0
+          ],
+          "name": "material_4",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ],
+            "metallicFactor": 0.0
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "emissiveFactor": [
+            0.1216681152,
+            0.3273215752,
+            1.0
+          ],
+          "name": "material_5",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ],
+            "metallicFactor": 0.0
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "emissiveFactor": [
+            0.1216681152,
+            0.3273215752,
+            1.0
+          ],
+          "name": "material_6",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ],
+            "metallicFactor": 0.0
+          }
+        },
+        {
+          "alphaMode": "BLEND",
+          "emissiveFactor": [
+            0.1236668112,
+            0.3360390288,
+            1.0
+          ],
+          "name": "material_7",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.0,
+              0.0,
+              0.0,
+              0.01
+            ],
+            "metallicFactor": 0.0
+          }
+        }
+      ],
+      "images": [
+        {
+          "bufferView": 5,
+          "mimeType": "image/jpeg",
+          "dimensions": [
+            8192,
+            4096
+          ],
+          "format": "JPEG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 6,
+          "mimeType": "image/png",
+          "dimensions": [
+            8192,
+            4096
+          ],
+          "format": "PNG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 7,
+          "mimeType": "image/jpeg",
+          "dimensions": [
+            8192,
+            4096
+          ],
+          "format": "JPEG",
+          "mode": "RGB"
+        },
+        {
+          "bufferView": 8,
+          "mimeType": "image/png",
+          "dimensions": [
+            8192,
+            4096
+          ],
+          "format": "PNG",
+          "mode": "LA"
+        }
+      ],
+      "meshCount": 8,
+      "primitiveCount": 8,
+      "vertices": 522712,
+      "indexCount": 3093120,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0",
+          "TEXCOORD_1",
+          "TEXCOORD_2",
+          "TEXCOORD_3",
+          "TEXCOORD_4",
+          "TEXCOORD_5",
+          "TEXCOORD_6"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 1
+    }
+  },
+  "nested": {
+    "3dbackgrounds/sci-fi-hanger.zip": [
+      {
+        "path": "source/Sci-Fi Hanger.zip",
+        "bytes": 3390341,
+        "nestedEntries": [
+          {
+            "path": "Sci-Fi Hanger/Sci-Fi Hanger.fbm/Door.jpg",
+            "bytes": 147456
+          },
+          {
+            "path": "Sci-Fi Hanger/Sci-Fi Hanger.fbm/FloorNormal.png",
+            "bytes": 363043
+          },
+          {
+            "path": "Sci-Fi Hanger/Sci-Fi Hanger.fbm/Spaces.png",
+            "bytes": 2063039
+          },
+          {
+            "path": "Sci-Fi Hanger/Sci-Fi Hanger.fbm/WallNormal.png",
+            "bytes": 434790
+          },
+          {
+            "path": "Sci-Fi Hanger/Sci-Fi Hanger.fbm/Walls.png",
+            "bytes": 219281
+          },
+          {
+            "path": "Sci-Fi Hanger/Sci-Fi Hanger.fbx",
+            "bytes": 161228
+          }
+        ]
+      },
+      {
+        "path": "textures/Walls.png",
+        "bytes": 216555,
+        "dimensions": [
+          540,
+          360
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/DoorNormal.png",
+        "bytes": 841405,
+        "dimensions": [
+          512,
+          512
+        ],
+        "format": "PNG",
+        "mode": "RGBA"
+      },
+      {
+        "path": "textures/Spaces.png",
+        "bytes": 1917328,
+        "dimensions": [
+          1600,
+          900
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Door.jpeg",
+        "bytes": 146250,
+        "dimensions": [
+          512,
+          512
+        ],
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/FloorNormal.png",
+        "bytes": 186797,
+        "dimensions": [
+          512,
+          512
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/WallNormal.png",
+        "bytes": 273856,
+        "dimensions": [
+          540,
+          360
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      }
+    ],
+    "3dbackgrounds/sci-fi_hanger.zip": [
+      {
+        "path": "license.txt",
+        "bytes": 680,
+        "licenseText": "Model Information:\n* title:\tSci-Fi Hanger\n* source:\thttps://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c\n* author:\tdylanheyes (https://sketchfab.com/dylanheyes)\n\nModel License:\n* license type:\tCC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)\n* requirements:\tAuthor must be credited. Commercial use is allowed.\n\nIf you use this 3D model in your project be sure to copy paste this credit wherever you share it:\nThis work is based on \"Sci-Fi Hanger\" (https://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c) by dylanheyes (https://sketchfab.com/dylanheyes) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)"
+      },
+      {
+        "path": "scene.bin",
+        "bytes": 836040
+      },
+      {
+        "path": "scene.gltf",
+        "bytes": 23407
+      },
+      {
+        "path": "textures/Backdrop_diffuse.png",
+        "bytes": 729605,
+        "dimensions": [
+          1024,
+          512
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Doors_diffuse.jpeg",
+        "bytes": 172526,
+        "dimensions": [
+          512,
+          512
+        ],
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Doors_normal.png",
+        "bytes": 684982,
+        "dimensions": [
+          512,
+          512
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Walls_diffuse.png",
+        "bytes": 147241,
+        "dimensions": [
+          512,
+          256
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Walls_normal.png",
+        "bytes": 205889,
+        "dimensions": [
+          512,
+          256
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      }
+    ],
+    "3dbackgrounds/earth (1).zip": [
+      {
+        "path": "source/Earth.fbx",
+        "bytes": 29364752
+      },
+      {
+        "path": "textures/8k_earth_clouds.jpeg",
+        "bytes": 11205305,
+        "dimensions": [
+          8192,
+          4096
+        ],
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/8k_earth_normal_map_(0-00-00-00).jpg",
+        "bytes": 1114669,
+        "dimensions": [
+          8192,
+          4096
+        ],
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/8k_earth_nightmap.jpg",
+        "bytes": 3144468,
+        "dimensions": [
+          8192,
+          4096
+        ],
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/8k_earth_specular_map.png",
+        "bytes": 795617,
+        "dimensions": [
+          8192,
+          4096
+        ],
+        "format": "PNG",
+        "mode": "L"
+      },
+      {
+        "path": "textures/8k_earth_daymap.jpeg",
+        "bytes": 4344161,
+        "dimensions": [
+          8192,
+          4096
+        ],
+        "format": "JPEG",
+        "mode": "RGB"
+      }
+    ],
+    "3dbackgrounds/need-some-space.zip": [
+      {
+        "path": "source/model.zip",
+        "bytes": 1834144,
+        "nestedEntries": [
+          {
+            "path": "model.ply",
+            "bytes": 1834012
+          }
+        ]
+      }
+    ],
+    "3dbackgrounds/inside-galaxy-skybox-hdri-360-panorama.zip": [
+      {
+        "path": "source/Inside galaxy HDRI.glb",
+        "bytes": 51797888,
+        "glb": {
+          "bytes": 51797888,
+          "sha256": "b0a96a1892a63fded8b6007b143f6b482752e7e2700a7490175fd7b28b8c21af",
+          "asset": {
+            "generator": "Khronos glTF Blender I/O v3.5.30",
+            "version": "2.0"
+          },
+          "extensionsUsed": [],
+          "extensionsRequired": [],
+          "materials": [
+            {
+              "doubleSided": true,
+              "emissiveFactor": [
+                1,
+                1,
+                1
+              ],
+              "emissiveTexture": {
+                "index": 0
+              },
+              "name": "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b",
+              "pbrMetallicRoughness": {
+                "baseColorFactor": [
+                  0,
+                  0,
+                  0,
+                  1
+                ]
+              }
+            }
+          ],
+          "images": [
+            {
+              "bufferView": 4,
+              "mimeType": "image/png",
+              "name": "Inside Galaxy 4k HDRI",
+              "dimensions": [
+                3840,
+                2160
+              ],
+              "format": "PNG",
+              "mode": "RGBA"
+            }
+          ],
+          "meshCount": 1,
+          "primitiveCount": 1,
+          "vertices": 559,
+          "indexCount": 2880,
+          "primitiveModes": [
+            4
+          ],
+          "attributes": [
+            [
+              "POSITION",
+              "TEXCOORD_0",
+              "NORMAL"
+            ]
+          ],
+          "animations": 0
+        }
+      },
+      {
+        "path": "textures/Inside Galaxy 4k HDRI_0.png",
+        "bytes": 35920572,
+        "dimensions": [
+          3840,
+          2160
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      }
+    ],
+    "3dbackgrounds/earth.zip": [
+      {
+        "path": "source/EARTH.fbx",
+        "bytes": 90464112
+      },
+      {
+        "path": "textures/fair_clouds_8k.jpeg",
+        "bytes": 7557309,
+        "dimensions": [
+          8192,
+          4096
+        ],
+        "format": "JPEG",
+        "mode": "L"
+      },
+      {
+        "path": "textures/elev_bump_16k.jpeg",
+        "bytes": 3039809,
+        "dimensions": [
+          16200,
+          8100
+        ],
+        "format": "JPEG",
+        "mode": "L"
+      },
+      {
+        "path": "textures/reflex2.png",
+        "bytes": 4079134,
+        "dimensions": [
+          16200,
+          8100
+        ],
+        "format": "PNG",
+        "mode": "L"
+      },
+      {
+        "path": "textures/water_16k.png",
+        "bytes": 4959292,
+        "dimensions": [
+          16200,
+          8100
+        ],
+        "format": "PNG",
+        "mode": "L"
+      },
+      {
+        "path": "textures/NIGHT.jpg",
+        "bytes": 3535120,
+        "dimensions": [
+          16200,
+          8100
+        ],
+        "format": "JPEG",
+        "mode": "L"
+      },
+      {
+        "path": "textures/2_no_clouds_16k.jpeg",
+        "bytes": 28844462,
+        "dimensions": [
+          16200,
+          8100
+        ],
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/BLANC.tga.png",
+        "bytes": 274,
+        "dimensions": [
+          512,
+          512
+        ],
+        "format": "PNG",
+        "mode": "1"
+      }
+    ],
+    "3dbackgrounds/vr-exhibition-gallery-baked.zip": [
+      {
+        "path": "source/2.blend",
+        "bytes": 1909268
+      },
+      {
+        "path": "textures/wall_l2.png",
+        "bytes": 8985591,
+        "dimensions": [
+          3072,
+          3072
+        ],
+        "format": "PNG",
+        "mode": "RGBA"
+      },
+      {
+        "path": "textures/wall_r2.png",
+        "bytes": 9060465,
+        "dimensions": [
+          3072,
+          3072
+        ],
+        "format": "PNG",
+        "mode": "RGBA"
+      },
+      {
+        "path": "textures/wall_back2.png",
+        "bytes": 3379865,
+        "dimensions": [
+          3072,
+          3072
+        ],
+        "format": "PNG",
+        "mode": "RGBA"
+      }
+    ],
+    "3dbackgrounds/spaceship-corridor.zip": [
+      {
+        "path": "source/Attached_Test_Floor.fbx",
+        "bytes": 4125856
+      },
+      {
+        "path": "textures/Floor_1_1001_BaseColor.png",
+        "bytes": 8793099,
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Floor_1_1001_OcclusionRoughnessMetallic.png",
+        "bytes": 15235262,
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Floor_1_1001_Normal.png",
+        "bytes": 15291946,
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      {
+        "path": "textures/Floor_1_1001_Emissive.png",
+        "bytes": 81327,
+        "dimensions": [
+          4096,
+          4096
+        ],
+        "format": "PNG",
+        "mode": "RGB"
+      }
+    ]
+  },
+  "optimized": {
+    "earth-airstudios.glb": {
+      "bytes": 10006784,
+      "sha256": "3d7adc9eb0da40c39b330ea189b7c0dd1e5fb67f802088060a6b2ac54d58ea87",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "AirStudios (https://sketchfab.com/sebbe613)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/earth-5f9c35be31a047928eace8b415a8ee3a",
+          "title": "Earth"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_materials_transmission",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "phong1",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0.37260061166542024,
+            "baseColorTexture": {
+              "index": 0
+            }
+          },
+          "emissiveFactor": [
+            1,
+            1,
+            1
+          ],
+          "emissiveTexture": {
+            "index": 1
+          }
+        },
+        {
+          "name": "lambert6",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0.6,
+            "metallicFactor": 0,
+            "baseColorTexture": {
+              "index": 2
+            }
+          }
+        },
+        {
+          "name": "lambert7",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.14229999999999987,
+              0.35230000000000006,
+              0.6794999999999991,
+              0.25
+            ],
+            "roughnessFactor": 0.6,
+            "metallicFactor": 0
+          },
+          "extensions": {
+            "KHR_materials_transmission": {
+              "transmissionFactor": 0.7550830247645453
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "mimeType": "image/webp",
+          "bufferView": 0,
+          "dimensions": [
+            4096,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 1,
+          "dimensions": [
+            4096,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 2,
+          "dimensions": [
+            4096,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGBA"
+        }
+      ],
+      "meshCount": 6,
+      "primitiveCount": 6,
+      "vertices": 325308,
+      "indexCount": 1797120,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "TEXCOORD_0",
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "TEXCOORD_0",
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "TEXCOORD_0",
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "TEXCOORD_0",
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ]
+      ],
+      "animations": 0
+    },
+    "earth-agullo.glb": {
+      "bytes": 8600996,
+      "sha256": "f61ca6b21c9013366daede30b005d1bdba24b068ddf58448999262c930f588ce",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "St\u00e9phane Agullo (https://sketchfab.com/sa3d)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/earth-5ce4b1465c83432d9bb7e3c30232c02b",
+          "title": "EARTH"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "TERRE",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.45,
+              0.45,
+              0.45,
+              1
+            ],
+            "roughnessFactor": 0.55,
+            "baseColorTexture": {
+              "index": 0
+            },
+            "metallicRoughnessTexture": {
+              "index": 2
+            }
+          },
+          "emissiveFactor": [
+            1,
+            1,
+            1
+          ],
+          "emissiveTexture": {
+            "index": 1
+          }
+        },
+        {
+          "name": "NUAGES",
+          "alphaMode": "BLEND",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              1,
+              1,
+              1,
+              0.2
+            ],
+            "roughnessFactor": 0.84,
+            "baseColorTexture": {
+              "index": 3
+            }
+          },
+          "emissiveFactor": [
+            0.0532298004,
+            0.14320318915,
+            0.50444964815
+          ]
+        },
+        {
+          "name": "material",
+          "alphaMode": "BLEND",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              0.01
+            ],
+            "metallicFactor": 0
+          },
+          "emissiveFactor": [
+            0.1216681152,
+            0.3273215752,
+            1
+          ]
+        },
+        {
+          "name": "material_3",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              0.01
+            ],
+            "metallicFactor": 0
+          },
+          "emissiveFactor": [
+            0.1216681152,
+            0.3273215752,
+            1
+          ]
+        },
+        {
+          "name": "material_7",
+          "alphaMode": "BLEND",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              0.01
+            ],
+            "metallicFactor": 0
+          },
+          "emissiveFactor": [
+            0.1236668112,
+            0.3360390288,
+            1
+          ]
+        }
+      ],
+      "images": [
+        {
+          "mimeType": "image/webp",
+          "bufferView": 0,
+          "dimensions": [
+            4096,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 1,
+          "dimensions": [
+            4096,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 2,
+          "dimensions": [
+            4096,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 3,
+          "dimensions": [
+            4096,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGBA"
+        }
+      ],
+      "meshCount": 8,
+      "primitiveCount": 8,
+      "vertices": 522712,
+      "indexCount": 3093120,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ]
+      ],
+      "animations": 1
+    },
+    "gallery.glb": {
+      "bytes": 674428,
+      "sha256": "50ce50f8793436745b676037010e40d3d2936b4b37a026cfd42e2de68ca9a76b",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "ida61xq (https://sketchfab.com/ida61xq)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/vr-exhibition-gallery-baked-ee6f3b0d9db14b62a1b3aeef04315313",
+          "title": "VR exhibition gallery baked"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "Material.001",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.14000622753052508,
+              0.14000622753052508,
+              0.14000622753052508,
+              1
+            ],
+            "roughnessFactor": 0.5,
+            "metallicFactor": 0
+          }
+        },
+        {
+          "name": "Material.006",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0.532599533773839,
+            "metallicFactor": 0,
+            "baseColorTexture": {
+              "index": 0
+            }
+          }
+        },
+        {
+          "name": "Material.004",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0.5,
+            "metallicFactor": 0,
+            "baseColorTexture": {
+              "index": 1
+            }
+          }
+        },
+        {
+          "name": "Material.003",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0.5,
+            "metallicFactor": 0,
+            "baseColorTexture": {
+              "index": 2
+            }
+          }
+        },
+        {
+          "name": "Material.002",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.018377254147345274,
+              0.018377254147345274,
+              0.018377254147345274,
+              1
+            ],
+            "roughnessFactor": 0.5,
+            "metallicFactor": 0
+          }
+        },
+        {
+          "name": "Material",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.8,
+              0.8,
+              0.8,
+              1
+            ],
+            "roughnessFactor": 0.5,
+            "metallicFactor": 0
+          }
+        },
+        {
+          "name": "light.001",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0,
+            "metallicFactor": 0
+          },
+          "emissiveFactor": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "images": [
+        {
+          "mimeType": "image/webp",
+          "bufferView": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 1,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 2,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 7,
+      "primitiveCount": 7,
+      "vertices": 15669,
+      "indexCount": 28032,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ]
+      ],
+      "animations": 0
+    },
+    "nebula.glb": {
+      "bytes": 67628,
+      "sha256": "932cc9d18e41c952b2e65c29985f8d7920c9a83f2adf111301902f08535f9960",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "Jungle Jim (https://sketchfab.com/jungle_jim)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/alien-space-nebula-2-skybox-a1c688c6e8164fd4ad5a7e56047e8b50",
+          "title": "Alien Space Nebula 2 (Skybox)"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_materials_emissive_strength",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "Material",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              0.8335263497945898
+            ],
+            "roughnessFactor": 0,
+            "metallicFactor": 0
+          },
+          "emissiveFactor": [
+            1,
+            1,
+            1
+          ],
+          "emissiveTexture": {
+            "index": 0
+          },
+          "extensions": {
+            "KHR_materials_emissive_strength": {
+              "emissiveStrength": 2.118101693262303
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "mimeType": "image/webp",
+          "bufferView": 0,
+          "dimensions": [
+            1024,
+            512
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 2,
+      "primitiveCount": 2,
+      "vertices": 1118,
+      "indexCount": 5760,
+      "primitiveModes": [
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 0
+    },
+    "hangar.glb": {
+      "bytes": 620912,
+      "sha256": "4bb07b1e1228a8022642f6955079e2d3cd852a7aa3c2a4b6fba76627ccc5433b",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "dylanheyes (https://sketchfab.com/dylanheyes)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c",
+          "title": "Sci-Fi Hanger"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_materials_ior",
+        "KHR_materials_specular",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "Walls",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0.4,
+            "metallicFactor": 0,
+            "baseColorTexture": {
+              "index": 0
+            }
+          },
+          "normalTexture": {
+            "index": 1,
+            "scale": 0.1
+          },
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {}
+          }
+        },
+        {
+          "name": "Chrome",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.8,
+              0.8,
+              0.8,
+              1
+            ],
+            "roughnessFactor": 0,
+            "metallicFactor": 0
+          },
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {}
+          }
+        },
+        {
+          "name": "Window",
+          "alphaMode": "BLEND",
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.8,
+              0.8,
+              0.8,
+              0.5
+            ],
+            "roughnessFactor": 0.16200000000000003,
+            "metallicFactor": 0
+          },
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {}
+          }
+        },
+        {
+          "name": "Floor",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "roughnessFactor": 0,
+            "metallicFactor": 0
+          },
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {
+              "specularColorFactor": [
+                0.7620633856996343,
+                0.7620633856996343,
+                0.7620633856996343
+              ]
+            }
+          }
+        },
+        {
+          "name": "Lights",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.8,
+              0.8,
+              0.8,
+              1
+            ],
+            "roughnessFactor": 0.8211145618000169,
+            "metallicFactor": 0
+          },
+          "emissiveFactor": [
+            1,
+            0.28402411542980915,
+            0.17156313300420642
+          ],
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {
+              "specularColorFactor": [
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        {
+          "name": "LightGlassCover",
+          "alphaMode": "BLEND",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              0.3834586315888604
+            ],
+            "roughnessFactor": 0.7470177871865296,
+            "metallicFactor": 0
+          },
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {
+              "specularColorFactor": [
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        {
+          "name": "Doors",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "roughnessFactor": 0,
+            "metallicFactor": 0,
+            "baseColorTexture": {
+              "index": 2
+            }
+          },
+          "emissiveFactor": [
+            0.2232794305242984,
+            0.2232794305242984,
+            0.2232794305242984
+          ],
+          "emissiveTexture": {
+            "index": 2
+          },
+          "normalTexture": {
+            "index": 3,
+            "scale": 0.15047109059761488
+          },
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {
+              "specularColorFactor": [
+                0.442,
+                0.442,
+                0.442
+              ]
+            }
+          }
+        },
+        {
+          "name": "Backdrop",
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0,
+            "baseColorTexture": {
+              "index": 4
+            }
+          },
+          "emissiveFactor": [
+            1,
+            1,
+            1
+          ],
+          "emissiveTexture": {
+            "index": 4
+          },
+          "extensions": {
+            "KHR_materials_ior": {
+              "ior": 1000
+            },
+            "KHR_materials_specular": {
+              "specularColorFactor": [
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      ],
+      "images": [
+        {
+          "mimeType": "image/webp",
+          "bufferView": 0,
+          "dimensions": [
+            512,
+            256
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 1,
+          "dimensions": [
+            512,
+            256
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 2,
+          "dimensions": [
+            512,
+            512
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 3,
+          "dimensions": [
+            512,
+            512
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 4,
+          "dimensions": [
+            1024,
+            512
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 8,
+      "primitiveCount": 8,
+      "vertices": 3148,
+      "indexCount": 13590,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "TEXCOORD_0",
+          "NORMAL",
+          "POSITION",
+          "TANGENT"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 1
+    },
+    "space.glb": {
+      "bytes": 434704,
+      "sha256": "1c715764f9a6805ccf0edbbb82682c02a5c1e5e32d6ed2ee3ed73321c03adeac",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "Lo\u00efc Norgeot (https://sketchfab.com/norgeotloic)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/need-some-space-d6521362b37b48e3a82bce4911409303",
+          "title": "Need some space?"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "KHR_materials_unlit",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "Scene_-_Root",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "metallicFactor": 0
+          },
+          "extensions": {
+            "KHR_materials_unlit": {}
+          }
+        }
+      ],
+      "images": [],
+      "meshCount": 1,
+      "primitiveCount": 1,
+      "vertices": 50000,
+      "indexCount": 0,
+      "primitiveModes": [
+        0
+      ],
+      "attributes": [
+        [
+          "COLOR_0",
+          "POSITION"
+        ]
+      ],
+      "animations": 0
+    },
+    "galaxy.glb": {
+      "bytes": 411668,
+      "sha256": "5f476aa6cda2856fbdaf31b60c0686cecc8a6c07810256428c041a8e4a9ff9d3",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "Aliaksandr.melas (https://sketchfab.com/alexandr.melas)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/inside-galaxy-skybox-hdri-360-panorama-96183eed1ae2425baddb75ca92103f87",
+          "title": "Inside Galaxy Skybox HDRI 360 panorama"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "material",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "emissiveFactor": [
+            1,
+            1,
+            1
+          ],
+          "emissiveTexture": {
+            "index": 0
+          }
+        }
+      ],
+      "images": [
+        {
+          "mimeType": "image/webp",
+          "bufferView": 0,
+          "dimensions": [
+            2048,
+            2048
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 1,
+      "primitiveCount": 1,
+      "vertices": 559,
+      "indexCount": 2880,
+      "primitiveModes": [
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TEXCOORD_0"
+        ]
+      ],
+      "animations": 0
+    },
+    "corridor.glb": {
+      "bytes": 2107164,
+      "sha256": "aefe5f9cae067e364916b3178246799ba8bd70944f53b5c456e339bec17f7aba",
+      "asset": {
+        "generator": "glTF-Transform v4.5.1",
+        "version": "2.0",
+        "extras": {
+          "author": "the_table (https://sketchfab.com/the_table)",
+          "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+          "source": "https://sketchfab.com/3d-models/spaceship-corridor-1cdd1db557b8428892af4773bdada913",
+          "title": "Spaceship Corridor"
+        }
+      },
+      "extensionsUsed": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "extensionsRequired": [
+        "EXT_meshopt_compression",
+        "EXT_texture_webp",
+        "KHR_mesh_quantization"
+      ],
+      "materials": [
+        {
+          "name": "01_-_Default",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0.5,
+            "baseColorTexture": {
+              "index": 0
+            },
+            "metallicRoughnessTexture": {
+              "index": 3
+            }
+          },
+          "emissiveFactor": [
+            1,
+            1,
+            1
+          ],
+          "emissiveTexture": {
+            "index": 1
+          },
+          "normalTexture": {
+            "index": 2
+          },
+          "occlusionTexture": {
+            "index": 3
+          }
+        },
+        {
+          "name": "Material_187",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "baseColorFactor": [
+              0.588,
+              0.588,
+              0.588,
+              1
+            ],
+            "roughnessFactor": 0.8929713596497552,
+            "metallicFactor": 0
+          }
+        },
+        {
+          "name": "Material_186",
+          "doubleSided": true,
+          "pbrMetallicRoughness": {
+            "roughnessFactor": 0.8929713596497552,
+            "metallicFactor": 0
+          }
+        }
+      ],
+      "images": [
+        {
+          "mimeType": "image/webp",
+          "bufferView": 0,
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 1,
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 2,
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        },
+        {
+          "mimeType": "image/webp",
+          "bufferView": 3,
+          "dimensions": [
+            1024,
+            1024
+          ],
+          "format": "WEBP",
+          "mode": "RGB"
+        }
+      ],
+      "meshCount": 7,
+      "primitiveCount": 7,
+      "vertices": 120296,
+      "indexCount": 376713,
+      "primitiveModes": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "attributes": [
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION",
+          "TANGENT",
+          "TEXCOORD_0"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ],
+        [
+          "NORMAL",
+          "POSITION"
+        ]
+      ],
+      "animations": 0
+    }
+  }
+}

@@ -1,0 +1,323 @@
+{
+  "results": [
+    {
+      "id": "hangar",
+      "viewport": [
+        960,
+        600
+      ],
+      "camera": {
+        "position": [
+          -5.448551122983995,
+          -2.4170041002755887,
+          13.907760506717366
+        ],
+        "target": [
+          -4.562517874852374,
+          -2.4462799891523863,
+          10.321698123021358
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "fov": 45
+      },
+      "memory": {
+        "geometries": 20,
+        "textures": 29
+      },
+      "materials": [
+        {
+          "name": "Walls",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0.4,
+          "metalness": 0,
+          "ior": 2.3333333333333335,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            0.1,
+            0.1
+          ]
+        },
+        {
+          "name": "Chrome",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 2.3333333333333335,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Window",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 0.5,
+          "depthWrite": false,
+          "side": 0,
+          "roughness": 0.16200000000000003,
+          "metalness": 0,
+          "ior": 2.3333333333333335,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Floor",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 0.55,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1.8769748901416816,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Lights",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0.8211145618000169,
+          "metalness": 0,
+          "ior": 1,
+          "transmission": 0,
+          "emissiveIntensity": 2.9026361519236215,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "LightGlassCover",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 0.3834586315888604,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0.7470177871865296,
+          "metalness": 0,
+          "ior": 1,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Doors",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1.4295432458697768,
+          "transmission": 0,
+          "emissiveIntensity": 0.2232794305242984,
+          "normalScale": [
+            0.15047109059761488,
+            0.15047109059761488
+          ]
+        },
+        {
+          "name": "Backdrop",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 0,
+          "roughness": 1,
+          "metalness": 0,
+          "ior": 1,
+          "transmission": 0,
+          "emissiveIntensity": 2.9026361519236215,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "ReflectorShader",
+          "type": "ShaderMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 0
+        }
+      ],
+      "shaderErrors": [],
+      "state": "saved",
+      "file": "docs/rendering/captures/baseline-hangar-960x600.png",
+      "frameMs": [
+        2.699999999953434,
+        1.8999999999068677,
+        1.9000000001396984,
+        2.5999999998603016,
+        2.800000000046566,
+        2.5
+      ]
+    },
+    {
+      "id": "gallery",
+      "viewport": [
+        960,
+        600
+      ],
+      "camera": {
+        "position": [
+          45.1535988062107,
+          6.7871396155734764,
+          1.1987932024578594
+        ],
+        "target": [
+          26.85451866880905,
+          7.178893718313245,
+          0.5459822367985029
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "fov": 45
+      },
+      "memory": {
+        "geometries": 18,
+        "textures": 25
+      },
+      "materials": [
+        {
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2
+        },
+        {
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2
+        },
+        {
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2
+        },
+        {
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2
+        },
+        {
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2
+        },
+        {
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2
+        },
+        {
+          "name": "",
+          "type": "MeshBasicMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2
+        }
+      ],
+      "shaderErrors": [],
+      "state": "saved",
+      "file": "docs/rendering/captures/baseline-gallery-960x600.png",
+      "frameMs": [
+        0.19999999995343387,
+        0.10000000009313226,
+        0.10000000009313226,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "space",
+      "viewport": [
+        960,
+        600
+      ],
+      "camera": {
+        "position": [
+          1.0174579248398166,
+          2.027580277807106,
+          -1.4223919090520416
+        ],
+        "target": [
+          1.471854549334694,
+          1.3397235401344074,
+          -1.4785699995975425
+        ],
+        "up": [
+          0,
+          1,
+          0
+        ],
+        "fov": 105.3448275862
+      },
+      "memory": {
+        "geometries": 3,
+        "textures": 14
+      },
+      "materials": [
+        {
+          "name": "",
+          "type": "PointsMaterial",
+          "opacity": 1,
+          "depthWrite": false,
+          "side": 0
+        }
+      ],
+      "shaderErrors": [],
+      "state": "saved",
+      "file": "docs/rendering/captures/baseline-space-960x600.png",
+      "frameMs": [
+        1.3000000000465661,
+        0.6000000000931323,
+        0.19999999995343387,
+        0.39999999990686774,
+        0.19999999995343387,
+        0.30000000004656613
+      ]
+    }
+  ],
+  "errors": [],
+  "softwareRenderer": true
+}

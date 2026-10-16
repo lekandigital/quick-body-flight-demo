@@ -1,0 +1,101 @@
+import assert from 'node:assert/strict';
+import { chromium } from '@playwright/test';
+import { createServer } from 'vite';
+import { mkdirSync, writeFileSync } from 'node:fs';
+
+const server = await createServer({ server: { host:'127.0.0.1', port:5176, strictPort:true } });
+await server.listen();
+const browser = await chromium.launch({ executablePath: process.env.RENDERING_CHROMIUM_PATH, headless:true,
+  args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream'] });
+const results = {};
+try {
+  const page = await browser.newPage({ viewport:{width:1100,height:1000} });
+  page.setDefaultTimeout(45000);
+  const errors = []; page.on('pageerror', (e) => errors.push(String(e)));
+  const openLab = async (id='galaxy') => {
+    await page.goto(`http://127.0.0.1:5176/dev/rendering.html?scene=${id}`);
+    await page.waitForFunction(() => document.querySelector('#status').textContent.includes('"state": "ready"'));
+  };
+  await openLab();
+  results.color = await page.evaluate(() => {
+    const {background:bg,THREE:T,draw,renderer} = window.__renderingLab;
+    for (const obj of [...bg.scene.children]) if (obj !== bg.camera) bg.scene.remove(obj);
+    bg.scene.background = new T.Color(0,0,0); bg.scene.environment = null;
+    bg.camera.position.set(0,0,1); bg.camera.up.set(0,1,0); bg.camera.lookAt(0,0,0);
+    const geometry = new T.PlaneGeometry(2,2);
+    const material = new T.MeshBasicMaterial({color:new T.Color(.18,.18,.18)});
+    bg.scene.add(new T.Mesh(geometry,material)); bg.setSize(960,600); draw();
+    const pixels = new Uint8Array(4); const gl=renderer.getContext();
+    gl.readPixels(480,300,1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+    geometry.dispose(); material.dispose(); return [...pixels];
+  });
+  assert.ok(Math.abs(results.color[0] - 118) <= 1, `Expected one sRGB conversion of linear .18 → 118, got ${results.color}`);
+  console.log('Color pipeline check passed');
+
+  // Hold a real environment request while a newer selection finishes loading.
+  let release; let observed;
+  const held = new Promise((resolve) => { release=resolve; });
+  const requested = new Promise((resolve) => { observed=resolve; });
+  await page.route('**/backgrounds/env/*.jpg', async (route) => { observed(); await held; await route.continue(); });
+  await page.goto('http://127.0.0.1:5176/dev/rendering.html?scene=galaxy');
+  await Promise.race([requested, new Promise((_,reject)=>setTimeout(()=>reject(new Error('Environment request did not start')),15000))]);
+  await page.evaluate(async () => {
+    const {background,LIBRARY} = window.__renderingLab;
+    await background.load(LIBRARY.find((x)=>x.id==='nebula'));
+  });
+  release();
+  await page.waitForFunction(() => document.querySelector('#status').textContent.includes('"state": "ready"'));
+  results.race = await page.evaluate(() => ({ id:window.__renderingLab.background.def.id, environment:!!window.__renderingLab.background.scene.environment }));
+  assert.deepEqual(results.race,{id:'nebula',environment:false});
+  console.log('Delayed-environment race check passed');
+  await page.unroute('**/backgrounds/env/*.jpg');
+
+  await openLab('hangar');
+  results.lifecycle = await page.evaluate(async () => {
+    const {background:bg,renderer,LIBRARY,draw} = window.__renderingLab;
+    const hangar=LIBRARY.find((x)=>x.id==='hangar');
+    const memory=[]; const roots=[];
+    for(let i=0;i<6;i++) {
+      await bg.load(hangar); draw(); renderer.getContext().finish();
+      memory.push({...renderer.info.memory});
+      let mirrorCount=0; bg.scene.traverse((o)=>{if(o.isReflector)mirrorCount++;});roots.push(mirrorCount);
+    }
+    bg.dispose(); renderer.renderLists.dispose();
+    await Promise.resolve(); // cached asset disposal runs after pending loads settle
+    return {memory,mirrors:roots,afterDispose:{...renderer.info.memory}};
+  });
+  assert.equal(new Set(results.lifecycle.memory.map((x)=>JSON.stringify(x))).size,1,'GPU object counts must plateau after warmup');
+  assert.ok(results.lifecycle.mirrors.every((n)=>n===0),'Hangar SSR must reflect the actual floor without auxiliary mirror geometry');
+  console.log('Hangar reload/disposal check passed');
+
+  await page.goto('http://127.0.0.1:5176/?bg=galaxy&avatar=robot&delegate=cpu');
+  await page.waitForFunction(() => document.body.dataset.bg==='galaxy');
+  assert.equal(await page.locator('#bg-cards button').count(),2);
+  await page.getByLabel('Background quality').selectOption('maximum');
+  results.maximum = await page.locator('#stage').evaluate((canvas)=>({width:canvas.width,height:canvas.height}));
+  await page.getByLabel('Background quality').selectOption('mobile');
+  results.mobile = await page.locator('#stage').evaluate((canvas)=>({width:canvas.width,height:canvas.height}));
+  assert.ok(results.mobile.width<results.maximum.width,'Explicit mobile mode reduces render resolution');
+  await page.getByLabel('Background quality').selectOption('balanced');
+  await page.locator('#bg-cards [data-bg="nebula"]').click();
+  await page.waitForFunction(() => document.body.dataset.bg==='nebula');
+  assert.ok((await page.locator('#bg-credit').innerText()).includes('Jungle Jim'));
+  const avatarFraming = await page.evaluate(()=>({canvas:document.querySelector('#stage').width,mode:document.querySelector('#mode-character').getAttribute('aria-pressed')}));
+  await page.locator('#fly-btn').click();
+  await page.locator('.ba-play iframe').waitFor();
+  results.flight = await page.locator('.ba-play iframe').getAttribute('src');
+  await page.getByRole('button',{name:'Close the game',exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('.ba-play'));
+  await page.locator('#row-btn').click();
+  await page.locator('.ba-play iframe').waitFor();
+  results.row = await page.locator('.ba-play iframe').getAttribute('src');
+  assert.ok(results.row.includes('row'));
+  results.avatar = avatarFraming;
+  results.camera = await page.locator('#video').evaluate((video)=>({width:video.videoWidth,height:video.videoHeight,readyState:video.readyState}));
+  assert.ok(results.camera.readyState>=2,'The synthetic webcam must remain active');
+  results.errors=errors;
+  assert.equal(errors.length,0,errors.join('\n'));
+  mkdirSync('docs/rendering/captures',{recursive:true});
+  writeFileSync('docs/rendering/captures/checks.json',JSON.stringify(results,null,2));
+  console.log(JSON.stringify(results,null,2));
+} finally {await browser.close();await server.close();}

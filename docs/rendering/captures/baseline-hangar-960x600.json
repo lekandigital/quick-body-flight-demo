@@ -1,0 +1,177 @@
+{
+  "id": "hangar",
+  "viewport": [
+    960,
+    600
+  ],
+  "camera": {
+    "position": [
+      -5.448551122983995,
+      -2.4170041002755887,
+      13.907760506717366
+    ],
+    "target": [
+      -4.562517874852374,
+      -2.4462799891523863,
+      10.321698123021358
+    ],
+    "up": [
+      0,
+      1,
+      0
+    ],
+    "fov": 45
+  },
+  "memory": {
+    "geometries": 20,
+    "textures": 29
+  },
+  "materials": [
+    {
+      "name": "Walls",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.4,
+      "metalness": 0,
+      "ior": 2.3333333333333335,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        0.1,
+        0.1
+      ]
+    },
+    {
+      "name": "Chrome",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "ior": 2.3333333333333335,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Window",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 0.5,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 0.16200000000000003,
+      "metalness": 0,
+      "ior": 2.3333333333333335,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Floor",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 0.55,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "ior": 1.8769748901416816,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Lights",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8211145618000169,
+      "metalness": 0,
+      "ior": 1,
+      "transmission": 0,
+      "emissiveIntensity": 2.9026361519236215,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "LightGlassCover",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 0.3834586315888604,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0.7470177871865296,
+      "metalness": 0,
+      "ior": 1,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Doors",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "ior": 1.4295432458697768,
+      "transmission": 0,
+      "emissiveIntensity": 0.2232794305242984,
+      "normalScale": [
+        0.15047109059761488,
+        0.15047109059761488
+      ]
+    },
+    {
+      "name": "Backdrop",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 0,
+      "roughness": 1,
+      "metalness": 0,
+      "ior": 1,
+      "transmission": 0,
+      "emissiveIntensity": 2.9026361519236215,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "ReflectorShader",
+      "type": "ShaderMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 0
+    }
+  ],
+  "shaderErrors": [],
+  "state": "captured",
+  "frameMs": [
+    2.699999999953434,
+    1.8999999999068677,
+    1.9000000001396984,
+    2.5999999998603016,
+    2.800000000046566,
+    2.5
+  ],
+  "renderer": "WebKit WebGL"
+}
