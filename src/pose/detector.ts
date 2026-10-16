@@ -33,10 +33,13 @@ async function buildLandmarker(variant: ModelVariant, delegate: 'GPU' | 'CPU') {
 }
 
 export async function createDetector(variant: ModelVariant = 'full'): Promise<PoseDetector> {
-  let delegate: 'GPU' | 'CPU' = 'GPU';
+  // ?delegate=cpu runs the pose model on the CPU (WASM) — off the GPU the page
+  // and the game are busy with
+  const wantCpu = new URLSearchParams(location.search).get('delegate') === 'cpu';
+  let delegate: 'GPU' | 'CPU' = wantCpu ? 'CPU' : 'GPU';
   let landmarker: PoseLandmarker;
   try {
-    landmarker = await buildLandmarker(variant, 'GPU');
+    landmarker = await buildLandmarker(variant, delegate);
   } catch (err) {
     console.warn('pose: GPU delegate failed, falling back to CPU/WASM', err);
     delegate = 'CPU';

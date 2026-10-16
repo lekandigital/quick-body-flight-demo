@@ -86,5 +86,19 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
     },
   };
   api.pick(initial);
+  // tuning hook (framing the scenes against their Sketchfab views):
+  // __bodyarcadeBg.tune('corridor', { camera: {...}, parts: [...] })
+  (window as unknown as { __bodyarcadeBg: unknown }).__bodyarcadeBg = {
+    api,
+    defs: BACKGROUNDS,
+    tune(id: string, patch: Partial<(typeof BACKGROUNDS)[number]>) {
+      const def = backgroundById(id);
+      if (!def) return false;
+      Object.assign(def, patch);
+      current = id;
+      paint();
+      return stage.setBackground(def).then(() => true);
+    },
+  };
   return api;
 }

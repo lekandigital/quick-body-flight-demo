@@ -1,0 +1,416 @@
+{
+ "source": "Sketchfab viewer settings (https://sketchfab.com/i/models/<uid>/options), trimmed",
+ "camera": {
+  "position": [
+   79.61523112779852,
+   111.30097651096234,
+   158.65645989557044
+  ],
+  "target": [
+   115.17138671875001,
+   115.69686508178711,
+   104.83224582672122
+  ],
+  "fov": 105.3448275862
+ },
+ "lighting": {
+  "enable": false,
+  "lights": [
+   {
+    "type": "DIRECTION",
+    "angle": 45,
+    "color": [
+     0.7806122449,
+     0.7985214494,
+     1
+    ],
+    "enable": true,
+    "ground": [
+     0.3,
+     0.2,
+     0.2
+    ],
+    "matrix": [
+     -0.98158045,
+     0.1909922167,
+     -0.0046683273,
+     0,
+     0.135483471,
+     0.7131126062,
+     0.6878332937,
+     0,
+     0.1346998486,
+     0.6745312328,
+     -0.7258536814,
+     0,
+     139.7100829333,
+     201.7213593229,
+     23.5103105997,
+     1
+    ],
+    "falloff": 0.0001594926,
+    "hardness": 0.5,
+    "intensity": 0.96,
+    "shadowBias": 0.005,
+    "castShadows": false,
+    "intensityGround": 1,
+    "attachedToCamera": false
+   },
+   {
+    "type": "DIRECTION",
+    "angle": 45,
+    "color": [
+     1,
+     0.878331945,
+     0.7091836735
+    ],
+    "enable": true,
+    "ground": [
+     0.3,
+     0.2,
+     0.2
+    ],
+    "matrix": [
+     0.7755211495,
+     -0.066660286,
+     0.6277924442,
+     0,
+     0.2690483737,
+     0.9344846523,
+     -0.2331338825,
+     0,
+     -0.5711216326,
+     0.3497067927,
+     0.7426474533,
+     0,
+     51.3421791348,
+     161.0537746122,
+     207.3646851947,
+     1
+    ],
+    "falloff": 0.0001594926,
+    "hardness": 0.5,
+    "intensity": 1,
+    "shadowBias": 0.005,
+    "castShadows": false,
+    "intensityGround": 1,
+    "attachedToCamera": false
+   },
+   {
+    "type": "DIRECTION",
+    "angle": 45,
+    "color": [
+     0.4234693878,
+     0.7352665556,
+     1
+    ],
+    "enable": true,
+    "ground": [
+     0.9642857143,
+     0.6484128637,
+     0.2607507289
+    ],
+    "matrix": [
+     0.6903299131,
+     -0.7076363669,
+     -0.1506498699,
+     0,
+     -0.0110896982,
+     0.197851373,
+     -0.980169298,
+     0,
+     0.7234097246,
+     0.6783108479,
+     0.1287352474,
+     0,
+     213.4157706728,
+     202.1945620741,
+     130.5036995182,
+     1
+    ],
+    "falloff": 0.0001594926,
+    "hardness": 0.5,
+    "intensity": 0.12,
+    "shadowBias": 0.005,
+    "castShadows": false,
+    "intensityGround": 0.06,
+    "attachedToCamera": false
+   }
+  ]
+ },
+ "shading": {
+  "type": "shadeless",
+  "renderer": "pbr",
+  "pointSize": 0.6403940887,
+  "vertexColor": {
+   "enable": true,
+   "useAlpha": false,
+   "colorSpace": "srgb"
+  }
+ },
+ "environment": {
+  "uid": "102d22e28ca34190a8470402ccdc35d3",
+  "blur": 0.1,
+  "enable": true,
+  "exposure": 6.8,
+  "rotation": 0,
+  "shadowBias": 0.005,
+  "shadowEnable": true,
+  "lightIntensity": 3,
+  "backgroundExposure": 0,
+  "name": "Milky Way",
+  "brightness": 6.429,
+  "sph": [
+   0.35606,
+   0.258251,
+   0.289161,
+   0.0312472,
+   0.0252226,
+   0.0401006,
+   0.00830225,
+   0.00923253,
+   0.0219481,
+   -0.0400332,
+   -0.0416848,
+   -0.0720929,
+   -0.0360429,
+   -0.0278279,
+   -0.0364114,
+   0.0544373,
+   0.0397866,
+   0.0452324,
+   -0.0429388,
+   -0.0320385,
+   -0.0394593,
+   -0.0528908,
+   -0.0381713,
+   -0.0454298,
+   0.052567,
+   0.0384541,
+   0.0441949,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0.00369173,
+   0.00268592,
+   0.00335939,
+   -0.00827406,
+   -0.00613976,
+   -0.00735882,
+   0.00367291,
+   0.00262802,
+   0.0028064,
+   0.00618457,
+   0.00474527,
+   0.00600214,
+   0.00192639,
+   0.00130403,
+   0.00119358,
+   -0.00823526,
+   -0.00606361,
+   -0.00763152,
+   0.00413824,
+   0.00318349,
+   0.00392011,
+   -6.37133e-05,
+   -0.000360186,
+   -0.000690853,
+   0.00087668,
+   0.000459845,
+   0.00030949
+  ]
+ },
+ "background": {
+  "uid": "51af6a870cce449eb75b0345feebaebb",
+  "color": [
+   0,
+   0,
+   0
+  ],
+  "enable": "color"
+ },
+ "postProcess": {
+  "dof": {
+   "enable": false,
+   "blurFar": 0.1055555556,
+   "blurNear": 0.0944444444,
+   "focusPoint": [
+    0,
+    0,
+    0
+   ]
+  },
+  "ssr": {
+   "enable": false,
+   "factor": 1
+  },
+  "taa": {
+   "enable": true,
+   "transparent": true
+  },
+  "ssao": {
+   "bias": 1.0895354549,
+   "enable": false,
+   "radius": 13.5760362712,
+   "intensity": 0.5
+  },
+  "bloom": {
+   "enable": true,
+   "factor": 2,
+   "radius": 1,
+   "threshold": 0
+  },
+  "grain": {
+   "enable": false,
+   "factor": 0.5,
+   "animated": false
+  },
+  "enable": true,
+  "sharpen": {
+   "enable": false,
+   "factor": 0.2
+  },
+  "vignette": {
+   "amount": 0.475,
+   "enable": false,
+   "hardness": 0.725
+  },
+  "toneMapping": {
+   "enable": true,
+   "method": "filmic",
+   "contrast": 0,
+   "exposure": 1.0888888889,
+   "brightness": -0.0111111111,
+   "saturation": 1.9
+  },
+  "colorBalance": {
+   "low": [
+    0.1666666667,
+    0.1666666667,
+    0.1777777778
+   ],
+   "mid": [
+    0,
+    0,
+    0
+   ],
+   "high": [
+    0,
+    0,
+    0
+   ],
+   "enable": false
+  },
+  "chromaticAberration": {
+   "enable": false,
+   "factor": 0
+  }
+ },
+ "orientation": {
+  "matrix": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ "materials": {
+  "Scene - Root": {
+   "AlbedoPBR": {
+    "color": [
+     1,
+     1,
+     1
+    ],
+    "enable": true,
+    "factor": 1,
+    "hasTexture": false
+   },
+   "SpecularF0": {
+    "enable": true,
+    "factor": 0.5,
+    "hasTexture": false
+   },
+   "DiffuseColor": {
+    "color": [
+     1,
+     1,
+     1
+    ],
+    "enable": true,
+    "factor": 1,
+    "hasTexture": false
+   },
+   "MetalnessPBR": {
+    "enable": true,
+    "factor": 0,
+    "hasTexture": false
+   },
+   "RoughnessPBR": {
+    "enable": true,
+    "factor": 0.6,
+    "hasTexture": false
+   },
+   "SpecularColor": {
+    "color": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "enable": true,
+    "factor": 0,
+    "hasTexture": false
+   },
+   "DiffuseIntensity": {
+    "color": [
+     1,
+     1,
+     1
+    ],
+    "enable": true,
+    "factor": 1,
+    "hasTexture": false
+   },
+   "SpecularHardness": {
+    "enable": true,
+    "factor": 12.5,
+    "hasTexture": false
+   },
+   "ClearCoatRoughness": {
+    "enable": true,
+    "factor": 0.04,
+    "hasTexture": false
+   }
+  }
+ }
+}

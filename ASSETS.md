@@ -188,11 +188,14 @@ Sketchfab downloads (Lekan, 2026-10-16, `~/Downloads/3dbackgrounds`). The licens
 file's own glTF `asset.extras` (and `license.txt` in the hangar zip): **CC-BY-4.0 — commercial use allowed, author
 must be credited.** The app shows the credit (title, author, links, CC BY 4.0) on the stage whenever a background is
 up (`src/ui/backgroundPicker.ts`). Files here are optimized copies, not the originals: textures resized (≤ 4096,
-WebP q82), meshopt geometry, the hangar's spec-gloss material converted to metal-rough, the two Earths simplified
-(sphere layers ~65k → ~19k triangles). `@gltf-transform/cli` 4: dedup → prune → resize → [weld+simplify] → webp → meshopt.
+WebP q82), meshopt geometry, the hangar's spec-gloss material converted to metal-rough (the Earths are not simplified:
+it broke their UVs). `@gltf-transform/cli` 4: dedup → prune → resize → webp → meshopt. Each `<file>.sketchfab.json` is
+the model's public Sketchfab viewer settings (camera, lights, materials, post-processing), trimmed; `env/<uid>.jpg` are
+the matching Sketchfab environment panoramas, used for image-based lighting.
 
 | file | title | author | source | original file |
 |---|---|---|---|---|
+| `nebula.glb` | Alien Space Nebula 2 (Skybox) | [Jungle Jim](https://sketchfab.com/jungle_jim) | [Sketchfab](https://sketchfab.com/3d-models/alien-space-nebula-2-skybox-a1c688c6e8164fd4ad5a7e56047e8b50) | `alien_space_nebula_2_skybox.glb` |
 | `galaxy.glb` | Inside Galaxy Skybox HDRI 360 panorama | [Aliaksandr.melas](https://sketchfab.com/alexandr.melas) | [Sketchfab](https://sketchfab.com/3d-models/inside-galaxy-skybox-hdri-360-panorama-96183eed1ae2425baddb75ca92103f87) | `inside_galaxy_skybox_hdri_360_panorama.glb` |
 | `space.glb` | Need some space? | [Loïc Norgeot](https://sketchfab.com/norgeotloic) | [Sketchfab](https://sketchfab.com/3d-models/need-some-space-d6521362b37b48e3a82bce4911409303) | `need_some_space.glb` |
 | `earth-agullo.glb` | EARTH | [Stéphane Agullo](https://sketchfab.com/sa3d) | [Sketchfab](https://sketchfab.com/3d-models/earth-5ce4b1465c83432d9bb7e3c30232c02b) | `earth.glb` |

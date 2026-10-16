@@ -3,10 +3,9 @@
 // HUD updates) via onTick.
 
 import * as THREE from 'three';
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { BackgroundDef } from './backgrounds';
-import { asset } from '../base';
+import { BackgroundRenderer } from './backgroundRenderer';
 
 export interface Stage {
   scene: THREE.Scene;
@@ -73,7 +72,9 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   rim.position.set(-2, 2, -2.5);
   scene.add(rim);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const ambient = new THREE.AmbientLight(0xffffff, 0.35);
+  scene.add(ambient);
+  const hemi = new THREE.HemisphereLight(0xeef6ff, 0xa9bad3, 1.15);
 
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(6, 48),
@@ -85,6 +86,9 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
 
   const grid = new THREE.GridHelper(12, 24, 0x2a3040, 0x1d2027);
   scene.add(grid);
+
+  // the active 3D background — read by the camera code below, so declared first
+  let bgDef: BackgroundDef | null = null;
 
   // ── showcase look (from the demo video; default in the glass build) ─────
   // A bright gradient backdrop, soft floor glow + contact shadow, no grid, a
@@ -176,88 +180,76 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     key.shadow.radius = 6;
     rim.color.set(0x7fd3ff);
     rim.intensity = 1.6;
-    scene.add(new THREE.HemisphereLight(0xeef6ff, 0xa9bad3, 1.15));
+    scene.add(hemi);
     frameShowcaseCamera();
   }
 
   // ── 3D backgrounds ────────────────────────────────────────────────────
-  const bgGroup = new THREE.Group();
-  bgGroup.name = 'background';
-  scene.add(bgGroup);
-  const loader = new GLTFLoader();
-  loader.setMeshoptDecoder(MeshoptDecoder);
-  const cache = new Map<string, Promise<GLTF>>();
-  const loadPart = (file: string) => {
-    if (!cache.has(file)) cache.set(file, loader.loadAsync(asset(`/backgrounds/${file}`)));
-    return cache.get(file)!;
-  };
-  let bgDef: BackgroundDef | null = null;
+  // Each background renders with its own scene, camera (the model's Sketchfab
+  // default view), lights, environment and post-process into a texture
+  // (./backgroundRenderer.ts); the avatar composites over it with its own
+  // camera and studio light — so a scene can look exactly like its Sketchfab
+  // view without moving the avatar's framing.
+  const bgRenderer = new BackgroundRenderer(renderer);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; // the avatar's soft fill over 3D scenes
+  const quadMat = new THREE.ShaderMaterial({
+    uniforms: { map: { value: null } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    // the background texture is already graded + sRGB: copy it as-is
+    fragmentShader: 'uniform sampler2D map; varying vec2 vUv; void main(){ gl_FragColor = texture2D(map, vUv); }',
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const quadScene = new THREE.Scene();
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), quadMat);
+  quad.frustumCulled = false;
+  quadScene.add(quad);
+  const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   let bgToken = 0;
-  let mixers: THREE.AnimationMixer[] = [];
-  let spinners: Array<{ obj: THREE.Object3D; rate: number }> = [];
 
   async function setBackground(def: BackgroundDef | null): Promise<void> {
     const token = ++bgToken;
     if (!def) {
-      bgGroup.clear();
-      mixers = [];
-      spinners = [];
+      bgRenderer.clear();
       bgDef = null;
       applyBackdrop();
+      applyPixelRatio();
       return;
     }
-    const parts = await Promise.all(def.parts.map((p) => loadPart(p.file).then((g) => ({ p, g }))));
-    if (token !== bgToken) return; // a newer pick won
-    bgGroup.clear();
-    mixers = [];
-    spinners = [];
-    for (const { p, g } of parts) {
-      const root = g.scene;
-      root.scale.setScalar(p.scale);
-      root.position.set(...p.position);
-      root.rotation.set(0, ((p.rotationY ?? 0) * Math.PI) / 180, 0);
-      root.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        if (!mesh.isMesh) return;
-        mesh.castShadow = false;
-        mesh.receiveShadow = false;
-        if (p.sky) {
-          mesh.frustumCulled = false;
-          mesh.renderOrder = -10;
-          for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-            m.side = THREE.BackSide;
-            m.depthWrite = false;
-          }
-        }
-      });
-      if (p.animate && g.animations.length) {
-        const mixer = new THREE.AnimationMixer(root);
-        for (const clip of g.animations) mixer.clipAction(clip).play();
-        mixers.push(mixer);
-      }
-      if (p.spin) spinners.push({ obj: root, rate: p.spin });
-      bgGroup.add(root);
-    }
+    await bgRenderer.load(def);
+    if (token !== bgToken) return;
     bgDef = def;
     applyBackdrop();
+    applyPixelRatio();
   }
 
-  /** slow camera drift for still space scenes — offsets from the resting frame */
-  function drift(pos: THREE.Vector3, look: THREE.Vector3): void {
-    if (!bgDef?.drift || pip || treatment !== 'character') return;
+  /** 1× pixels under 3D backgrounds and in the model view (GPU headroom for
+   *  the pose model); up to 2× on the plain sky */
+  function applyPixelRatio(): void {
+    renderer.setPixelRatio(pip || bgDef ? 1 : Math.min(window.devicePixelRatio, 2));
+    resize();
+  }
+
+  /** a slow drift of the BACKGROUND camera around its Sketchfab view, for
+   *  still space scenes; returns false when there's nothing to move */
+  function drift(pos: THREE.Vector3, target: THREE.Vector3): boolean {
+    if (!bgDef?.drift || pip) return false;
     const t = performance.now() / 1000;
     const wave = (period: number) => Math.sin((t * 2 * Math.PI) / period);
+    const off = pos.clone().sub(target);
     if (bgDef.drift === 'orbit') {
-      const a = wave(40) * 0.14; // ±8° around the avatar
-      const r = pos.z;
-      pos.x = Math.sin(a) * r;
-      pos.z = Math.cos(a) * r;
+      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), wave(48) * 0.08); // ±4.5° around the view
+      pos.copy(target).add(off);
     } else if (bgDef.drift === 'dolly') {
-      pos.z += wave(30) * 0.7; // a slow breath in and out
+      pos.copy(target).add(off.multiplyScalar(1 + wave(30) * 0.12)); // a slow breath in and out
     } else if (bgDef.drift === 'pan') {
-      pos.x += wave(34) * 0.6;
-      look.x += wave(34) * 0.25;
+      const side = new THREE.Vector3().crossVectors(off, new THREE.Vector3(0, 1, 0)).normalize().multiplyScalar(off.length() * 0.05 * wave(36));
+      pos.add(side);
+      target.add(side);
     }
+    return true;
   }
 
   const homeHost = canvas.parentElement!;
@@ -268,6 +260,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     const h = parent.clientHeight;
     if (w === 0 || h === 0) return;
     renderer.setSize(w, h, false);
+    bgRenderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
@@ -284,8 +277,9 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   let suspended = false;
 
   function loop(now: number) {
-    // in-game model view: ≤ 30 fps, the game owns the frame budget
-    if (pip && now - last < 1000 / 31) {
+    // ≤ 30 fps in the model view and over 3D backgrounds: the pose model shares
+    // this GPU, and starving it breaks the controls (measured at 2× density)
+    if ((pip || bgDef) && now - last < 1000 / 31) {
       requestAnimationFrame(loop);
       return;
     }
@@ -302,12 +296,19 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       fpsAccum = 0;
       fpsCount = 0;
     }
-    if (bgDef && !pip) {
-      for (const m of mixers) m.update(dt);
-      for (const s of spinners) s.obj.rotation.y += s.rate * dt;
-    }
     for (const cb of tickCbs) cb(dt, now);
-    renderer.render(scene, camera);
+    if (bgDef && !pip && bgRenderer.active) {
+      bgRenderer.render(dt, drift);
+      quadMat.uniforms.map.value = bgRenderer.texture;
+      renderer.autoClear = true;
+      renderer.render(quadScene, quadCam);
+      renderer.autoClear = false;
+      renderer.clearDepth();
+      renderer.render(scene, camera);
+      renderer.autoClear = true;
+    } else {
+      renderer.render(scene, camera);
+    }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -315,11 +316,12 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   function applyBackdrop(): void {
     if (!showcase) return;
     const bg3d = !!bgDef && !pip;
-    bgGroup.visible = bg3d;
+    scene.environment = bg3d ? envTex : null;
+    scene.environmentIntensity = 0.6;
     scene.background = pip
       ? null
       : bg3d
-        ? new THREE.Color(bgDef!.tone === 'dark' ? 0x05060a : 0xf2f2f2)
+        ? null // drawn by the background pass
         : cssBackdrop
           ? null
           : backdrop(treatment === 'hand' ? 'hand' : theme);
@@ -371,7 +373,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     canvas,
     setBackground,
     backgroundId: () => bgDef?.id ?? null,
-    hasDrift: () => !!bgDef?.drift && !pip,
+    hasDrift: () => false, // the background camera drifts, not the avatar's
     applyFraming() {
       const f = api.framing();
       camera.position.copy(f.pos);
@@ -393,10 +395,9 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     },
     setPip(v) {
       pip = v;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, v ? 1.5 : 2));
       applyBackdrop();
       if (showcase && v) frameShowcaseCamera();
-      resize();
+      applyPixelRatio();
     },
     setTheme(t) {
       theme = t;
@@ -410,7 +411,6 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
             : pip
               ? { pos: new THREE.Vector3(0, 1.02, 4.5), look: new THREE.Vector3(0, 0.95, 0) }
               : { pos: new THREE.Vector3(0, 1.0, SHOWCASE_Z), look: new THREE.Vector3(0, 0.98, 0) };
-        drift(f.pos, f.look);
         return f;
       }
       return treatment === 'hand'
