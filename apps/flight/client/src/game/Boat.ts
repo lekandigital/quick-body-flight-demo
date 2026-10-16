@@ -93,6 +93,27 @@ function findOceanQuaternionExhaustive(
   return fallback ?? quaternionFromSurfaceNormal(0, 0, 1);
 }
 
+/**
+ * BodyArcade Rowing: impulse-and-glide constants. Additive path — the
+ * keyboard accel/brake/coast behavior above is untouched (upstream feel is
+ * frozen); these only act when the rowing input source drives the boat.
+ */
+/** Speed added by one full-amplitude stroke. */
+const ROW_IMPULSE_SPEED = 0.15;
+/** Surge attack: budget is applied at this rate (full stroke ≈ 0.3 s). */
+const ROW_SURGE_RATE = 0.5;
+/** Rowing tops out at the keyboard max (upgrades still multiply). */
+const ROW_MAX_SPEED = MAX_SPEED;
+/** Rowing water drag is PROPORTIONAL to speed (τ ≈ 5.5 s): each cadence
+ *  settles at its own speed (impulse rate = drag) so the boat reads the
+ *  rhythm, and stillness is an exponential drift that never hard-stops.
+ *  Keyboard coast keeps the upstream linear COAST_DECAY untouched. */
+const ROW_DRAG_PER_S = 0.18;
+/** Extra drag while the shore guard flags NEAR-CONTACT land (soft
+ *  approach). Gentle on purpose: 1.1 strangled propulsion whenever a
+ *  random spawn faced a coast — the guard turn does the real avoiding. */
+const ROW_SHORE_DRAG_PER_S = 1.0;
+
 const BOB_AMPLITUDE = 0.009;
 const BOB_SPEED = 2.6;
 const PITCH_BOB_AMP = 0.042;
@@ -128,6 +149,20 @@ export class Boat {
   private turnInputSmoothed = 0;
   /** Remaining time at diamond boost speed after {@link speedBoost} (diamond pickup). */
   private boostTimer = 0;
+
+  /** BodyArcade Rowing: surge speed not yet applied (attack envelope). */
+  private rowSurgeBudget = 0;
+  /** Rowing mode flags, set per-tick by the rowing input source. `glide`
+   *  swaps coast decay for the gentler rowing drift; `sustain` (cruise)
+   *  holds speed against decay. Keyboard activity clears both upstream. */
+  rowGlide = false;
+  rowSustain = false;
+  /** Shore guard set this tick: 0..1 drag level (graded with hazard,
+   *  1 at contact) — rowing/autopilot path only; keyboard never sets it. */
+  rowShoreDrag = 0;
+  /** Last update's movement step was rejected by the land gate — the hull
+   *  is against the shore. Diagnostic flag, no physics change. */
+  moveBlocked = false;
 
   /** Active upgrade multipliers; updated by Game.propagateUpgrades() after each pick. */
   upgrades = {
@@ -190,8 +225,34 @@ export class Boat {
       this.speed = Math.min(effMaxSpeed, this.speed + effAccel * dt);
     } else if (brake) {
       this.speed = Math.max(0, this.speed - BRAKE_DECEL * dt);
+    } else if (this.rowSustain && this.rowSurgeBudget <= 0) {
+      // cruise: momentum holds while the rower rests (rowing mode only)
+    } else if (this.rowGlide) {
+      this.speed = Math.max(0, this.speed * (1 - ROW_DRAG_PER_S * dt));
     } else {
       this.speed = Math.max(0, this.speed - COAST_DECAY * dt);
+    }
+
+    // Rowing surge: each detected stroke banked a speed budget; apply it
+    // with a short attack so the boat visibly lunges per pull.
+    // pulls bite proportionally less as the bow nears land (the coxswain
+    // feathers the rower's power near a wall) — proportional, never a hard
+    // block: a hard gate deadlocked escape (turn needs way, way needs
+    // pulls, pulls blocked while pointing at the wall)
+    if (this.rowSurgeBudget > 0 && this.boostTimer <= 0 && !brake) {
+      const step =
+        Math.min(this.rowSurgeBudget, ROW_SURGE_RATE * dt) * (1 - 0.85 * this.rowShoreDrag);
+      const rowMax = ROW_MAX_SPEED * this.upgrades.maxSpeedMult;
+      this.speed = Math.min(rowMax, this.speed + step);
+      this.rowSurgeBudget -= step;
+      if (this.speed >= rowMax) this.rowSurgeBudget = 0;
+    }
+
+    // Shore guard: land imminent ahead — shed way with a smooth extra drag
+    // (soften the approach; the isLand movement gate below still prevents
+    // any penetration). Never set on the keyboard path.
+    if (this.rowShoreDrag > 0 && this.boostTimer <= 0 && !forward) {
+      this.speed *= Math.max(0, 1 - ROW_SHORE_DRAG_PER_S * this.rowShoreDrag * dt);
     }
 
     this.turnInputSmoothed += (turnRate - this.turnInputSmoothed) * (1 - Math.exp(-TURN_INPUT_SMOOTH * dt));
@@ -207,6 +268,9 @@ export class Boat {
 
     if (!isLand(this.seed, this.terrainType, nx, ny, nz)) {
       this.qPosition = nextQ;
+      this.moveBlocked = false;
+    } else {
+      this.moveBlocked = true;
     }
 
     const up = tangentFrame(this.qPosition).up;
@@ -223,6 +287,12 @@ export class Boat {
     this.pitch = this.bobPitch;
     this.bankAngle = this.bobRoll;
     this.applyMatrix();
+  }
+
+  /** BodyArcade Rowing: bank one stroke's surge (strength 0..1 = amplitude). */
+  rowStroke(strength: number) {
+    const s = Math.max(0, Math.min(1, strength));
+    this.rowSurgeBudget += ROW_IMPULSE_SPEED * s;
   }
 
   /** Temporary surge from collecting a diamond (matches plane/carpet diamond pickup). */

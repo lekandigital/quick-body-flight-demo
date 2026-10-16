@@ -44,6 +44,9 @@ import { resolveServerUrl } from "../runtime/resolveServerUrl";
 import { isLocalMode, localAutoJoin, localLanternAdd } from "../runtime/localWorlds";
 import { BodyFlightControls } from "../input/bodyControls";
 import { FlightTuner } from "../input/flightTuner";
+import { RowingControls } from "../input/rowControls";
+import { RowingHUD } from "../ui/RowingHUD";
+import { createOceanCourse, assistTurnRate, clearWaterFrac, ShoreGuard, type Waterway } from "./Waterway";
 import { isMobile } from "../utils/isMobile";
 import { StateSync } from "../network/StateSync";
 import { RemotePlaneManager } from "./RemotePlane";
@@ -451,6 +454,17 @@ export class Game {
   /** BodyArcade: body input as a parallel control source + its tuner. */
   private bodyControls: BodyFlightControls | null = null;
   private flightTuner: FlightTuner | null = null;
+  private rowingHUD: RowingHUD | null = null;
+  /** BodyArcade Rowing: stroke input for the boat + its water course. */
+  private rowingControls: RowingControls | null = null;
+  private waterway: Waterway | null = null;
+  private shoreGuard: ShoreGuard | null = null;
+  /** ?row: start straight onto the water on first lobby mount. */
+  private rowAutoStartPending = new URLSearchParams(window.location.search).has("row");
+  /** ?calm: eval hook — no water-spout twisters, no diamond speed spike.
+   *  Feel/closed-loop specs need deterministic water; live play keeps the
+   *  game's charm (twister spins and diamond boosts are features). */
+  private evalCalmWater = new URLSearchParams(window.location.search).has("calm");
   private tunerPrevHeading = 0;
   private headingRateDegS = 0;
   /** Eval only (?record-intents=1): per-tick inputs + live pose for replay. */
@@ -825,15 +839,21 @@ export class Game {
   /** BodyArcade: body-input source, tuner ("b"), and the __FLIGHT eval handle. */
   private initBodyInput() {
     this.bodyControls = new BodyFlightControls();
-    this.flightTuner = new FlightTuner(this.bodyControls, () => {
-      if (!this.localPlayer || this.gamePhase !== "flying") return null;
-      return {
-        headingRateDegS: this.headingRateDegS,
-        speed: this.localPlayer.speed,
-        altitude: this.localPlayer.altitude,
-        bankDeg: (this.localPlayer.bankAngle * 180) / Math.PI,
-      };
-    });
+    this.rowingControls = new RowingControls();
+    this.flightTuner = new FlightTuner(
+      this.bodyControls,
+      () => {
+        if (!this.localPlayer || this.gamePhase !== "flying") return null;
+        return {
+          headingRateDegS: this.headingRateDegS,
+          speed: this.localPlayer.speed,
+          altitude: this.localPlayer.altitude,
+          bankDeg: (this.localPlayer.bankAngle * 180) / Math.PI,
+        };
+      },
+      this.rowingControls,
+      () => this.localPlayer instanceof Boat,
+    );
     window.addEventListener("keydown", this.onTunerKey);
 
     (window as unknown as { __FLIGHT: unknown }).__FLIGHT = {
@@ -849,6 +869,11 @@ export class Game {
           vehicle: this.localPlayer.vehicle,
           worldSlug: this.worldSlug,
           controlsEnabled: this.controls?.enabled ?? false,
+          // world position (specs: displacement / stuck detection)
+          pos: ((): [number, number, number] => {
+            const e = this.localPlayer!.group.matrix.elements;
+            return [e[12]!, e[13]!, e[14]!];
+          })(),
           introActive: this.introActive,
           running: this.running,
           gameTime: this.gameTime,
@@ -857,6 +882,26 @@ export class Game {
       body: () => this.bodyControls?.debugState() ?? null,
       setProfile: (id: string) => this.bodyControls?.setProfile(id) ?? false,
       setAssist: (id: string) => this.bodyControls?.setAssist(id) ?? false,
+      // BodyArcade Rowing: eval/spec handles
+      row: () => this.rowingControls?.debugState() ?? null,
+      rowSample: () =>
+        this.localPlayer instanceof Boat && this.waterway
+          ? this.waterway.sample(this.localPlayer.qPosition)
+          : null,
+      setRowProfile: (id: string) => this.rowingControls?.setProfile(id) ?? false,
+      setRowAssist: (id: string) => this.rowingControls?.setAssist(id) ?? false,
+      /** Diagnostic: fraction of arcWorld ahead at heading+offset that is
+       *  clear water (1 = clear). Specs use it to find a shoreline. */
+      landProbe: (headingOffset: number, arcWorld: number) => {
+        if (!(this.localPlayer instanceof Boat) || !this.worldConfig) return null;
+        return clearWaterFrac(
+          this.worldConfig.seed,
+          this.worldConfig.terrainType ?? "default",
+          this.localPlayer.qPosition,
+          this.localPlayer.heading + headingOffset,
+          arcWorld / (this.worldConfig.globeRadius ?? 5),
+        );
+      },
       /**
        * Eval: replay a recorded intent tape through a fresh REAL Plane
        * seeded with the recorded snapshot — the replay-tolerance check.
@@ -956,7 +1001,7 @@ export class Game {
       this.localPlayer instanceof Carpet ||
       this.localPlayer instanceof Boat
     ) {
-      this.localPlayer.speedBoost();
+      if (!this.evalCalmWater) this.localPlayer.speedBoost();
       const boostPick =
         SPEED_BOOST_SFX_IDS[Math.floor(Math.random() * SPEED_BOOST_SFX_IDS.length)]!;
       this.audioManager.playSFX(boostPick, SPEED_BOOST_SFX_VOLUME);
@@ -973,43 +1018,54 @@ export class Game {
       onNameChange: (name) => { this.playerName = name; ProgressionManager.savePlayerName(name); },
       onPlay: (vehicle, options) => {
         if (!ProgressionManager.isVehicleUnlocked(vehicle)) return;
-        this.runFreeplayMode = !!options?.freeplay;
-        this.pendingCampsiteAfterIntro =
-          CAMPSITE_HOME_ENABLED && (options?.startAtCampsite ?? false);
-        this.playerVehicle = vehicle;
-        this.audioManager.startMusic();
-        void this.audioManager.loadSFX("crickets_loop", "/audio/sfx/crickets_loop.mp3").then(() => {
-          this.audioManager.startLoop("crickets_loop", 0);
-        });
-        void this.audioManager.loadSFX(RAIN_LOOP_NAME, "/audio/sfx/rain_1.mp3").then(() => {
-          this.audioManager.startLoop(RAIN_LOOP_NAME, 0);
-        });
-        void this.audioManager.loadSFX(BIRDS_LOOP_NAME, "/audio/sfx/birds_chirp_1.mp3").then(() => {
-          this.audioManager.startLoop(BIRDS_LOOP_NAME, 0);
-        });
-        void this.audioManager.loadSFX(RUMBLE_LOOP_NAME, "/audio/sfx/rumbling_1.mp3").then(() => {
-          this.audioManager.startLoop(RUMBLE_LOOP_NAME, 0);
-        });
-        void this.audioManager.loadSFX(MOONSTONE_RUMBLE_LOOP_NAME, "/audio/sfx/rumble.mp3").then(() => {
-          this.audioManager.startLoop(MOONSTONE_RUMBLE_LOOP_NAME, 0);
-        });
-        void this.audioManager.loadSFX("twister", "/audio/sfx/twister.mp3").then(() => {
-          this.audioManager.startLoop("twister", 0);
-        });
-        void this.audioManager.loadSFX(EXPLOSION_SFX_NAME, "/audio/sfx/explosion_1.mp3");
-        for (const id of LANTERN_COLLECT_SFX_IDS) {
-          void this.audioManager.loadSFX(id, `/audio/sfx/${id}.mp3`);
-        }
-        for (const id of JELLYFISH_COLLECT_SFX_IDS) {
-          void this.audioManager.loadSFX(id, `/audio/sfx/${id}.mp3`);
-        }
-        this.lobby.fadeOut(() => {
-          this.lobby.dispose();
-          this.startGame(vehicle);
-        });
+        this.beginPlay(vehicle, options);
       },
     });
     this.lobby.show();
+    // BodyArcade Rowing (?row): straight onto the water — a session-only
+    // demo/eval entry; unlock progression is neither read nor written.
+    if (this.rowAutoStartPending) {
+      this.rowAutoStartPending = false;
+      this.beginPlay("boat", undefined);
+    }
+  }
+
+  /** Shared start path for the lobby's GO and the ?row direct entry. */
+  private beginPlay(vehicle: Vehicle, options?: { freeplay?: boolean; startAtCampsite?: boolean }) {
+    this.runFreeplayMode = !!options?.freeplay;
+    this.pendingCampsiteAfterIntro =
+      CAMPSITE_HOME_ENABLED && (options?.startAtCampsite ?? false);
+    this.playerVehicle = vehicle;
+    this.audioManager.startMusic();
+    void this.audioManager.loadSFX("crickets_loop", "/audio/sfx/crickets_loop.mp3").then(() => {
+      this.audioManager.startLoop("crickets_loop", 0);
+    });
+    void this.audioManager.loadSFX(RAIN_LOOP_NAME, "/audio/sfx/rain_1.mp3").then(() => {
+      this.audioManager.startLoop(RAIN_LOOP_NAME, 0);
+    });
+    void this.audioManager.loadSFX(BIRDS_LOOP_NAME, "/audio/sfx/birds_chirp_1.mp3").then(() => {
+      this.audioManager.startLoop(BIRDS_LOOP_NAME, 0);
+    });
+    void this.audioManager.loadSFX(RUMBLE_LOOP_NAME, "/audio/sfx/rumbling_1.mp3").then(() => {
+      this.audioManager.startLoop(RUMBLE_LOOP_NAME, 0);
+    });
+    void this.audioManager.loadSFX(MOONSTONE_RUMBLE_LOOP_NAME, "/audio/sfx/rumble.mp3").then(() => {
+      this.audioManager.startLoop(MOONSTONE_RUMBLE_LOOP_NAME, 0);
+    });
+    void this.audioManager.loadSFX("twister", "/audio/sfx/twister.mp3").then(() => {
+      this.audioManager.startLoop("twister", 0);
+    });
+    void this.audioManager.loadSFX(EXPLOSION_SFX_NAME, "/audio/sfx/explosion_1.mp3");
+    for (const id of LANTERN_COLLECT_SFX_IDS) {
+      void this.audioManager.loadSFX(id, `/audio/sfx/${id}.mp3`);
+    }
+    for (const id of JELLYFISH_COLLECT_SFX_IDS) {
+      void this.audioManager.loadSFX(id, `/audio/sfx/${id}.mp3`);
+    }
+    this.lobby.fadeOut(() => {
+      this.lobby.dispose();
+      this.startGame(vehicle);
+    });
   }
 
   /**
@@ -1487,8 +1543,15 @@ export class Game {
     this.playerVehicle = vehicle;
     this.vehicleFeatures = getVehicleFeatures(vehicle);
 
+    // Test/eval hook (?spawn=<int>): deterministic spawn — the rowing specs
+    // pin an open-water salt so shore-guard interference near random
+    // coastal spawns can't confound feel measurements (same house pattern
+    // as ?autostart / ?record-intents).
+    const spawnOverride = new URLSearchParams(window.location.search).get("spawn");
     const spawnSessionSalt =
-      (Date.now() ^ ((Math.random() * 0xffffffff) | 0) ^ (seed * 7919)) >>> 0;
+      spawnOverride !== null && Number.isFinite(Number(spawnOverride))
+        ? Number(spawnOverride) >>> 0
+        : (Date.now() ^ ((Math.random() * 0xffffffff) | 0) ^ (seed * 7919)) >>> 0;
 
     this.progression = new ProgressionManager(vehicle);
     this.progression.restore();
@@ -1524,6 +1587,17 @@ export class Game {
 
     if (vehicle === "boat") {
       this.localPlayer = new Boat(globeRadius, seed, terrainType, hullColor, spawnSessionSalt);
+      // BodyArcade Rowing: generate the procedural open-water course from
+      // the spawn (the Waterway seam — real waterway data plugs in here).
+      this.waterway = createOceanCourse(
+        seed, terrainType, this.localPlayer.qPosition, this.localPlayer.heading, globeRadius,
+      );
+      // ?noguard: spec isolation hook — feel/physics specs measure the
+      // steering model without the safety net; the guard keeps its own
+      // adversarial spec plus both closed-loop integration specs.
+      if (!new URLSearchParams(window.location.search).has("noguard")) {
+        this.shoreGuard = new ShoreGuard(seed, terrainType, globeRadius);
+      }
     } else if (vehicle === "carpet") {
       this.localPlayer = new Carpet(globeRadius, seed, terrainType, spawnSessionSalt, hullColor);
     } else {
@@ -1949,8 +2023,10 @@ export class Game {
       this.fireflyClusters.push(new FireflyCluster(this.scene, globeRadius, seed, terrainType, fi));
     }
 
-    this.waterSpouts = new WaterSpouts(this.globe, seed);
-    this.scene.add(this.waterSpouts.group);
+    if (!this.evalCalmWater) {
+      this.waterSpouts = new WaterSpouts(this.globe, seed);
+      this.scene.add(this.waterSpouts.group);
+    }
 
     this.ensureBraziersSpawned();
     this.restorePlayerWorldState();
@@ -3485,7 +3561,137 @@ export class Game {
     }
     // Body input merges here — the single point it enters the intent layer.
     // Keyboard/touch activity always wins (see BodyFlightControls.merge).
-    if (this.bodyControls && this.controls.enabled) {
+    // The boat is rowed (stroke impulses via RowingControls); plane/carpet
+    // keep the Gate-2-approved flight controller untouched.
+    if (this.rowingControls && this.localPlayer instanceof Boat && this.controls.enabled) {
+      const boat = this.localPlayer;
+      const merged = this.rowingControls.merge(inputState);
+      const bodyOwns = this.rowingControls.bodyActive;
+      // Rowing feedback strip (Gate-2 round-2): stroke pulse, cadence,
+      // steering, plain-language signal guidance — always on for the boat
+      if (this.gamePhase === "flying" && this.hud) {
+        if (!this.rowingHUD) this.rowingHUD = new RowingHUD(this.hud.root);
+        this.rowingHUD.setVisible(true);
+        this.rowingHUD.update(this.rowingControls.debugState());
+      } else {
+        this.rowingHUD?.setVisible(false);
+      }
+      boat.rowGlide = bodyOwns;
+      boat.rowSustain = bodyOwns && this.rowingControls.cruising;
+      if (this.gamePhase === "flying") {
+        for (const strength of this.rowingControls.consumeStrokes()) {
+          boat.rowStroke(strength);
+        }
+      } else {
+        this.rowingControls.consumeStrokes();
+      }
+      // GATE-2 handling fix (live 360°-pivot + idle-drift report): the
+      // corrections (Full-Assist course-follow + shore guard) are summed
+      // separately, vanish on a boat with no way, and the WHOLE rowing yaw
+      // is speed-coupled — a boat carves through the water, it never
+      // pivots in place. The keyboard path (merge returned kb) is never
+      // touched: upstream boat steering stays byte-identical.
+      const kbOwns = this.rowingControls.keyboardOwns;
+      if (!kbOwns && this.gamePhase === "flying") {
+        // shore guard first: while it is escaping an island, course-follow
+        // must yield — otherwise it steers straight back into the island
+        // just escaped (measured: a speed-zero oscillation trap).
+        let hazard = 0;
+        let escape = 0;
+        let escaping = false;
+        let ttlS = Infinity;
+        if (this.shoreGuard) {
+          const g = this.shoreGuard.steer(
+            boat.qPosition, boat.heading, boat.speed, performance.now(),
+            boat.moveBlocked,
+          );
+          hazard = g.hazard;
+          escape = g.turnBias;
+          escaping = g.escaping;
+          ttlS = g.ttlS;
+        }
+        let corrections = 0;
+        let cornerLevel = 0;
+        // GATE-2 round-2 fix (live report): the coxswain must never
+        // out-steer the rower. assistTurnRate reaches ±0.55 while a gentle
+        // lean through the expo profile reads ~0.12, so Full Assist felt
+        // like "leaning left still drifts right" — deliberate steering
+        // (lean or stroke asymmetry, measured on the INPUT axes) silences
+        // the course-follow pull and the corner brake, and hands-off
+        // restores them (autopilot keeps corridor-holding). The shore
+        // guard is deliberately NOT scaled by intent: safety keeps
+        // outranking authority.
+        const userIntent = this.rowingControls.steeringIntent;
+        if (bodyOwns && this.rowingControls.assist.courseFollow && this.waterway) {
+          const sample = this.waterway.sample(boat.qPosition);
+          const R = this.worldConfig?.globeRadius ?? 5;
+          let follow = assistTurnRate(sample, boat.heading, R);
+          // Never FIGHT an active escape (that was the speed-zero
+          // oscillation trap) — but keep following the line otherwise:
+          // blanket suppression while any hazard existed left the boat
+          // off-corridor half the run on island-dense water (measured
+          // inBand 0.49).
+          if (escaping && escape !== 0 && Math.sign(follow) !== Math.sign(escape)) {
+            follow = 0;
+          }
+          corrections += follow * (1 - userIntent);
+          // coxswain: brake into corners the boat cannot follow at speed
+          let need = sample.aheadHeading - boat.heading;
+          while (need > Math.PI) need -= Math.PI * 2;
+          while (need < -Math.PI) need += Math.PI * 2;
+          // a brake must release as the boat slows or it parks the boat at
+          // the corner forever (a slow boat can already make any turn) —
+          // and it yields to deliberate steering like the course pull does
+          cornerLevel =
+            Math.min(1, Math.max(0, (Math.abs(need) - 0.7) / 1.3)) *
+            Math.min(1, boat.speedRatio / 0.5) *
+            (1 - userIntent);
+        }
+        const assistId = this.rowingControls.assist.id;
+        const guardGain = assistId === "full" ? 1 : assistId === "standard" ? 0.6 : 0.3;
+        if (boat.speed < 0.04) corrections = 0; // no way, no helm authority
+        const way = 0.12 + 0.88 * Math.min(1, boat.speedRatio / 0.55);
+        let turn = (merged.turnRate + corrections) * way;
+        if (this.shoreGuard && (hazard > 0 || boat.moveBlocked)) {
+          // Guard authority ramps with hazard: a distance bias first, then a
+          // proportional takeover of the helm as land nears. Deliberately
+          // NOT way-scaled — a slow boat still needs its safety net (the
+          // first cut way-scaled it and drag+weak-turn deadlocked against
+          // the shore, the exact trap loop Gate 2 warned about). Actual
+          // CONTACT (the land gate rejected the last step) is a full
+          // takeover at every assist level: safety outranks authority once
+          // the hull is touching.
+          const takeover = boat.moveBlocked
+            ? 1
+            : Math.min(1, Math.max(0, (hazard - 0.5) / 0.4)) * guardGain;
+          const escapeTurn = boat.moveBlocked && escape === 0 ? 1 : escape;
+          turn = turn * (1 - takeover) + escapeTurn * (boat.moveBlocked ? 1 : guardGain);
+        }
+        // near-contact only: shed way softly (never while already slow —
+        // the escape turn needs what little way is left)
+        // Graded approach drag: ramps in from hazard 0.5 so a full-speed
+        // head-on approach actually softens before the bow touches; full
+        // strength at contact. Zero when the guard is disabled or the
+        // boat is already slow (the escape turn needs the remaining way).
+        // brake on TIME margin (< 1.2 s to land), not probe fraction — the
+        // same margin at every speed, so cruising past headlands never
+        // suppresses the fast cadences (a speed-scaled criterion did)
+        const shoreLevel =
+          this.shoreGuard && boat.speed > 0.1
+            ? boat.moveBlocked
+              ? 1
+              : Math.min(1, Math.max(0, (1.2 - ttlS) / 1.2))
+            : 0;
+        // corner braking stays below the surge-hold threshold (0.6): it
+        // slows the boat into bends but never blocks propulsion — only
+        // real land proximity may do that
+        boat.rowShoreDrag = Math.max(shoreLevel, Math.min(cornerLevel * 0.8, 0.55));
+        merged.turnRate = Math.max(-1.2, Math.min(1.2, turn));
+      } else {
+        boat.rowShoreDrag = 0;
+      }
+      inputState = merged;
+    } else if (this.bodyControls && this.controls.enabled) {
       const merged = this.bodyControls.merge(inputState);
       // Profile boost gesture (hands forward, hysteresis + refractory in
       // BodyFlightControls) rides the same boost path as ring pickups.
@@ -7206,6 +7412,12 @@ export class Game {
     this.touchControls?.dispose();
     this.bodyControls?.dispose();
     this.bodyControls = null;
+    this.rowingControls?.dispose();
+    this.rowingControls = null;
+    this.rowingHUD?.dispose();
+    this.rowingHUD = null;
+    this.waterway = null;
+    this.shoreGuard = null;
     this.flightTuner?.dispose();
     this.flightTuner = null;
     window.removeEventListener("keydown", this.onTunerKey);

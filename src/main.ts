@@ -23,17 +23,20 @@ import { createGhostPlayer } from './memory/ghost';
 import { saveLoop, listLoops, loadLoop, deleteLoop } from './memory/store';
 import { createIntentDetector } from './gesture/intent';
 import { createBodyInputAdapter, type BodyInputAdapter } from './bodyinput/adapter';
-import { openFlight } from './bodyinput/flightBridge';
+import type { BodyTracking, TrackingState } from '@bodyarcade/body-input';
+import { openFlight, defaultFlightUrl } from './bodyinput/flightBridge';
 import { createDirector } from './director/director';
 import { TAKE_SCRIPTS } from './director/scripts';
 import type { HandPuppetId } from './hand/types';
-import { createPanel } from './ui/panel';
+import { createPanel, updatePpcStates } from './ui/panel';
 import { config, onConfigChange, setConfig } from './config';
 import { createDetector, type ModelVariant } from './pose/detector';
 import { drawSkeleton } from './overlay/skeleton';
 import { LM } from './pose/indices';
 import { mirrorNorm, mirrorWorld } from './pose/mirror';
 import { LandmarkSmoother } from './pose/smoothing';
+import { PoseContinuity } from './pose/continuity';
+import { MASKS, createMasker } from './eval/masks';
 import type { LandmarkPoint, PoseFrame } from './pose/types';
 import { createRobot } from './rig/robot';
 import { Retargeter } from './rig/retarget';
@@ -131,6 +134,7 @@ async function boot() {
   const isAvatarVisualReview = smokeMode === 'avatar-visual-review';
   const isGeneratedOnlyMode = isAvatarLoadOnly || isAvatarVisualReview;
   if (params.has('mirror')) config.mirror = params.get('mirror') !== '0';
+  if (params.has('ppc')) config.ppc = params.get('ppc') !== '0'; // eval A/B, not persisted
   if (params.has('body')) config.bodyMode = params.get('body') === 'full' ? 'full' : 'upper';
   if (params.has('mode')) config.mode = params.get('mode') === 'hand' ? 'hand' : 'character';
   if (params.has('puppet')) {
@@ -616,12 +620,22 @@ async function boot() {
   smoother.setParams(config.minCutoff, config.beta);
   smoother.enabled = config.smoothing;
 
+  // Predictive Pose Continuity: sits at the fork so puppeteering AND
+  // body-input inherit it; exact pass-through while landmarks are visible
+  const continuity = new PoseContinuity();
+  continuity.enabled = config.ppc;
+
   onConfigChange((key) => {
     if (key === 'minCutoff' || key === 'beta') smoother.setParams(config.minCutoff, config.beta);
     if (key === 'smoothing') smoother.enabled = config.smoothing;
+    if (key === 'ppc') {
+      continuity.enabled = config.ppc;
+      continuity.reset();
+    }
     if (key === 'mirror') {
       setMirrored(els, config.mirror);
       smoother.reset();
+      continuity.reset();
       retargeter.bind(avatar);
     }
   });
@@ -765,6 +779,7 @@ async function boot() {
         hud.setLive(true);
         hud.setCam(`LIVE ${video.videoWidth}×${video.videoHeight}`);
         smoother.reset();
+        continuity.reset();
         layoutOverlay(els);
       });
     } else {
@@ -780,6 +795,7 @@ async function boot() {
       hud.setLive(false);
       hud.setCam(`FILE ${video.videoWidth}×${video.videoHeight}`);
       smoother.reset();
+      continuity.reset();
       layoutOverlay(els);
     });
   };
@@ -943,6 +959,29 @@ async function boot() {
     const target = ev.target as Element | null;
     if (target?.closest('#fly-btn')) startFlight();
   });
+
+  // BodyArcade Rowing entry: same game, boat vehicle, stroke input —
+  // ?row starts straight on the water (companion mode identical to Fly).
+  const rowUrl = () => {
+    const base = defaultFlightUrl();
+    return `${base}${base.includes('?') ? '&' : '?'}row`;
+  };
+  // Rowing keeps the FULL pose model (unlike Fly): stroke detection reads
+  // wrist DEPTH, and the lite model's z collapses when the hands work near
+  // the frame edge — measured on the chest-up seated crop: cycle amplitude
+  // 0.112 arm lengths under lite (below the 0.15 stroke bar, 2/13 strokes)
+  // vs 0.252 under full (13/13). Gate-2 live seated propulsion died exactly
+  // this way. The stage stays suspended — that is the real GPU budget win;
+  // Fly's torso-scale axes are robust to lite and keep it (approved feel).
+  const startRow = () =>
+    openFlight(
+      bodyInput,
+      {
+        setStageSuspended: (v) => stage.setSuspended(v),
+      },
+      rowUrl(),
+    );
+  document.getElementById('row-btn')?.addEventListener('click', startRow);
 
   // ── recording director: guided takes, hands-free via the gesture seed ──
   let latestNorm: LandmarkPoint[] | null = null;
@@ -1168,6 +1207,8 @@ async function boot() {
     { id: 'autocam', label: 'auto-director camera · toggle', run: toggleCmd2('autoCam') },
     { id: 'fly', label: 'fly · bodyarcade flight (body streams into the game)',
       run: () => startFlight() },
+    { id: 'row', label: 'row · bodyarcade rowing (strokes drive the boat)',
+      run: () => startRow() },
     { id: 'body-tuner', label: 'body input · tuner overlay', key: 'b',
       run: () => {
         let host = document.getElementById('bi-tuner-host');
@@ -1201,28 +1242,102 @@ async function boot() {
   const mNorm: LandmarkPoint[] = [];
   const mWorld: LandmarkPoint[] = [];
 
+  // per-limb PPC states → body-input signal (additive tracking block);
+  // reused object, refreshed per pose frame
+  const ppcTracking: BodyTracking = {
+    torso: 'visible', head: 'visible', leftArm: 'visible',
+    rightArm: 'visible', leftLeg: 'visible', rightLeg: 'visible',
+  };
+  function currentTracking(): BodyTracking {
+    for (const s of continuity.states()) {
+      ppcTracking[s.name] = s.state.toLowerCase() as TrackingState;
+    }
+    return ppcTracking;
+  }
+
+  // PPC eval harness: ?mask=<spec> applies deterministic synthetic occlusion
+  // windows (keyed on video time) between mirroring and continuity — the
+  // same frame provides ground truth for the masked-run metrics
+  const maskName = params.get('mask');
+  const masker = maskName && MASKS[maskName] ? createMasker(MASKS[maskName]) : null;
+  if (maskName && !masker) console.warn(`unknown mask spec: ${maskName}`);
+  const lmTrace: object[] | null = params.has('lmtrace') ? [] : null;
+  if (lmTrace) (window as unknown as { __LMTRACE: object[] }).__LMTRACE = lmTrace;
+
   function onPoseFrame(frame: PoseFrame | null) {
+    // the camera overlay always draws the RAW detection — predicted
+    // landmarks never appear over the real video (honesty line)
+    drawSkeleton(overlayCtx, frame ? frame.norm : null, overlay.width, overlay.height);
+
+    const tMs = frame ? frame.wallTimeMs : performance.now();
+    let world: LandmarkPoint[] | null = null;
+    let norm: LandmarkPoint[] | null = null;
     if (frame) {
       window.__PP.lastDetectionAt = frame.wallTimeMs;
       window.__PP.detectionCount++;
-      drawSkeleton(overlayCtx, frame.norm, overlay.width, overlay.height);
+      norm = config.mirror ? mirrorNorm(frame.norm, mNorm) : frame.norm;
+      world = config.mirror ? mirrorWorld(frame.world, mWorld) : frame.world;
+    }
 
-      const norm = config.mirror ? mirrorNorm(frame.norm, mNorm) : frame.norm;
-      const world = config.mirror ? mirrorWorld(frame.world, mWorld) : frame.world;
-      const worldSmooth = smoother.apply(world, frame.wallTimeMs);
-      retargeter.updateFromPose(worldSmooth, norm, frame.wallTimeMs);
-      poseRing.push(encodePoseFrame(worldSmooth, norm, frame.wallTimeMs));
-      latestNorm = norm;
-      intents.onLandmarks(norm, frame.wallTimeMs);
-      bodyInput.onPoseFrame(world, norm, frame.wallTimeMs);
-      evalCollector?.onPoseFrame(norm);
+    // diagnostic trace (?lmtrace=1): raw pre-PPC landmark behavior for the
+    // wrists/elbows — used to characterize what the detector really emits
+    // during behind-torso occlusion (bounded; eval/debug only)
+    if (lmTrace && world && frame) {
+      const g = (i: number) => ({
+        v: Math.round(world![i].visibility * 100) / 100,
+        x: Math.round(world![i].x * 1000) / 1000,
+        y: Math.round(world![i].y * 1000) / 1000,
+        z: Math.round(world![i].z * 1000) / 1000,
+      });
+      if (lmTrace.length < 6000) {
+        lmTrace.push({ t: Math.round(frame.videoTimeMs), lw: g(15), rw: g(16), le: g(13), re: g(14) });
+      }
+    }
+
+    const truthWorld = world;
+    const truthNorm = norm;
+    let masked: number[] = [];
+    let maskDropped = false;
+    if (masker && world && norm && frame) {
+      const mr = masker.apply(world, norm, frame.videoTimeMs);
+      world = mr.world;
+      norm = mr.norm;
+      masked = mr.masked;
+      maskDropped = mr.dropped;
+    }
+
+    // Predictive Pose Continuity: may briefly carry the stream through an
+    // occlusion (≤ 400 ms, decaying confidence) or synthesize through a
+    // short full dropout; null once faded — every consumer inherits it
+    const cont = continuity.apply(world, norm, tMs);
+
+    if (cont) {
+      const worldSmooth = smoother.apply(cont.world, tMs);
+      retargeter.updateFromPose(worldSmooth, cont.norm, tMs);
+      poseRing.push(encodePoseFrame(worldSmooth, cont.norm, tMs));
+      latestNorm = cont.norm;
+      intents.onLandmarks(cont.norm, tMs);
+      bodyInput.onPoseFrame(cont.world, cont.norm, tMs, config.ppc ? currentTracking() : undefined);
     } else {
-      drawSkeleton(overlayCtx, null, overlay.width, overlay.height);
       retargeter.updateFromPose(null, null);
       latestNorm = null;
-      intents.onLandmarks(null, performance.now());
-      bodyInput.onPoseFrame(null, null, performance.now());
-      evalCollector?.onPoseFrame(null);
+      intents.onLandmarks(null, tMs);
+      bodyInput.onPoseFrame(null, null, tMs, config.ppc ? currentTracking() : undefined);
+    }
+
+    // detection honesty: a synthesized dropout frame is NOT a detection.
+    // Masked runs sample sync against the TRUTH stream — the metric is
+    // "did the puppet keep matching the real person while blind"
+    if (masker) {
+      evalCollector?.onPoseFrame(frame ? truthNorm : null);
+      if (frame && truthWorld && truthNorm) {
+        evalCollector?.onPpcFrame(
+          masker.spec.name, config.ppc, truthWorld, truthNorm, cont?.world ?? null,
+          masked, maskDropped, continuity.states(),
+        );
+      }
+    } else {
+      evalCollector?.onPoseFrame(frame && cont ? cont.norm : null);
     }
   }
 
@@ -1370,6 +1485,7 @@ async function boot() {
       hud.setPoseFps(config.mode === 'hand' ? handMode.handFps() : detector.poseFps());
       hud.setRig(config.mode === 'hand' ? (handMode.lastDetectionAt() > 0 ? 1 : 0) : retargeter.activeBoneCount());
       hud.tick(window.__PP.lastDetectionAt, window.__PP.videoReady);
+      updatePpcStates(continuity.states());
       visibilityCoach(performance.now());
 
       const fps = detector.poseFps();

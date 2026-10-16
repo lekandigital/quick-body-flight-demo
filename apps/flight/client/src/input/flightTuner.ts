@@ -1,5 +1,6 @@
 import type { BodyFlightControls } from "./bodyControls";
 import { BODY_PROFILES } from "./bodyControls";
+import type { RowingControls } from "./rowControls";
 
 /**
  * BodyArcade original: flight-side control tuner overlay.
@@ -36,9 +37,16 @@ export class FlightTuner {
   private notesEl: HTMLElement | null = null;
   private recenterEl: HTMLElement | null = null;
 
+  private rowStatusEl: HTMLElement | null = null;
+  private rowBadgeEl: HTMLElement | null = null;
+  private rowProfileBtn: HTMLButtonElement | null = null;
+  private rowAssistBtn: HTMLButtonElement | null = null;
+
   constructor(
     private body: BodyFlightControls,
     private getPlaneResponse: () => PlaneResponse | null,
+    private row?: RowingControls,
+    private isBoat?: () => boolean,
   ) {
     this.loadGains();
   }
@@ -237,6 +245,47 @@ export class FlightTuner {
       el.appendChild(row);
     }
 
+    // BodyArcade Rowing: stroke readout + rowing profile/assist (boat only).
+    if (this.row) {
+      mkSection("rowing (boat)");
+      const rowBtns = document.createElement("div");
+      Object.assign(rowBtns.style, { display: "flex", gap: "6px", margin: "2px 0 4px" });
+      const mkRowBtn = (onClick: () => void) => {
+        const b = document.createElement("button");
+        Object.assign(b.style, {
+          font: "inherit",
+          color: "inherit",
+          background: "rgba(90, 200, 170, 0.2)",
+          border: "1px solid rgba(140, 230, 200, 0.4)",
+          borderRadius: "4px",
+          padding: "2px 8px",
+          cursor: "pointer",
+        } as CSSStyleDeclaration);
+        b.onclick = onClick;
+        rowBtns.appendChild(b);
+        return b;
+      };
+      this.rowProfileBtn = mkRowBtn(() => this.row!.cycleProfile());
+      this.rowAssistBtn = mkRowBtn(() => this.row!.cycleAssist());
+      el.appendChild(rowBtns);
+      // Gate-2 feedback: the one busy text line buried CRUISE — the row
+      // STATE gets a big steady badge; details go on a dimmer second line.
+      this.rowBadgeEl = document.createElement("div");
+      Object.assign(this.rowBadgeEl.style, {
+        margin: "0 0 4px",
+        padding: "5px 8px",
+        textAlign: "center",
+        fontWeight: "700",
+        letterSpacing: "0.12em",
+        borderRadius: "4px",
+        background: "rgba(120, 160, 220, 0.15)",
+      } as CSSStyleDeclaration);
+      el.appendChild(this.rowBadgeEl);
+      this.rowStatusEl = document.createElement("div");
+      this.rowStatusEl.style.opacity = "0.75";
+      el.appendChild(this.rowStatusEl);
+    }
+
     this.responseEl = document.createElement("div");
     this.responseEl.style.marginTop = "8px";
     el.appendChild(this.responseEl);
@@ -334,6 +383,45 @@ export class FlightTuner {
     setBar("turnRate", d.intent.turnRate / Math.max(0.001, d.profile.turnGain), true);
     setBar("speedAxis", d.intent.speedAxis, true);
     setBar("elevateAxis", d.intent.elevateAxis, true);
+
+    if (this.row && this.rowStatusEl && this.rowBadgeEl) {
+      const rd = this.row.debugState();
+      const boat = this.isBoat?.() ?? false;
+      if (this.rowProfileBtn) this.rowProfileBtn.textContent = `${rd.profile.label} ⇄`;
+      if (this.rowAssistBtn) this.rowAssistBtn.textContent = `${rd.assist.label} ⇄`;
+      // one steady word for the state that matters, color-coded
+      let badge: string;
+      let color: string;
+      if (!boat) {
+        badge = "NOT IN THE BOAT";
+        color = "#9fb4d8";
+      } else if (rd.reason === "keyboard") {
+        badge = "KEYBOARD";
+        color = "#cfe4ff";
+      } else if (rd.reason === "autopilot" || rd.reason === "no-signal") {
+        badge = "AUTOPILOT — DRIFTING";
+        color = "#f0b46a";
+      } else if (rd.reason === "reacquiring" || rd.reason === "low-confidence") {
+        badge = "REACQUIRING";
+        color = "#f0b46a";
+      } else if (rd.cruiseHolding) {
+        badge = "CRUISE — RESTING";
+        color = "#8fe3c0";
+      } else if (rd.strokeRate > 0.05) {
+        badge = `ROWING ${rd.strokeRate.toFixed(2)} Hz`;
+        color = "#8fe3c0";
+      } else {
+        badge = "IDLE — GLIDING";
+        color = "#9fb4d8";
+      }
+      this.rowBadgeEl.textContent = badge;
+      this.rowBadgeEl.style.color = color;
+      this.rowStatusEl.textContent = boat
+        ? `amp L ${rd.ampL.toFixed(2)} R ${rd.ampR.toFixed(2)} · ` +
+          `turn ${rd.turnRate >= 0 ? "+" : ""}${rd.turnRate.toFixed(2)}` +
+          `${rd.cruiseArmed && !rd.cruiseHolding ? " · cruise armed" : ""}`
+        : "";
+    }
 
     if (this.responseEl) {
       const r = this.getPlaneResponse();
