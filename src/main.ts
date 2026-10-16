@@ -29,6 +29,8 @@ import { openFlight, defaultFlightUrl, activeExperience } from './bodyinput/flig
 import { glassifyAll, watchGlass, upgradeControls } from '@bodyarcade/glass';
 import { createLink } from './ui/link';
 import { asset } from './base';
+import { BACKGROUNDS, backgroundById, randomBackgroundId } from './stage/backgrounds';
+import { createBackgroundPicker } from './ui/backgroundPicker';
 import { createDirector } from './director/director';
 import { TAKE_SCRIPTS } from './director/scripts';
 import type { HandPuppetId } from './hand/types';
@@ -226,6 +228,12 @@ async function boot() {
   const receipt = createReceipt();
   const stage = createStage(stageCanvas);
   stage.setTheme(config.theme);
+  // a different 3D background every load (?bg=<id> pins one; ?bg=sky = the grid)
+  const bgParam = params.get('bg');
+  const backgrounds = createBackgroundPicker(
+    stage,
+    bgParam && (bgParam === 'sky' || backgroundById(bgParam)) ? bgParam : randomBackgroundId(),
+  );
   onConfigChange((key) => {
     if (key === 'theme') stage.setTheme(config.theme);
   });
@@ -1293,6 +1301,9 @@ async function boot() {
     { id: 'help', label: 'help · how to use (onboarding)',
       run: () => onboarding.show() },
     { id: 'vfx', label: 'velocity vfx · toggle', run: toggleCmd2('vfx') },
+    { id: 'bg-next', label: 'background · next', key: 'n', run: () => backgrounds.next() },
+    { id: 'bg-sky', label: 'background · sky (moving grid)', run: () => backgrounds.pick('sky') },
+    ...BACKGROUNDS.map((b) => ({ id: `bg-${b.id}`, label: `background · ${b.label.toLowerCase()}`, run: () => backgrounds.pick(b.id) })),
     { id: 'autocam', label: 'auto-director camera · toggle', run: toggleCmd2('autoCam') },
     { id: 'fly', label: 'fly · bodyarcade flight (body streams into the game)',
       run: () => startFlight() },
@@ -1555,6 +1566,8 @@ async function boot() {
 
   let hudAccum = 0;
   stage.onTick((dt, time) => {
+    // background drift still moves the camera when the auto-director is off
+    if (!config.autoCam && cameraOwned === 0 && stage.hasDrift()) stage.applyFraming();
     if (config.mode === 'hand') {
       handMode.tick(dt, time);
     } else {

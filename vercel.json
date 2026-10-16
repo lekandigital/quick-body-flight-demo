@@ -1,0 +1,43 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci && npm --prefix apps/flight ci --workspace client --include-workspace-root",
+  "buildCommand": "node scripts/build-bodyarcade.mjs",
+  "outputDirectory": "deploy/bodyarcade-site",
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/bodyarcade",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/bodyarcade/(assets|flight/assets|backgrounds)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}

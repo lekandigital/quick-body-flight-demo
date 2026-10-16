@@ -3,6 +3,10 @@
 // HUD updates) via onTick.
 
 import * as THREE from 'three';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+import type { BackgroundDef } from './backgrounds';
+import { asset } from '../base';
 
 export interface Stage {
   scene: THREE.Scene;
@@ -27,6 +31,13 @@ export interface Stage {
   /** Resting camera for the current look + treatment (the auto-director,
    *  replay and poster moves are offsets from this). */
   framing(): { pos: THREE.Vector3; look: THREE.Vector3 };
+  /** Swap the 3D background (null = the CSS sky). Resolves once it shows. */
+  setBackground(def: BackgroundDef | null): Promise<void>;
+  backgroundId(): string | null;
+  /** the current background wants a slow camera drift */
+  hasDrift(): boolean;
+  /** put the camera on framing() now (drift without the auto-director) */
+  applyFraming(): void;
 }
 
 export function createStage(canvas: HTMLCanvasElement): Stage {
@@ -41,7 +52,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   scene.background = new THREE.Color(0x0e0f13);
   scene.fog = new THREE.Fog(0x0e0f13, 6, 14);
 
-  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 50);
+  // far plane covers the 3D backgrounds (sky sphere r = 400)
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 2000);
   camera.position.set(0, 1.3, 3.2);
   camera.lookAt(0, 1.0, 0);
 
@@ -168,6 +180,86 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     frameShowcaseCamera();
   }
 
+  // ── 3D backgrounds ────────────────────────────────────────────────────
+  const bgGroup = new THREE.Group();
+  bgGroup.name = 'background';
+  scene.add(bgGroup);
+  const loader = new GLTFLoader();
+  loader.setMeshoptDecoder(MeshoptDecoder);
+  const cache = new Map<string, Promise<GLTF>>();
+  const loadPart = (file: string) => {
+    if (!cache.has(file)) cache.set(file, loader.loadAsync(asset(`/backgrounds/${file}`)));
+    return cache.get(file)!;
+  };
+  let bgDef: BackgroundDef | null = null;
+  let bgToken = 0;
+  let mixers: THREE.AnimationMixer[] = [];
+  let spinners: Array<{ obj: THREE.Object3D; rate: number }> = [];
+
+  async function setBackground(def: BackgroundDef | null): Promise<void> {
+    const token = ++bgToken;
+    if (!def) {
+      bgGroup.clear();
+      mixers = [];
+      spinners = [];
+      bgDef = null;
+      applyBackdrop();
+      return;
+    }
+    const parts = await Promise.all(def.parts.map((p) => loadPart(p.file).then((g) => ({ p, g }))));
+    if (token !== bgToken) return; // a newer pick won
+    bgGroup.clear();
+    mixers = [];
+    spinners = [];
+    for (const { p, g } of parts) {
+      const root = g.scene;
+      root.scale.setScalar(p.scale);
+      root.position.set(...p.position);
+      root.rotation.set(0, ((p.rotationY ?? 0) * Math.PI) / 180, 0);
+      root.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        if (p.sky) {
+          mesh.frustumCulled = false;
+          mesh.renderOrder = -10;
+          for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+            m.side = THREE.BackSide;
+            m.depthWrite = false;
+          }
+        }
+      });
+      if (p.animate && g.animations.length) {
+        const mixer = new THREE.AnimationMixer(root);
+        for (const clip of g.animations) mixer.clipAction(clip).play();
+        mixers.push(mixer);
+      }
+      if (p.spin) spinners.push({ obj: root, rate: p.spin });
+      bgGroup.add(root);
+    }
+    bgDef = def;
+    applyBackdrop();
+  }
+
+  /** slow camera drift for still space scenes — offsets from the resting frame */
+  function drift(pos: THREE.Vector3, look: THREE.Vector3): void {
+    if (!bgDef?.drift || pip || treatment !== 'character') return;
+    const t = performance.now() / 1000;
+    const wave = (period: number) => Math.sin((t * 2 * Math.PI) / period);
+    if (bgDef.drift === 'orbit') {
+      const a = wave(40) * 0.14; // ±8° around the avatar
+      const r = pos.z;
+      pos.x = Math.sin(a) * r;
+      pos.z = Math.cos(a) * r;
+    } else if (bgDef.drift === 'dolly') {
+      pos.z += wave(30) * 0.7; // a slow breath in and out
+    } else if (bgDef.drift === 'pan') {
+      pos.x += wave(34) * 0.6;
+      look.x += wave(34) * 0.25;
+    }
+  }
+
   const homeHost = canvas.parentElement!;
   function resize() {
     const parent = canvas.parentElement;
@@ -210,6 +302,10 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       fpsAccum = 0;
       fpsCount = 0;
     }
+    if (bgDef && !pip) {
+      for (const m of mixers) m.update(dt);
+      for (const s of spinners) s.obj.rotation.y += s.rate * dt;
+    }
     for (const cb of tickCbs) cb(dt, now);
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
@@ -218,10 +314,23 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
 
   function applyBackdrop(): void {
     if (!showcase) return;
-    scene.background = pip || cssBackdrop ? null : backdrop(treatment === 'hand' ? 'hand' : theme);
+    const bg3d = !!bgDef && !pip;
+    bgGroup.visible = bg3d;
+    scene.background = pip
+      ? null
+      : bg3d
+        ? new THREE.Color(bgDef!.tone === 'dark' ? 0x05060a : 0xf2f2f2)
+        : cssBackdrop
+          ? null
+          : backdrop(treatment === 'hand' ? 'hand' : theme);
     document.body.dataset.treatment = treatment;
-    if (glowDisc) glowDisc.visible = !pip && theme === 'light';
-    renderer.toneMappingExposure = theme === 'dark' && !pip ? 0.95 : 1.05;
+    document.body.dataset.bg = bg3d ? bgDef!.id : 'sky';
+    document.body.dataset.tone = bg3d ? bgDef!.tone : theme;
+    // floors: the contact shadow sits a hair above the scene's own floor
+    ground.visible = pip || !bg3d || bgDef!.floor;
+    ground.position.y = bg3d ? 0.004 : 0;
+    if (glowDisc) glowDisc.visible = !pip && !bg3d && theme === 'light';
+    renderer.toneMappingExposure = theme === 'dark' && !pip && !bg3d ? 0.95 : 1.05;
   }
 
   function setTreatment(t: 'character' | 'hand'): void {
@@ -255,11 +364,19 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     camera.updateProjectionMatrix();
   }
 
-  return {
+  const api: Stage = {
     scene,
     camera,
     renderer,
     canvas,
+    setBackground,
+    backgroundId: () => bgDef?.id ?? null,
+    hasDrift: () => !!bgDef?.drift && !pip,
+    applyFraming() {
+      const f = api.framing();
+      camera.position.copy(f.pos);
+      camera.lookAt(f.look);
+    },
     onTick: (cb) => tickCbs.push(cb),
     renderFps: () => fps,
     setTreatment,
@@ -287,15 +404,19 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     },
     framing() {
       if (showcase) {
-        return treatment === 'hand'
-          ? { pos: new THREE.Vector3(0, 1.15, 2.1), look: new THREE.Vector3(0, 1.05, 0) }
-          : pip
-            ? { pos: new THREE.Vector3(0, 1.02, 4.5), look: new THREE.Vector3(0, 0.95, 0) }
-            : { pos: new THREE.Vector3(0, 1.0, SHOWCASE_Z), look: new THREE.Vector3(0, 0.98, 0) };
+        const f =
+          treatment === 'hand'
+            ? { pos: new THREE.Vector3(0, 1.15, 2.1), look: new THREE.Vector3(0, 1.05, 0) }
+            : pip
+              ? { pos: new THREE.Vector3(0, 1.02, 4.5), look: new THREE.Vector3(0, 0.95, 0) }
+              : { pos: new THREE.Vector3(0, 1.0, SHOWCASE_Z), look: new THREE.Vector3(0, 0.98, 0) };
+        drift(f.pos, f.look);
+        return f;
       }
       return treatment === 'hand'
         ? { pos: new THREE.Vector3(0, 1.15, 2.1), look: new THREE.Vector3(0, 1.05, 0) }
         : { pos: new THREE.Vector3(0, 1.3, 3.2), look: new THREE.Vector3(0, 1.0, 0) };
     },
   };
+  return api;
 }

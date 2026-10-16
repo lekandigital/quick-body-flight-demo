@@ -8,9 +8,8 @@
 //   bodyarcade/            the tracker + glass UI (this repo's root app)
 //   bodyarcade/flight/     the game (Flight; ?row = Rowing), same origin so
 //                          body signals reach it over BroadcastChannel
-//   vercel.json            camera allowed for this origin, nothing else
 import { execSync } from 'node:child_process';
-import { cpSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -37,35 +36,6 @@ mkdirSync(site, { recursive: true });
 cpSync(APP_DIST, site, { recursive: true });
 cpSync(GAME_DIST, join(site, 'flight'), { recursive: true });
 
-const name = BASE.slice(1, -1);
-writeFileSync(
-  join(OUT, 'vercel.json'),
-  JSON.stringify(
-    {
-      $schema: 'https://openapi.vercel.sh/vercel.json',
-      // soarlabs.ai runs trailingSlash:false and strips the slash before its
-      // rewrite reaches us — so never redirect back to a slashed path here
-      // (that would loop); /bodyarcade and /bodyarcade/flight serve their index.html
-      trailingSlash: false,
-      redirects: [{ source: '/', destination: BASE.replace(/\/$/, ''), permanent: false }],
-      headers: [
-        {
-          source: '/(.*)',
-          headers: [
-            { key: 'X-Content-Type-Options', value: 'nosniff' },
-            { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-            // the tracker needs the webcam; the game frame needs nothing
-            { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
-          ],
-        },
-        {
-          source: `/${name}/(assets|flight/assets)/(.*)`,
-          headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-        },
-      ],
-    },
-    null,
-    2,
-  ),
-);
+// routing + headers live in the repo-root vercel.json (Vercel reads that one
+// for Git and CLI deploys alike)
 console.log(`\nbuilt ${OUT}\n  ${BASE}        app\n  ${BASE}flight/ game`);

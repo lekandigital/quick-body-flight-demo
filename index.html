@@ -24,6 +24,8 @@
           <span class="link-text"><b id="link-label">Connecting</b><small id="link-detail">starting the camera…</small></span>
         </div>
         <div class="stage-label" id="stage-label">STAGE · <b id="stage-avatar">—</b></div>
+        <!-- the active 3D background's credit (CC BY 4.0 asks for it) -->
+        <div class="bg-credit" id="bg-credit" hidden></div>
 
         <!-- the camera pipeline still needs its elements; they stay off screen -->
         <section class="camera-pane" id="camera-pane" aria-hidden="true">
@@ -96,11 +98,8 @@
             <div id="loop-list" class="loop-list"></div>
           </section>
           <section class="rail-sec">
-            <div class="rail-hdr"><span>Coach</span></div>
-            <div class="coach-card" id="coach-card">
-              <div class="coach-eyebrow" id="coach-eyebrow">Setup</div>
-              <p id="coach-line">Stand back so your shoulders and hips are in frame, then calibrate.</p>
-            </div>
+            <div class="rail-hdr"><span>Backgrounds</span><span id="bg-count"></span></div>
+            <div class="cards" id="bg-cards"></div>
           </section>
           <div class="privacy-line">
             all inference runs in your browser — no frame, landmark, or recording

@@ -56,7 +56,8 @@ body.glass-ui[data-treatment="hand"] {
   --stage-sky: radial-gradient(ellipse 60% 50% at 50% 42%, rgba(255, 255, 255, 0.8), rgba(240, 236, 255, 0) 70%),
     linear-gradient(180deg, #a99af5 0%, #d9d1ff 45%, #f0ecff 78%, #f8f6ff 100%);
 }
-[data-theme="dark"] .glass-ui {
+body.glass-ui[data-tone="dark"],
+[data-theme="dark"] body.glass-ui:not([data-tone]) {
   --accent: #6f9dff;
   --accent-quiet: #6f9dff1f;
   --warn: #e0913f;
@@ -71,13 +72,15 @@ body.glass-ui[data-treatment="hand"] {
   --rule: #282c33;
   --rule-strong: #3b4048;
   /* [D] form demo's dark context: border-white/20, text-white/80, label white/85 */
-  --glass-fill: rgba(255, 255, 255, 0.08);
-  --glass-fill-hover: rgba(255, 255, 255, 0.16);
+  /* configuration for dark scenes: smoked glass so white ink holds over
+     bright patches (the hangar window, the lit side of the Earth) */
+  --glass-fill: rgba(12, 14, 20, 0.32);
+  --glass-fill-hover: rgba(12, 14, 20, 0.44);
   --glass-hair: rgba(255, 255, 255, 0.2);
   --glass-ink: rgba(255, 255, 255, 0.85);
   --glass-ink-2: rgba(255, 255, 255, 0.7);
   --glass-ink-3: rgba(255, 255, 255, 0.55);
-  --panel-fill: rgba(12, 13, 16, 0.32);
+  --panel-fill: rgba(12, 13, 16, 0.48);
   --badge-bg: color-mix(in srgb, #1b1e23 70%, transparent); /* [S] --panel-2, dark */
   --stage-fallback: linear-gradient(180deg, #0d1b33 0%, #1f3a63 45%, #3b5d8c 78%, #56769f 100%);
   --stage-sky: radial-gradient(ellipse 60% 50% at 50% 42%, rgba(170, 205, 255, 0.35), rgba(120, 160, 220, 0) 70%), var(--stage-fallback);
@@ -278,7 +281,7 @@ body.glass-ui::after { display: none; }
   white-space: nowrap;
 }
 .glass-ui .stage-label b { color: var(--ink-2); font-weight: 500; text-shadow: none; }
-[data-theme="dark"] .glass-ui .stage-label { background: color-mix(in srgb, #15171b 70%, transparent); }
+body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #15171b 70%, transparent); }
 
 /* ── link state ───────────────────────────────────────────────────── */
 .link-chip {
@@ -787,4 +790,39 @@ body.glass-ui.playing .stage-label { visibility: hidden; }
   .glass-ui .fly-card { flex: 1 1 150px; }
   .link-chip { bottom: auto; top: calc(var(--gap) * 2 + var(--bar-h)); height: 48px; }
   .glass-ui .chain { display: none; }
+}
+
+/* ── 3D backgrounds ──────────────────────────────────────────────────── */
+/* a 3D scene is up: the grid layer behind the canvas has nothing to show */
+body.glass-ui[data-bg]:not([data-bg="sky"]) .stage-backdrop { display: none; }
+/* credit: [S] .drag-hint pill, bottom-right of the stage */
+.glass-ui .bg-credit {
+  position: absolute;
+  right: var(--gap);
+  bottom: calc(var(--gap) + (var(--bar-h) - 22px) / 2);
+  z-index: 12;
+  max-width: min(46vw, 560px);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-3);
+  background: var(--badge-bg);
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.glass-ui .bg-credit[hidden] { display: none; }
+.glass-ui .bg-credit a { color: var(--ink-2); text-decoration: none; }
+.glass-ui .bg-credit a:hover { color: var(--accent); }
+body.glass-ui.playing .bg-credit { visibility: hidden; }
+/* with the take bar centred, the credit sits right of it on wide screens and
+   above it on narrower ones */
+@media (max-width: 1500px) {
+  .glass-ui .bg-credit { bottom: calc(var(--gap) * 2 + var(--bar-h)); right: calc(var(--gap) + 320px); max-width: 40vw; }
+}
+@media (max-width: 900px) {
+  .glass-ui .bg-credit { right: var(--gap); left: var(--gap); max-width: none; bottom: calc(var(--gap) * 3 + var(--bar-h) + 120px); }
 }

@@ -181,3 +181,24 @@ Upstream files adapted beyond the P0 manifest: `client/src/game/Game.ts`
 `client/index.html` + `client/src/main.ts` (self-hosted Inter, external
 widget removed), `client/vite.config.ts` + `client/tsconfig.json`
 (body-input alias).
+
+## Stage backgrounds (`public/backgrounds/`) — all CC-BY-4.0, credited on screen
+
+Sketchfab downloads (Lekan, 2026-10-16, `~/Downloads/3dbackgrounds`). The license and credit are read from each
+file's own glTF `asset.extras` (and `license.txt` in the hangar zip): **CC-BY-4.0 — commercial use allowed, author
+must be credited.** The app shows the credit (title, author, links, CC BY 4.0) on the stage whenever a background is
+up (`src/ui/backgroundPicker.ts`). Files here are optimized copies, not the originals: textures resized (≤ 4096,
+WebP q82), meshopt geometry, the hangar's spec-gloss material converted to metal-rough, the two Earths simplified
+(sphere layers ~65k → ~19k triangles). `@gltf-transform/cli` 4: dedup → prune → resize → [weld+simplify] → webp → meshopt.
+
+| file | title | author | source | original file |
+|---|---|---|---|---|
+| `galaxy.glb` | Inside Galaxy Skybox HDRI 360 panorama | [Aliaksandr.melas](https://sketchfab.com/alexandr.melas) | [Sketchfab](https://sketchfab.com/3d-models/inside-galaxy-skybox-hdri-360-panorama-96183eed1ae2425baddb75ca92103f87) | `inside_galaxy_skybox_hdri_360_panorama.glb` |
+| `space.glb` | Need some space? | [Loïc Norgeot](https://sketchfab.com/norgeotloic) | [Sketchfab](https://sketchfab.com/3d-models/need-some-space-d6521362b37b48e3a82bce4911409303) | `need_some_space.glb` |
+| `earth-agullo.glb` | EARTH | [Stéphane Agullo](https://sketchfab.com/sa3d) | [Sketchfab](https://sketchfab.com/3d-models/earth-5ce4b1465c83432d9bb7e3c30232c02b) | `earth.glb` |
+| `earth-airstudios.glb` | Earth | [AirStudios](https://sketchfab.com/sebbe613) | [Sketchfab](https://sketchfab.com/3d-models/earth-5f9c35be31a047928eace8b415a8ee3a) | `earth (1).glb` |
+| `hangar.glb` | Sci-Fi Hanger | [dylanheyes](https://sketchfab.com/dylanheyes) | [Sketchfab](https://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c) | `sci-fi_hanger.glb` |
+| `corridor.glb` | Spaceship Corridor | [the_table](https://sketchfab.com/the_table) | [Sketchfab](https://sketchfab.com/3d-models/spaceship-corridor-1cdd1db557b8428892af4773bdada913) | `spaceship_corridor (1).glb` |
+| `gallery.glb` | VR exhibition gallery baked | [ida61xq](https://sketchfab.com/ida61xq) | [Sketchfab](https://sketchfab.com/3d-models/vr-exhibition-gallery-baked-ee6f3b0d9db14b62a1b3aeef04315313) | `vr_exhibition_gallery_baked.glb` |
+
+Credit line format (from the license): *This work is based on "<title>" (<source>) by <author> (<author url>) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)*.
