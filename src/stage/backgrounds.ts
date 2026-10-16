@@ -70,7 +70,8 @@ const GALAXY: Credit = {
 /** The CSS sky (the demos' moving grid) — not a 3D file. */
 export const SKY_ID = 'sky';
 
-export const BACKGROUNDS: BackgroundDef[] = [
+/** Every background in public/backgrounds/ — the full library, kept for development. */
+export const LIBRARY: BackgroundDef[] = [
   {
     id: 'nebula', label: 'Alien nebula', glyph: '❈', kind: 'space', tone: 'dark', floor: false, drift: 'orbit',
     parts: [{ file: 'nebula.glb', sky: true }],
@@ -115,7 +116,16 @@ export const BACKGROUNDS: BackgroundDef[] = [
   },
 ];
 
-/** The sky option (the moving-grid backdrop) shown alongside the 3D ones. */
+/**
+ * What production offers: only these two (Lekan, 2026-10-16). The other scenes
+ * stay in LIBRARY and public/backgrounds/ for development but are not
+ * selectable, and scripts/build-bodyarcade.mjs leaves their files out of the
+ * build (keep its LIVE_BACKGROUNDS in step with this list).
+ */
+export const LIVE_IDS = ['galaxy', 'nebula'];
+export const BACKGROUNDS: BackgroundDef[] = LIBRARY.filter((b) => LIVE_IDS.includes(b.id));
+
+/** The sky option (the moving-grid backdrop): not offered in production; the fallback if a scene fails to load. */
 export const SKY_DEF = { id: SKY_ID, label: 'Sky', glyph: '☁', kind: 'sky' as const, tone: 'light' as const };
 
 export function backgroundById(id: string): BackgroundDef | undefined {

@@ -9,7 +9,7 @@
 //   bodyarcade/flight/     the game (Flight; ?row = Rowing), same origin so
 //                          body signals reach it over BroadcastChannel
 import { execSync } from 'node:child_process';
-import { cpSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,6 +35,19 @@ const site = join(OUT, BASE.slice(1, -1));
 mkdirSync(site, { recursive: true });
 cpSync(APP_DIST, site, { recursive: true });
 cpSync(GAME_DIST, join(site, 'flight'), { recursive: true });
+
+// production ships only the live backgrounds (LIVE_IDS in src/stage/backgrounds.ts);
+// the rest of public/backgrounds/ stays in the repo for development
+const LIVE_BACKGROUNDS = ['galaxy', 'nebula'];
+const bgDir = join(site, 'backgrounds');
+const keepEnv = new Set(
+  LIVE_BACKGROUNDS.map((id) => JSON.parse(readFileSync(join(bgDir, `${id}.sketchfab.json`), 'utf8')).environment?.uid).filter(Boolean),
+);
+for (const f of readdirSync(bgDir)) {
+  if (f === 'env') continue;
+  if (!LIVE_BACKGROUNDS.some((id) => f === `${id}.glb` || f === `${id}.sketchfab.json`)) rmSync(join(bgDir, f), { recursive: true });
+}
+for (const f of readdirSync(join(bgDir, 'env'))) if (!keepEnv.has(f.replace(/\.jpg$/, ''))) rmSync(join(bgDir, 'env', f));
 
 // routing + headers live in the repo-root vercel.json (Vercel reads that one
 // for Git and CLI deploys alike)

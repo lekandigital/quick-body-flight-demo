@@ -4,7 +4,7 @@
 // random 3D background; picks don't persist.
 
 import type { Stage } from '../stage/scene';
-import { BACKGROUNDS, SKY_DEF, SKY_ID, backgroundById, type Credit } from '../stage/backgrounds';
+import { BACKGROUNDS, SKY_ID, backgroundById, type Credit } from '../stage/backgrounds';
 
 export interface BackgroundPicker {
   current(): string;
@@ -13,7 +13,7 @@ export interface BackgroundPicker {
   ids(): string[];
 }
 
-const ALL = [...BACKGROUNDS, SKY_DEF];
+const ALL = BACKGROUNDS;
 
 function creditHtml(c: Credit): string {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -46,7 +46,7 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
     const note = document.createElement('div');
     note.className = 'card-note';
     const bg = backgroundById(def.id);
-    note.textContent = bg ? `by ${bg.credits[0].author} · CC BY 4.0` : 'moving grid · the glass demos';
+    note.textContent = bg ? `by ${bg.credits[0].author} · CC BY 4.0` : '';
     card.append(preview, nm, chip, note);
     card.onclick = () => api.pick(def.id);
     host.append(card);

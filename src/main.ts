@@ -232,7 +232,7 @@ async function boot() {
   const bgParam = params.get('bg');
   const backgrounds = createBackgroundPicker(
     stage,
-    bgParam && (bgParam === 'sky' || backgroundById(bgParam)) ? bgParam : randomBackgroundId(),
+    bgParam && backgroundById(bgParam) ? bgParam : randomBackgroundId(),
   );
   onConfigChange((key) => {
     if (key === 'theme') stage.setTheme(config.theme);
@@ -1302,7 +1302,6 @@ async function boot() {
       run: () => onboarding.show() },
     { id: 'vfx', label: 'velocity vfx · toggle', run: toggleCmd2('vfx') },
     { id: 'bg-next', label: 'background · next', key: 'n', run: () => backgrounds.next() },
-    { id: 'bg-sky', label: 'background · sky (moving grid)', run: () => backgrounds.pick('sky') },
     ...BACKGROUNDS.map((b) => ({ id: `bg-${b.id}`, label: `background · ${b.label.toLowerCase()}`, run: () => backgrounds.pick(b.id) })),
     { id: 'autocam', label: 'auto-director camera · toggle', run: toggleCmd2('autoCam') },
     { id: 'fly', label: 'fly · bodyarcade flight (body streams into the game)',
