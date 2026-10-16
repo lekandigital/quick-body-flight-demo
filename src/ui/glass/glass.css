@@ -460,6 +460,7 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
 
 /* sliders: [S] .ctl rows; the slider itself is LiquidSlider (packages/glass) */
 .glass-ui .rail-slider { padding: 0; }
+.glass-ui .rail-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 34px; font-size: 13px; color: var(--ink); cursor: pointer; }
 .glass-ui .rail-slider-marks {
   display: flex;
   justify-content: space-between;
@@ -740,12 +741,22 @@ body.glass-ui.playing .stage-label { visibility: hidden; }
   --panel-fill: rgba(0, 0, 0, 0.18);
 }
 .ba-play iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.ba-pip {
+/* bottom-left dock: the game's control switcher over the model view */
+.ba-dock {
   position: absolute;
   left: var(--gap);
   bottom: var(--gap);
   z-index: 2;
-  width: clamp(170px, 17vw, 250px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  pointer-events: none;
+  --pip-w: clamp(170px, 17vw, 250px);
+}
+.ba-pip {
+  position: relative;
+  width: var(--pip-w);
   aspect-ratio: 3 / 4;
   border-radius: 28px;
   overflow: hidden;
@@ -772,6 +783,89 @@ body.glass-ui.playing .stage-label { visibility: hidden; }
 .ba-pip .link-text b { font-size: 12px; font-weight: 500; }
 .ba-pip .link-dot { width: 8px; height: 8px; box-shadow: none; }
 .glass-ui .ba-close { position: absolute; top: 10px; right: 10px; z-index: 3; color: var(--glass-ink); pointer-events: auto; }
+.glass-ui .ba-gear { position: absolute; top: 10px; left: 10px; z-index: 3; padding: 0; color: var(--glass-ink); pointer-events: auto; }
+.ba-play [hidden] { display: none !important; }
+
+/* control switcher: the topbar's .modes pills on a panel track */
+.glass-ui .ba-quick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 2 * var(--gap));
+  padding: 4px 4px 4px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-hair);
+  pointer-events: auto;
+  --glass-fill: rgba(10, 12, 18, 0.34);
+}
+.ba-play.settings-open .ba-quick { visibility: hidden; }
+.ba-quick-lbl { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--glass-ink-2); white-space: nowrap; }
+.ba-quick-opts { display: flex; gap: 2px; }
+.glass-ui .ba-qopt { height: 32px; padding: 0 12px; font-size: 13px; white-space: nowrap; color: var(--glass-ink-2); }
+.glass-ui .ba-qopt[aria-pressed="true"] { color: #fff; }
+
+/* settings sheet: an Experiences-style panel beside the model view */
+.glass-ui .ba-sheet {
+  position: absolute;
+  z-index: 4;
+  left: calc(var(--gap) * 2 + clamp(170px, 17vw, 250px));
+  bottom: var(--gap);
+  width: min(340px, calc(100vw - 2 * var(--gap)));
+  max-height: calc(100% - 2 * var(--gap));
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 6px;
+  border-radius: 28px;
+  border: 1px solid var(--glass-hair);
+  overflow: hidden;
+  color: var(--ink);
+  --glass-fill: rgba(10, 12, 18, 0.58);
+}
+.ba-sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 0 0 10px; }
+.ba-sheet .exp-eyebrow { padding: 0; color: var(--glass-ink-2); }
+.ba-sheet-title { padding-top: 6px; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.2; }
+.ba-sheet-scroll { overflow-y: auto; min-height: 0; scrollbar-width: none; padding-bottom: 10px; }
+.ba-sheet-scroll::-webkit-scrollbar { display: none; }
+.ba-sec { padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--glass-hair); }
+.ba-sheet .rail-hdr { color: var(--glass-ink-2); padding-bottom: 8px; }
+.ba-label { margin: 4px 0 6px; font-size: 12px; color: var(--glass-ink-2); }
+.ba-opts { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.glass-ui .ba-opt {
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 18px;
+  text-align: left;
+}
+.ba-opt b { font-size: 13px; font-weight: 600; color: var(--ink); }
+.ba-opt small { font-size: 11.5px; line-height: 1.35; color: var(--glass-ink-2); font-weight: 400; }
+.ba-opt:not([aria-pressed="true"]) small { display: none; }
+.glass-ui .ba-opt:not([aria-pressed="true"]) b { font-weight: 500; color: var(--glass-ink-2); }
+.ba-range { display: flex; align-items: center; gap: 10px; min-height: 36px; }
+.ba-range > span:first-child { width: 58px; font-size: 12px; color: var(--glass-ink); }
+.ba-range .gslider { flex: 1; }
+.ba-range em { font-family: var(--font-mono); font-style: normal; font-size: 11px; color: var(--glass-ink-2); min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; }
+.glass-ui .ba-action { margin-top: 8px; }
+.ba-hint { display: block; margin-top: 6px; font-size: 11.5px; line-height: 1.4; color: var(--glass-ink-2); }
+/* live readout: what the game is getting from your body right now */
+.ba-live { padding: 10px 12px; border-radius: 18px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--glass-hair); }
+.ba-live-status { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+.ba-live-status::before { content: ""; width: 8px; height: 8px; border-radius: 4px; background: #9fb4d8; flex: 0 0 auto; }
+.ba-live-status[data-tone="ok"]::before { background: #5fd0ab; }
+.ba-live-status[data-tone="warn"]::before { background: #e0913f; }
+.ba-meters { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+.ba-meter { display: flex; align-items: center; gap: 10px; }
+.ba-meter-lbl { width: 58px; font-size: 11.5px; color: var(--glass-ink-2); }
+.ba-meter-track { position: relative; flex: 1; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.ba-meter[data-signed="true"] .ba-meter-track::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.35); }
+.ba-meter-fill { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: #8fc4ff; transition: width 0.08s linear, left 0.08s linear; }
+@media (max-width: 720px) {
+  .glass-ui .ba-sheet { left: var(--gap); right: var(--gap); width: auto; max-height: 72%; }
+  .ba-quick-lbl { display: none; }
+}
 
 /* ── narrow screens: keep everything, stack it ─────────────────────── */
 @media (max-width: 1180px) {

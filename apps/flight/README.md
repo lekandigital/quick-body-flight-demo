@@ -16,7 +16,9 @@ flow), or `npm run dev:client` here for standalone game-only dev.
 Actual keyboard controls (the table below is upstream's original text;
 its W/S/Shift/Ctrl rows predate the current code): **A/D turn · W
 accelerate · S brake · ArrowUp climb · Space paintball/action · F
-interact.** Body input maps through profiles — press `B` in-game.
+interact.** Body input maps through profiles, picked in the BodyArcade
+overlay (switcher + gear) — the game publishes them from
+`client/src/input/settingsBridge.ts`.
 
 ---
 

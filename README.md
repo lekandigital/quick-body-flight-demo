@@ -43,12 +43,18 @@ npm run arcade   # builds the game + starts everything on :5173
 
 Open PosePuppet, let it track you, then click the **Fly** card (or
 `⌘K → fly`). The game opens at `/flight/` with your body streaming in —
-lean to bank, and in the default **Superman** profile: arms out to fly,
-arms high to climb, both hands forward to dive/boost, drop your arms to
-stabilize. **Head Pilot** flies seated. Keyboard always wins the moment
-you touch it; a T-pose recaptures your neutral. Press `B` in the game for
-the control tuner (profiles, assist levels, live signal chain). Tracking
-loss auto-levels the plane and control blends back smoothly.
+by default with your **Shoulders**: tilt them to bank, lean back to climb
+and forward to dive, speed is automatic (Rowing steers the same way by
+default). **Superman** (arms out to fly, arms high to climb, hands forward
+to dive/boost) and **Pilot Lean** are one click away in the switcher above
+your model view. The gear on the model view opens the game's settings:
+controls, assist level, sensitivity, a live readout of what the game is
+getting, and Recenter. Games carry no settings panels of their own — they
+declare their options over the game-settings channel
+(`packages/body-input/src/gameSettings.ts`) and the overlay draws them.
+Keyboard always wins the moment you touch it; a T-pose recaptures your
+neutral. Tracking loss auto-levels the plane and control blends back
+smoothly.
 
 Everything stays local: no server, no analytics, zero network requests —
 the flight suite literally asserts it. Derived control signals are the

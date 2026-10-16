@@ -27,8 +27,11 @@ const KEYBOARD_PRIORITY_MS = 1500;
 const SIGNAL_STALE_MS = 350;
 const MIN_CONFIDENCE = 0.35;
 const MESSAGE_ENVELOPE = "bodyarcade.body-input.v1";
-const PROFILE_STORE_KEY = "bodyarcade_row_profile_v1";
+// v2: Shoulders is the default in every BodyArcade game (2026-10-16);
+// bumping the key drops older saved picks so the default reaches everyone.
+const PROFILE_STORE_KEY = "bodyarcade_row_profile_v2";
 const ASSIST_STORE_KEY = "bodyarcade_row_assist_v1";
+const GAIN_STORE_KEY = "bodyarcade_row_gains_v1";
 
 /** Loss: turn intent decays to neutral (drift straight) — flight's τ. */
 const LOSS_DECAY_TAU_S = 0.25;
@@ -69,15 +72,17 @@ export interface RowProfile {
  *  ampL−ampR > 0 maps to negative turnRate. Live gate picks the default. */
 export const ROW_PROFILES: RowProfile[] = [
   {
+    // Shoulders: the default, as in Flight. leanX is the torso/shoulder-
+    // line tilt, so this is the same "tilt your shoulders" control.
     id: "row-lean",
-    label: "Lean steering",
+    label: "Shoulders",
     // GATE-2 FIX (live 360°-pivot report): leanX saturates at ~15° of
     // torso tilt, so a "gentle" lean read as full deflection — expo 1.6
     // makes the response progressive (gentle lean → gentle curve) and the
     // gain drops 1.1 → 0.8. Yaw is additionally speed-coupled in Game.tick
     // (carve, don't pivot) — the two together are the handling fix.
     turnGain: 0.8,
-    notes: "lean L/R steers · strokes propel · sit back to rest (cruise)",
+    notes: "tilt your shoulders to steer · strokes propel · sit back to rest (cruise)",
     steer: (s, _asym, p) => {
       const x = s.axes.leanX;
       return -Math.sign(x) * Math.pow(Math.abs(x), 1.6) * p.turnGain;
@@ -85,12 +90,15 @@ export const ROW_PROFILES: RowProfile[] = [
   },
   {
     id: "row-asym",
-    label: "Stroke steering",
+    label: "Strokes",
     turnGain: 3.2,
     notes: "pull harder on one side to turn away from it · strokes propel · rest = cruise",
     steer: (_s, asym, p) => Math.max(-1.2, Math.min(1.2, -asym * p.turnGain)),
   },
 ];
+
+/** Shipped steering gains (reset). */
+const DEFAULT_ROW_GAINS = new Map(ROW_PROFILES.map((p) => [p.id, p.turnGain]));
 
 export interface RowAssist {
   id: string;
@@ -180,6 +188,12 @@ export class RowingControls {
     };
     window.addEventListener("message", this.onWindowMessage);
     try {
+      const gains = JSON.parse(localStorage.getItem(GAIN_STORE_KEY) ?? "{}") as Record<string, number>;
+      for (const p of ROW_PROFILES) if (typeof gains[p.id] === "number") p.turnGain = gains[p.id]!;
+    } catch {
+      /* defaults */
+    }
+    try {
       const p = ROW_PROFILES.findIndex((x) => x.id === localStorage.getItem(PROFILE_STORE_KEY));
       if (p >= 0) this.profileIdx = p;
       const a = ROW_ASSISTS.findIndex((x) => x.id === localStorage.getItem(ASSIST_STORE_KEY));
@@ -254,6 +268,27 @@ export class RowingControls {
     this.assistIdx = i;
     this.persist(ASSIST_STORE_KEY, this.assist.id);
     return true;
+  }
+
+  /** Steering sensitivity of the active profile (BodyArcade settings sheet). */
+  setTurnGain(value: number) {
+    if (!Number.isFinite(value)) return;
+    this.profile.turnGain = Math.max(0, Math.min(4, value));
+    this.persist(GAIN_STORE_KEY, JSON.stringify(Object.fromEntries(ROW_PROFILES.map((p) => [p.id, p.turnGain]))));
+  }
+
+  /** Back to the shipped profile, assist level and gains. */
+  resetDefaults() {
+    for (const p of ROW_PROFILES) p.turnGain = DEFAULT_ROW_GAINS.get(p.id) ?? p.turnGain;
+    this.profileIdx = 0;
+    this.assistIdx = 0;
+    try {
+      localStorage.removeItem(PROFILE_STORE_KEY);
+      localStorage.removeItem(ASSIST_STORE_KEY);
+      localStorage.removeItem(GAIN_STORE_KEY);
+    } catch {
+      /* session-only */
+    }
   }
 
   private persist(key: string, value: string) {

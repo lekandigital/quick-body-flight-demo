@@ -209,6 +209,22 @@ async function boot() {
     });
   }
 
+  // tracking switches: the everyday ones from the engineering panel
+  const trackSwitches: [id: string, get: () => boolean, put: (on: boolean) => void, key: string][] = [
+    ['trk-mirror', () => config.mirror, (on) => setConfig('mirror', on), 'mirror'],
+    ['trk-legs', () => config.bodyMode === 'full', (on) => setConfig('bodyMode', on ? 'full' : 'upper'), 'bodyMode'],
+    ['trk-smooth', () => config.smoothing, (on) => setConfig('smoothing', on), 'smoothing'],
+  ];
+  for (const [id, get, put, key] of trackSwitches) {
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (!input) continue;
+    input.checked = get();
+    input.onchange = () => put(input.checked);
+    onConfigChange((k) => {
+      if (k === key && input.checked !== get()) input.checked = get();
+    });
+  }
+
   // theme toggle (persisted)
   const themeBtn = document.createElement('button');
   themeBtn.id = 'theme-btn';
@@ -799,6 +815,7 @@ async function boot() {
       cameraOwned = Math.max(0, cameraOwned - 1);
     },
     attachLink: (el: HTMLElement) => link.attach(el),
+    recenter: () => bodyInput.core.recenter(),
   };
 
   // Flight: the game swaps PosePuppet to the lite model while it runs

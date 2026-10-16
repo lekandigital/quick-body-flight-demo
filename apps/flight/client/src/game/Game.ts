@@ -43,7 +43,7 @@ import { SocketClient } from "../network/SocketClient";
 import { resolveServerUrl } from "../runtime/resolveServerUrl";
 import { isLocalMode, localAutoJoin, localLanternAdd } from "../runtime/localWorlds";
 import { BodyFlightControls } from "../input/bodyControls";
-import { FlightTuner } from "../input/flightTuner";
+import { GameSettingsBridge } from "../input/settingsBridge";
 import { RowingControls } from "../input/rowControls";
 import { RowingHUD } from "../ui/RowingHUD";
 import { createOceanCourse, assistTurnRate, clearWaterFrac, ShoreGuard, type Waterway } from "./Waterway";
@@ -451,9 +451,10 @@ export class Game {
 
   private socketClient: SocketClient | null = null;
   private stateSync: StateSync | null = null;
-  /** BodyArcade: body input as a parallel control source + its tuner. */
+  /** BodyArcade: body input as a parallel control source; its options are
+   *  published to the BodyArcade overlay (no in-game settings panel). */
   private bodyControls: BodyFlightControls | null = null;
-  private flightTuner: FlightTuner | null = null;
+  private settingsBridge: GameSettingsBridge | null = null;
   private rowingHUD: RowingHUD | null = null;
   /** BodyArcade Rowing: stroke input for the boat + its water course. */
   private rowingControls: RowingControls | null = null;
@@ -465,7 +466,7 @@ export class Game {
    *  Feel/closed-loop specs need deterministic water; live play keeps the
    *  game's charm (twister spins and diamond boosts are features). */
   private evalCalmWater = new URLSearchParams(window.location.search).has("calm");
-  private tunerPrevHeading = 0;
+  private prevHeading = 0;
   private headingRateDegS = 0;
   /** Eval only (?record-intents=1): per-tick inputs + live pose for replay. */
   private intentTape: {
@@ -836,25 +837,15 @@ export class Game {
     }
   }
 
-  /** BodyArcade: body-input source, tuner ("b"), and the __FLIGHT eval handle. */
+  /** BodyArcade: body-input source, overlay settings, and the __FLIGHT eval handle. */
   private initBodyInput() {
     this.bodyControls = new BodyFlightControls();
     this.rowingControls = new RowingControls();
-    this.flightTuner = new FlightTuner(
+    this.settingsBridge = new GameSettingsBridge(
       this.bodyControls,
-      () => {
-        if (!this.localPlayer || this.gamePhase !== "flying") return null;
-        return {
-          headingRateDegS: this.headingRateDegS,
-          speed: this.localPlayer.speed,
-          altitude: this.localPlayer.altitude,
-          bankDeg: (this.localPlayer.bankAngle * 180) / Math.PI,
-        };
-      },
       this.rowingControls,
       () => this.localPlayer instanceof Boat,
     );
-    window.addEventListener("keydown", this.onTunerKey);
 
     (window as unknown as { __FLIGHT: unknown }).__FLIGHT = {
       state: () => {
@@ -933,13 +924,6 @@ export class Game {
       (window as unknown as { __FLIGHT_TAPE: unknown }).__FLIGHT_TAPE = this.intentTape;
     }
   }
-
-  private onTunerKey = (e: KeyboardEvent) => {
-    if (e.key.toLowerCase() !== "b" || e.repeat) return;
-    const target = e.target as HTMLElement | null;
-    if (target && (target.isContentEditable || /INPUT|TEXTAREA/.test(target.tagName))) return;
-    this.flightTuner?.toggle(this.container);
-  };
 
   private recenterToastEl: HTMLElement | null = null;
   private recenterToastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -2039,7 +2023,9 @@ export class Game {
     this.eternalFlameUI = new EternalFlameUI(this.container, this.hud.root);
     this.eternalFlameUI.syncFromSave();
 
-    this.debugMenu = new DebugMenu(
+    // TinySkies' cheat menu (Shift+Q): dev builds only — production games
+    // carry no dev panels; player options live in the BodyArcade overlay
+    if (import.meta.env.DEV) this.debugMenu = new DebugMenu(
       this.container,
       () => {
         const prev = ProgressionManager.loadPlayerWorldState();
@@ -3554,8 +3540,8 @@ export class Game {
 
     let inputState =
       this.touchControls ? this.touchControls.getState() : this.controls.getState();
-    // T-pose recenter confirmation, visible without the tuner (Gate-2
-    // feedback: the tuner-only flag was easy to miss).
+    // T-pose recenter confirmation (Gate-2 feedback: a flag inside the
+    // old tuner panel was easy to miss).
     if (this.bodyControls?.consumeRecenterFlag()) {
       this.showRecenterToast();
     }
@@ -3783,13 +3769,13 @@ export class Game {
     if (tape && tape.initial && this.localPlayer instanceof Plane && tape.live.length < tape.frames.length) {
       tape.live.push(this.localPlayer.getReplayState());
     }
-    // Signed heading rate for the tuner's plane-response readout.
+    // Signed heading rate (__FLIGHT.state, read by the feel/replay specs).
     {
-      let dh = this.localPlayer.heading - this.tunerPrevHeading;
+      let dh = this.localPlayer.heading - this.prevHeading;
       while (dh > Math.PI) dh -= Math.PI * 2;
       while (dh < -Math.PI) dh += Math.PI * 2;
       this.headingRateDegS = (dh / Math.max(dt, 1e-4)) * (180 / Math.PI);
-      this.tunerPrevHeading = this.localPlayer.heading;
+      this.prevHeading = this.localPlayer.heading;
     }
     this.localPlayer.group.updateMatrixWorld(true);
     if (
@@ -7418,9 +7404,8 @@ export class Game {
     this.rowingHUD = null;
     this.waterway = null;
     this.shoreGuard = null;
-    this.flightTuner?.dispose();
-    this.flightTuner = null;
-    window.removeEventListener("keydown", this.onTunerKey);
+    this.settingsBridge?.dispose();
+    this.settingsBridge = null;
     if (this.recenterToastTimer) clearTimeout(this.recenterToastTimer);
     this.recenterToastEl?.remove();
     this.recenterToastEl = null;

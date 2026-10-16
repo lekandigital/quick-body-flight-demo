@@ -96,6 +96,9 @@ export function createPalette(commands: Command[]): void {
 
   const byKey = new Map(commands.filter((c) => c.key).map((c) => [c.key!, c]));
   window.addEventListener('keydown', (e) => {
+    // a game is open over the page: its keys are the game's (a stray "m"
+    // here would flip the mirror and with it the steering)
+    if (document.body.classList.contains('playing')) return;
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       isOpen() ? close() : open();
