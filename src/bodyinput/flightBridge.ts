@@ -32,7 +32,7 @@ export interface FlightCompanionDeps {
 export function defaultFlightUrl(): string {
   const env = import.meta.env.VITE_FLIGHT_URL as string | undefined;
   // Same-origin by default: the built flight app lives at <base>/flight/.
-  return env && env.trim() ? env.trim() : asset('/flight/');
+  return env && env.trim() ? env.trim() : asset('/flight');
 }
 
 let active: { close: () => void; kind: Experience } | null = null;
