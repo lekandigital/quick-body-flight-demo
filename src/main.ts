@@ -26,7 +26,7 @@ import { createIntentDetector } from './gesture/intent';
 import { createBodyInputAdapter, type BodyInputAdapter } from './bodyinput/adapter';
 import type { BodyTracking, TrackingState } from '@bodyarcade/body-input';
 import { openFlight, defaultFlightUrl, activeExperience } from './bodyinput/flightBridge';
-import { glassifyAll, watchGlass } from '@bodyarcade/glass';
+import { glassifyAll, watchGlass, upgradeControls } from '@bodyarcade/glass';
 import { createLink } from './ui/link';
 import { asset } from './base';
 import { createDirector } from './director/director';
@@ -116,7 +116,34 @@ async function boot() {
 
   // glass chrome: every [data-glass] element now and later
   glassifyAll();
-  watchGlass();
+  upgradeControls();
+  watchGlass((node) => upgradeControls(node));
+  // backdrop media slot (public/backdrops/backdrop.*): a looping video or a
+  // still, like the library demo's SharedMediaLayer. Absent = grid + sky only.
+  void (async () => {
+    const slot = document.getElementById('stage-media');
+    if (!slot) return;
+    for (const ext of ['mp4', 'webm', 'jpg', 'png', 'webp']) {
+      const url = asset(`/backdrops/backdrop.${ext}`);
+      try {
+        const res = await fetch(url, { method: 'HEAD' });
+        if (!res.ok || (res.headers.get('content-type') ?? '').includes('text/html')) continue;
+      } catch {
+        continue;
+      }
+      if (ext === 'mp4' || ext === 'webm') {
+        const v = document.createElement('video');
+        Object.assign(v, { src: url, muted: true, loop: true, autoplay: true, playsInline: true });
+        slot.append(v);
+        void v.play().catch(() => {});
+      } else {
+        slot.style.backgroundImage = `url("${url}")`;
+      }
+      document.body.classList.add('has-backdrop-media');
+      return;
+    }
+  })();
+
   // link state replaces the camera view: is the model following someone?
   const link = createLink(document.getElementById('link-state')!);
 
@@ -184,7 +211,8 @@ async function boot() {
   const themeBtn = document.createElement('button');
   themeBtn.id = 'theme-btn';
   themeBtn.dataset.glass = 'navButton';
-  themeBtn.textContent = '◐';
+  themeBtn.className = 'nav-circle sm';
+  themeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor"/></svg>';
   themeBtn.title = 'toggle light/dark theme (t)';
   themeBtn.onclick = () => setConfig('theme', config.theme === 'dark' ? 'light' : 'dark');
   document.getElementById('controls')!.append(themeBtn);
@@ -514,7 +542,7 @@ async function boot() {
     countdownActive = true;
     const el = document.createElement('div');
     el.className = 'countdown';
-    el.dataset.glass = 'panel';
+    el.dataset.glass = 'navButton';
     el.textContent = '3';
     // the camera view is gone — count down over the model instead
     (document.getElementById('stage-pane') ?? pane).appendChild(el);

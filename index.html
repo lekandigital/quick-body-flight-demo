@@ -11,6 +11,10 @@
     <!-- the stage owns the whole window; every control floats over it on glass -->
     <main id="split" class="split">
       <section class="stage-pane" id="stage-pane">
+        <!-- moving backdrop: the library demos' animated grid over the sky,
+             plus a media slot (public/backdrops/backdrop.*) like their
+             SharedMediaLayer. The 3D stage renders transparent over it. -->
+        <div class="stage-backdrop" aria-hidden="true"><div class="stage-media" id="stage-media"></div></div>
         <canvas id="stage"></canvas>
 
         <!-- link state: replaces the camera view. The person is shown as their
@@ -42,9 +46,9 @@
       <header id="topbar" data-glass="bar">
         <div class="brand">
           <span class="brand-name">bodyarcade</span>
-          <button class="kbd" id="palette-btn" data-glass="navButton" title="command palette (⌘K)">⌘K</button>
+          <button class="kbd nav-circle sm" id="palette-btn" data-glass="navButton" title="command palette (⌘K)">⌘K</button>
         </div>
-        <nav class="modes" id="mode-select" aria-label="mode">
+        <nav class="modes" id="mode-select" data-glass="bar" aria-label="mode">
           <button id="mode-character" aria-pressed="true">Character</button>
           <button id="mode-hand" disabled title="hand-only mode lands later this pass">Hand-only</button>
           <button id="mode-setup" title="recalibrate your neutral pose">Setup</button>
@@ -54,15 +58,16 @@
       </header>
 
       <aside class="experiences" id="experiences" data-glass="panel" aria-label="Experiences">
+        <div class="exp-eyebrow">BodyArcade</div>
         <div class="exp-hdr">Experiences</div>
         <button id="fly-btn" class="fly-card" data-glass="navButton"
           title="open Flight — your body flies the plane; the tracker keeps running and your model rides along in the corner">
-          <span class="fly-card-glyph" aria-hidden="true">✈</span>
+          <span class="fly-card-glyph" data-glass="navButton" aria-hidden="true">✈</span>
           <span class="fly-card-text"><b>Flight</b><small>lean to bank · TinySkies</small></span>
         </button>
         <button id="row-btn" class="fly-card" data-glass="navButton"
           title="open Rowing — rowing strokes drive the boat; the tracker keeps running and your model rides along in the corner">
-          <span class="fly-card-glyph" aria-hidden="true">⛵</span>
+          <span class="fly-card-glyph" data-glass="navButton" aria-hidden="true">⛵</span>
           <span class="fly-card-text"><b>Rowing</b><small>pull to row · dev build</small></span>
         </button>
       </aside>

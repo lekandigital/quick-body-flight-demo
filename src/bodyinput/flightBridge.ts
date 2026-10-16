@@ -74,14 +74,17 @@ export function openFlight(
 
   const close = document.createElement('button');
   close.type = 'button';
-  close.className = 'ba-close';
+  close.className = 'ba-close nav-circle sm';
   close.dataset.glass = 'navButton';
   close.title = 'Back to BodyArcade';
   close.setAttribute('aria-label', 'Close the game');
   close.innerHTML =
-    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
-  layer.append(iframe, pip, close);
+  // the exit lives on the model view's corner — the game's own HUD owns the
+  // screen corners (fullscreen, menu, quest panel)
+  pip.append(close);
+  layer.append(iframe, pip);
   document.body.appendChild(layer);
   document.body.classList.add('playing');
 

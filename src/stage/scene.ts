@@ -79,6 +79,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   // fixed full-body camera. `?look=studio` keeps the original dark studio.
   // Tracking, retargeting and the avatar are untouched.
   const showcase = new URLSearchParams(location.search).get('look') !== 'studio';
+  // full figure with headroom for root motion, between the glass bars
+  const SHOWCASE_Z = 6.2;
   type Palette = { stops: [number, string][]; glow: string; glowEdge: string };
   const PALETTES: Record<'light' | 'dark' | 'hand', Palette> = {
     light: { stops: [[0, '#7fb9f5'], [0.45, '#c9e3ff'], [0.78, '#eaf3ff'], [1, '#f5f8ff']],
@@ -116,6 +118,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   let treatment: 'character' | 'hand' = 'character';
   let pip = false;
   let glowDisc: THREE.Mesh | null = null;
+  // a CSS backdrop behind the canvas (glass build): render transparent over it
+  const cssBackdrop = showcase && !!document.querySelector('.stage-backdrop');
   function floorGlowTexture(): THREE.CanvasTexture {
     const c = document.createElement('canvas');
     c.width = 512;
@@ -133,15 +137,17 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   }
   function frameShowcaseCamera(): void {
     camera.fov = 30;
-    camera.position.set(0, 1.08, 4.7);
-    camera.lookAt(0, 1.08, 0);
+    // the in-game model view is small and has no bars to clear: frame closer
+    const z = pip ? 4.5 : SHOWCASE_Z;
+    camera.position.set(0, pip ? 1.02 : 1.0, z);
+    camera.lookAt(0, pip ? 0.95 : 0.98, 0);
     camera.updateProjectionMatrix();
   }
   if (showcase) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    scene.background = backdrop('light');
+    scene.background = cssBackdrop ? null : backdrop('light');
     scene.fog = null;
     grid.visible = false;
     (ground as unknown as THREE.Mesh<THREE.BufferGeometry, THREE.Material>).material = new THREE.ShadowMaterial({ opacity: 0.22 });
@@ -212,7 +218,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
 
   function applyBackdrop(): void {
     if (!showcase) return;
-    scene.background = pip ? null : backdrop(treatment === 'hand' ? 'hand' : theme);
+    scene.background = pip || cssBackdrop ? null : backdrop(treatment === 'hand' ? 'hand' : theme);
+    document.body.dataset.treatment = treatment;
     if (glowDisc) glowDisc.visible = !pip && theme === 'light';
     renderer.toneMappingExposure = theme === 'dark' && !pip ? 0.95 : 1.05;
   }
@@ -282,7 +289,9 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       if (showcase) {
         return treatment === 'hand'
           ? { pos: new THREE.Vector3(0, 1.15, 2.1), look: new THREE.Vector3(0, 1.05, 0) }
-          : { pos: new THREE.Vector3(0, 1.08, 4.7), look: new THREE.Vector3(0, 1.08, 0) };
+          : pip
+            ? { pos: new THREE.Vector3(0, 1.02, 4.5), look: new THREE.Vector3(0, 0.95, 0) }
+            : { pos: new THREE.Vector3(0, 1.0, SHOWCASE_Z), look: new THREE.Vector3(0, 0.98, 0) };
       }
       return treatment === 'hand'
         ? { pos: new THREE.Vector3(0, 1.15, 2.1), look: new THREE.Vector3(0, 1.05, 0) }

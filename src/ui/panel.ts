@@ -94,6 +94,10 @@ export function createPanel(rig?: PanelRigApi): void {
   host.id = 'panel';
   host.dataset.glass = 'panel';
   host.classList.add('hidden');
+  // rows live in an inner scroller: the glass plate stays put while it scrolls
+  const body = document.createElement('div');
+  body.className = 'panel-scroll';
+  host.append(body);
 
   const fullBody = document.createElement('input');
   fullBody.type = 'checkbox';
@@ -106,7 +110,7 @@ export function createPanel(rig?: PanelRigApi): void {
   const ppcStates = document.createElement('div');
   ppcStates.id = 'ppc-states';
 
-  host.append(
+  body.append(
     row('mirror', toggle('mirror')),
     row('full body (legs)', fullBody),
     row('smoothing', toggle('smoothing')),
@@ -129,7 +133,7 @@ export function createPanel(rig?: PanelRigApi): void {
     modelSel.append(o);
   }
   modelSel.onchange = () => setConfig('model', modelSel.value as Config['model']);
-  host.append(row('model', modelSel));
+  body.append(row('model', modelSel));
 
   if (rig) {
     const calBtn = document.createElement('button');
@@ -147,7 +151,7 @@ export function createPanel(rig?: PanelRigApi): void {
     const calRow = document.createElement('div');
     calRow.className = 'panel-row';
     calRow.append(calBtn, clearBtn);
-    host.append(calRow);
+    body.append(calRow);
 
     // per-bone offset: bone selector + xyz degree sliders, persisted
     const boneSel = document.createElement('select');
@@ -158,7 +162,7 @@ export function createPanel(rig?: PanelRigApi): void {
       o.textContent = b;
       boneSel.append(o);
     }
-    host.append(row('offset bone', boneSel));
+    body.append(row('offset bone', boneSel));
 
     const axisSliders: { axis: 'x' | 'y' | 'z'; input: HTMLInputElement; val: HTMLElement }[] = [];
     for (const axis of ['x', 'y', 'z'] as const) {
@@ -178,7 +182,7 @@ export function createPanel(rig?: PanelRigApi): void {
         val.textContent = `${input.value}°`;
       };
       wrap.append(input, val);
-      host.append(row(`offset ${axis}`, wrap));
+      body.append(row(`offset ${axis}`, wrap));
       axisSliders.push({ axis, input, val });
     }
     function syncOffsetSliders(): void {
@@ -201,7 +205,7 @@ export function createPanel(rig?: PanelRigApi): void {
     createPanel(rig);
     document.getElementById('panel')!.classList.remove('hidden');
   };
-  host.append(reset);
+  body.append(reset);
 
   document.body.append(host);
 
@@ -210,7 +214,10 @@ export function createPanel(rig?: PanelRigApi): void {
     btn = document.createElement('button');
     btn.id = 'panel-toggle';
     btn.dataset.glass = 'navButton';
-    btn.textContent = '⚙';
+    btn.className = 'nav-circle sm';
+    // lucide "sliders-horizontal", the icon set the library's demo uses
+    btn.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></svg>';
     btn.title = 'settings (d)';
     document.getElementById('controls')!.append(btn);
     btn.onclick = () => document.getElementById('panel')!.classList.toggle('hidden');

@@ -325,7 +325,7 @@ export class FlightTuner {
       if (!d.senderConnected) {
         const hint = document.createElement("div");
         // the tracker page is one level up from the game (…/bodyarcade/ ← …/bodyarcade/flight/)
-        const rootUrl = new URL("../", window.location.href).href;
+        const rootUrl = new URL(`${import.meta.env.BASE_URL}../`, window.location.href).href;
         hint.textContent =
           window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
             ? "PosePuppet is not reaching this page. BroadcastChannel is origin-scoped; a different port is a different origin. Run `npm run arcade` at the repo root, open PosePuppet, then Command-K -> fly."

@@ -13,7 +13,7 @@
 //  - size changes are applied directly (no size spring) and coalesced to one
 //    map rebuild per frame; refractiveIndex/blur still spring like upstream.
 
-import { CONVEX, calculateRefractionSpecular, getDisplacementData } from './liquid-lib';
+import { CONVEX, LIP, calculateRefractionSpecular, getDisplacementData } from './liquid-lib';
 
 /** One glass look. Values are the library's props; `fill` is the surface tint
  *  the upstream demo applies with Tailwind (`bg-white/20` → rgba(255,255,255,.2)). */
@@ -27,6 +27,10 @@ export interface GlassMaterial {
   /** interaction targets, sprung like the upstream demo (stiffness 300, damping 30) */
   hover?: { refractiveIndex: number; blur: number };
   focus?: { refractiveIndex: number; blur: number };
+  /** bezel profile (LiquidFilter's bezelHeightFn); CONVEX unless stated */
+  surface?: 'CONVEX' | 'LIP';
+  /** LiquidFilter's scaleRatio (× maximumDisplacement); springs via setScaleRatio */
+  scaleRatio?: number;
 }
 
 // Upstream constants, apps/next-demo/.../liquid-glass-demo.tsx (GLASS_EFFECTS)
@@ -50,10 +54,40 @@ export const MATERIALS = {
     ...BAR_REST, hover: BAR_HOVER, focus: BAR_FOCUS,
   },
   /** "Upstream: bottom bar" as the gallery shows it (search field focused) —
-   *  the frosted state, used for panels that carry text over a live scene. */
+   *  the frosted state, for panels that carry text over a live scene. Held
+   *  still (no springs: a panel-sized map rebuild per frame would stutter). */
   panel: {
     glassThickness: 110, bezelWidth: 20, specularOpacity: 0.9, specularSaturation: 4,
     ...BAR_FOCUS,
+  },
+  /** "Upstream: bottom bar" as the gallery shows it (search field focused) —
+   *  the frosted state, for small surfaces that sit over busy content. */
+  frosted: {
+    glassThickness: 110, bezelWidth: 20, specularOpacity: 0.9, specularSaturation: 4,
+    ...BAR_FOCUS,
+  },
+  /** "Upstream: form field" — the form demo's LiquidGlass behind inputs,
+   *  selects and its Submit button: thickness 110, bezel 20, n 1.8, blur 0.4 */
+  formField: {
+    glassThickness: 110, bezelWidth: 20, refractiveIndex: 1.8, blur: 0.4,
+    specularOpacity: 1, specularSaturation: 4,
+  },
+  /** the same, bezel 10 — the form demo's narrower fields and Submit button */
+  formFieldThin: {
+    glassThickness: 110, bezelWidth: 10, refractiveIndex: 1.8, blur: 0.4,
+    specularOpacity: 1, specularSaturation: 4,
+  },
+  /** the slider thumb IS the nav button circle (Lekan): rest = "nav button",
+   *  hover/drag = "nav button, hovered" — nothing else */
+  sliderThumb: {
+    glassThickness: 110, bezelWidth: 20, specularOpacity: 0.9, specularSaturation: 4,
+    ...NAV_REST, hover: NAV_HOVER,
+  },
+  /** LiquidSwitch's thumb, 'sm' preset verbatim: LIP profile, thickness 24,
+   *  bezel 10, n 1.5, blur 0.2, specular 0.5 / saturation 6 */
+  switchThumb: {
+    glassThickness: 24, bezelWidth: 10, refractiveIndex: 1.5, blur: 0.2,
+    specularOpacity: 0.5, specularSaturation: 6, surface: 'LIP', scaleRatio: 0.4,
   },
 } satisfies Record<string, GlassMaterial>;
 
@@ -66,7 +100,8 @@ const BASE_CSS = `
 .glass{isolation:isolate}
 .glass>.glass-plate{position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;
   background:var(--glass-fill,rgba(255,255,255,.2));box-shadow:0 3px 14px rgba(0,0,0,.1);transition:background-color .2s ease}
-.glass-navButton:hover>.glass-plate{background:var(--glass-fill-hover,rgba(255,255,255,.35))}
+.glass-navButton:hover>.glass-plate,.glass-navButton.glass-lit>.glass-plate,
+.glass-navButton[aria-pressed="true"]>.glass-plate,.glass-navButton.on>.glass-plate{background:var(--glass-fill-hover,rgba(255,255,255,.35))}
 .glass-bar>.glass-plate{box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
 .glass-fallback>.glass-plate{border:1px solid var(--glass-hair,rgba(255,255,255,.55));-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 `;
@@ -113,7 +148,7 @@ export function liquidSupported(): boolean {
 }
 
 /** glass.tsx getBorderRadius, verbatim in behaviour. */
-function borderRadiusOf(el: HTMLElement, rect: DOMRect): number {
+function borderRadiusOf(el: HTMLElement, rect: { width: number; height: number }): number {
   const raw = getComputedStyle(el).borderRadius;
   if (!raw || raw === '0px') return 0;
   const r = parseFloat(raw);
@@ -157,6 +192,10 @@ export interface GlassHandle {
   el: HTMLElement;
   /** force the focused look (e.g. while a field inside is focused) */
   setFocused(v: boolean): void;
+  /** LiquidFilter scaleRatio (sprung) — the controls' press response */
+  setScaleRatio(v: number): void;
+  /** hold the hovered material (the slider thumb follows its input's hover) */
+  setHovered(v: boolean): void;
   /** rebuild maps now (after a layout change the observers can't see) */
   refresh(): void;
   destroy(): void;
@@ -180,12 +219,23 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
   plate.className = 'glass-plate';
   plate.setAttribute('aria-hidden', 'true');
   el.prepend(plate);
+  // code that rewrites the host (textContent = '…') drops the plate: put it back
+  const guard = new MutationObserver(() => {
+    if (plate.parentNode !== el) el.prepend(plate);
+  });
+  guard.observe(el, { childList: true });
 
   const live = liquidSupported();
   if (!live) {
     // LiquidDiv fallback: a border + 4px backdrop blur, nothing else
     el.classList.add('glass-fallback');
-    const h: GlassHandle = { el, setFocused() {}, refresh() {}, destroy: () => plate.remove() };
+    const h: GlassHandle = {
+      el, setFocused() {}, setScaleRatio() {}, setHovered() {}, refresh() {},
+      destroy: () => {
+        guard.disconnect();
+        plate.remove();
+      },
+    };
     handles.set(el, h);
     return h;
   }
@@ -214,6 +264,9 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
 
   const n = new Spring(m.refractiveIndex);
   const b = new Spring(m.blur);
+  const sr = new Spring(m.scaleRatio ?? 1);
+  const surfaceFn = m.surface === 'LIP' ? LIP.fn : CONVEX.fn;
+  let maxDisp = 0;
   let w = 0;
   let h = 0;
   let r = 0;
@@ -222,6 +275,7 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
   let raf = 0;
   let last = 0;
   let hovered = false;
+  let held = false;
   let focused = false;
   let destroyed = false;
 
@@ -235,7 +289,7 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
       const { displacementMap, maximumDisplacement } = getDisplacementData({
         glassThickness: m.glassThickness,
         bezelWidth: Math.max(Math.min(m.bezelWidth, 2 * r - 1), 0), // LiquidFilter clamp
-        bezelHeightFn: CONVEX.fn,
+        bezelHeightFn: surfaceFn,
         refractiveIndex: n.value,
         canvasWidth: w,
         canvasHeight: h,
@@ -247,8 +301,9 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
       dispImg.setAttribute('href', imageDataToUrl(displacementMap));
       dispImg.setAttribute('width', String(w));
       dispImg.setAttribute('height', String(h));
-      disp.setAttribute('scale', String(maximumDisplacement));
+      maxDisp = maximumDisplacement;
     }
+    disp.setAttribute('scale', String(maxDisp * sr.value));
     const sk = `${w}|${h}|${r}|${dpr}`;
     if (sk !== specKey) {
       specKey = sk;
@@ -267,26 +322,32 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
     last = now;
     const nMoving = n.step(dt);
     const bMoving = b.step(dt);
+    const sMoving = sr.step(dt);
     paintMaps();
-    if (nMoving || bMoving) schedule();
+    if (nMoving || bMoving || sMoving) schedule();
     else last = 0;
   }
   function schedule(): void {
     if (!raf && !destroyed) raf = requestAnimationFrame(frame);
   }
 
+  // selected controls hold the demo's "nav button, hovered" material
+  const isSelected = () => el.matches('[aria-pressed="true"], .on, .is-on');
   function retarget(): void {
-    const t = focused && m.focus ? m.focus : hovered && m.hover ? m.hover : m;
+    const lit = hovered || held || isSelected();
+    const t = focused && m.focus ? m.focus : lit && m.hover ? m.hover : m;
     n.target = t.refractiveIndex;
     b.target = t.blur;
     schedule();
   }
 
   function measure(): void {
-    const rect = el.getBoundingClientRect();
-    const nw = Math.max(Math.round(rect.width), 1);
-    const nh = Math.max(Math.round(rect.height), 1);
-    const nr = Math.max(borderRadiusOf(el, rect), 0);
+    // layout size, not getBoundingClientRect: thumbs scale with transforms and
+    // the filter must stay sized to the element's own box (LiquidFilter is
+    // handed the unscaled width/height the same way)
+    const nw = Math.max(el.offsetWidth, 1);
+    const nh = Math.max(el.offsetHeight, 1);
+    const nr = Math.max(borderRadiusOf(el, { width: nw, height: nh }), 0);
     if (nw === w && nh === h && Math.abs(nr - r) < 0.5) return;
     w = nw;
     h = nh;
@@ -297,6 +358,10 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
   const ro = new ResizeObserver(measure);
   ro.observe(el);
   measure();
+  // selection is just an attribute/class on the host: follow it
+  const sel = new MutationObserver(retarget);
+  if (m.hover) sel.observe(el, { attributes: true, attributeFilter: ['aria-pressed', 'class'] });
+  if (m.hover && isSelected()) retarget();
 
   const onEnter = () => {
     hovered = true;
@@ -323,6 +388,15 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
 
   const handle: GlassHandle = {
     el,
+    setScaleRatio(v) {
+      sr.target = v;
+      schedule();
+    },
+    setHovered(v) {
+      held = v;
+      el.classList.toggle('glass-lit', v);
+      retarget();
+    },
     setFocused(v) {
       focused = v;
       el.classList.toggle('glass-focused', v);
@@ -334,6 +408,8 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
     },
     destroy() {
       destroyed = true;
+      guard.disconnect();
+      sel.disconnect();
       ro.disconnect();
       if (raf) cancelAnimationFrame(raf);
       filter.remove();
@@ -352,19 +428,22 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
 /** Glassify every `[data-glass]` element under `root` (value = material). */
 export function glassifyAll(root: ParentNode = document): void {
   root.querySelectorAll<HTMLElement>('[data-glass]').forEach((el) => {
+    if (el.dataset.glass === 'none') return;
     glassify(el, (el.dataset.glass as MaterialName) || 'panel');
   });
 }
 
 /** Keep glassifying `[data-glass]` nodes that code adds later (palette rows,
- *  record button, coach actions…). One observer for the whole document. */
-export function watchGlass(): void {
+ *  record button, coach actions…), plus anything `onAdded` wants to upgrade.
+ *  One observer for the whole document. */
+export function watchGlass(onAdded?: (node: HTMLElement) => void): void {
   new MutationObserver((records) => {
     for (const rec of records) {
       rec.addedNodes.forEach((node) => {
-        if (!(node instanceof HTMLElement)) return;
-        if (node.dataset.glass) glassify(node, node.dataset.glass as MaterialName);
+        if (!(node instanceof HTMLElement) || node.classList.contains('glass-plate')) return;
+        if (node.dataset.glass && node.dataset.glass !== 'none') glassify(node, node.dataset.glass as MaterialName);
         glassifyAll(node);
+        onAdded?.(node);
       });
     }
   }).observe(document.body, { childList: true, subtree: true });

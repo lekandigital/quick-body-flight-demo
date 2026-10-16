@@ -43,8 +43,11 @@ writeFileSync(
   JSON.stringify(
     {
       $schema: 'https://openapi.vercel.sh/vercel.json',
-      trailingSlash: true,
-      redirects: [{ source: '/', destination: BASE, permanent: false }],
+      // soarlabs.ai runs trailingSlash:false and strips the slash before its
+      // rewrite reaches us — so never redirect back to a slashed path here
+      // (that would loop); /bodyarcade and /bodyarcade/flight serve their index.html
+      trailingSlash: false,
+      redirects: [{ source: '/', destination: BASE.replace(/\/$/, ''), permanent: false }],
       headers: [
         {
           source: '/(.*)',
