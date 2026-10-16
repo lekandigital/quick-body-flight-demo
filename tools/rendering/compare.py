@@ -26,7 +26,9 @@ sf_pair=Image.open(refs/'sf1-pairs.png')
 sheet('space.jpg',[(load('baseline','space'),'Baseline: subpixel points'),(load('space-pixels','space'),'Correct pixel-size points + authored bloom'),(sf_pair.crop((590,744,1205,1088)),'Sketchfab reference — historical camera')])
 earth=cap/'earth-16k-earth-960x600.png'
 sheet('earth.jpg',[(load('baseline','earth'),'Baseline: clipped globe'),(Image.open(earth) if earth.exists() else load('original','earth'),'Full-globe framing / original textures'),(Image.open(refs/'sfembed-api-pair.png').crop((728,0,1448,450)),'Sketchfab — lighting/post still differ')])
-sheet('hangar.jpg',[(load('baseline','hangar'),'Baseline: auxiliary transparent mirror'),(load('hangar-lowenv','hangar'),'Actual opaque floor / screen-space reflection'),(Image.open(refs/'sfembed-api-hangar.png'),'Sketchfab — HDR lighting still differs')])
+sheet('hangar.jpg',[(load('baseline','hangar'),'Baseline: auxiliary transparent mirror'),(load('milestone','hangar'),'Original SG / bump rays / HDR reference'),(Image.open(refs/'sfembed-api-hangar.png'),'Sketchfab — indirect light still differs')])
+sheet('hangar-reflections.jpg',[(load('hangar-source','hangar'),'Same source/camera: screen-space gaps'),(load('hangar-surface','hangar'),'Scene capture: complete flat reflection'),(load('hangar-verified','hangar'),'Source bump and reflected-view ray tracing')])
+sheet('gallery.jpg',[(load('baseline','gallery'),'Baseline: optimized 2K WebP'),(load('milestone','gallery'),'Original 3K baked wall maps')])
 sheet('corridor.jpg',[(load('baseline','corridor'),'Baseline: optimized 1K maps'),(load('original','corridor'),'Original 4K maps / preserved materials'),(Image.open(refs/'sfembed-api-pair2.png').crop((728,0,1448,450)),'Sketchfab — illumination still differs')])
 metrics={}
 for id in ['galaxy','nebula']:

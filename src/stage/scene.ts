@@ -45,6 +45,8 @@ export interface Stage {
 export function createStage(canvas: HTMLCanvasElement): Stage {
   // alpha: the in-game model view renders over glass with no background
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const gl=renderer.getContext();
+  const maxRenderDimension=Math.min(renderer.capabilities.maxTextureSize,gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
   renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -236,10 +238,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     applyPixelRatio();
   }
 
-  /** 1× pixels under 3D backgrounds and in the model view (GPU headroom for
-   *  the pose model); up to 2× on the plain sky */
+  /** Explicit quality controls density; only actual device limits constrain it. */
   function applyPixelRatio(): void {
-    renderer.setPixelRatio(pip ? 1 : bgDef ? BACKGROUND_QUALITY[quality].resolution(window.devicePixelRatio) : Math.min(window.devicePixelRatio, 2));
     resize();
   }
 
@@ -270,6 +270,12 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     const w = parent.clientWidth;
     const h = parent.clientHeight;
     if (w === 0 || h === 0) return;
+    const requested=pip?1:bgDef?BACKGROUND_QUALITY[quality].resolution(window.devicePixelRatio):Math.min(window.devicePixelRatio,2);
+    const ratio=Math.min(requested,maxRenderDimension/Math.max(w,h));
+    if(ratio!==renderer.getPixelRatio()) {
+      if(ratio<requested) console.warn(`Requested render size exceeds the GPU's ${maxRenderDimension}px limit; using the maximum supported size.`);
+      renderer.setPixelRatio(ratio);
+    }
     renderer.setSize(w, h, false);
     const size = renderer.getDrawingBufferSize(new THREE.Vector2());
     bgRenderer.setSize(size.x, size.y);
@@ -289,8 +295,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   let suspended = false;
 
   function loop(now: number) {
-    // ≤ 30 fps in the model view and over 3D backgrounds: the pose model shares
-    // this GPU, and starving it breaks the controls (measured at 2× density)
+    // Maximum is uncapped. Lower profiles and the in-game model view retain
+    // their explicit cadence; gameplay suspension remains independent.
     const limit = pip ? 30 : bgDef ? BACKGROUND_QUALITY[quality].fps : Infinity;
     if (now - last < 1000 / limit - .5) {
       requestAnimationFrame(loop);

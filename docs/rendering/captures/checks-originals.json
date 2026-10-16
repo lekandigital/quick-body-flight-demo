@@ -1,0 +1,90 @@
+{
+  "profile": {
+    "originals": true,
+    "referenceHDR": true
+  },
+  "color": [
+    118,
+    118,
+    118,
+    255
+  ],
+  "contextRestore": {
+    "before": [
+      42,
+      24,
+      49,
+      255
+    ],
+    "after": [
+      42,
+      24,
+      49,
+      255
+    ]
+  },
+  "race": {
+    "id": "nebula",
+    "environment": false
+  },
+  "lifecycle": {
+    "memory": [
+      {
+        "geometries": 22,
+        "textures": 31
+      },
+      {
+        "geometries": 22,
+        "textures": 31
+      },
+      {
+        "geometries": 22,
+        "textures": 31
+      },
+      {
+        "geometries": 22,
+        "textures": 31
+      },
+      {
+        "geometries": 22,
+        "textures": 31
+      },
+      {
+        "geometries": 22,
+        "textures": 31
+      }
+    ],
+    "mirrors": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "afterDispose": {
+      "geometries": 1,
+      "textures": 1
+    }
+  },
+  "maximum": {
+    "width": 2200,
+    "height": 2000
+  },
+  "mobile": {
+    "width": 825,
+    "height": 750
+  },
+  "flight": "http://127.0.0.1:5176/flight",
+  "row": "http://127.0.0.1:5176/flight?row",
+  "avatar": {
+    "canvas": 1100,
+    "mode": "true"
+  },
+  "camera": {
+    "width": 1280,
+    "height": 720,
+    "readyState": 4
+  },
+  "errors": []
+}

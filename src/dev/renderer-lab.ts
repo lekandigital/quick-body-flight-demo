@@ -30,6 +30,7 @@ renderer.debug.onShaderError = (gl, program, vs, fs) => {
   shaderErrors.push([gl.getProgramInfoLog(program), gl.getShaderInfoLog(vs), gl.getShaderInfoLog(fs)].join('\n'));
 };
 const params = new URLSearchParams(location.search);
+const captureScale=Math.min(4,Math.max(1,Number(params.get('scale'))||1));
 if (params.has('scene')) select.value = params.get('scene')!;
 if (params.has('label')) $<HTMLInputElement>('label').value = params.get('label')!;
 if (params.has('viewport')) $<HTMLSelectElement>('viewport').value = params.get('viewport')!;
@@ -52,26 +53,30 @@ function report(extra: Record<string, unknown> = {}) {
         side: m.side, roughness: p.roughness, metalness: p.metalness, ior: p.ior,
         transmission: p.transmission, emissiveIntensity: p.emissiveIntensity, normalScale: p.normalScale?.toArray() });
       materials[materials.length-1].fullResolutionTextures=p.userData.fullResolutionTextures;
+      materials[materials.length-1].surfaceReflection=p.userData.surfaceReflection;
       const last=materials[materials.length-1];
       const emissiveImage=p.emissiveMap?.image as {width?:number;height?:number}|undefined;
       const baseImage=p.map?.image as {width?:number;height?:number}|undefined;
       if(p.emissiveMap) last.emissiveTexture={width:emissiveImage?.width,height:emissiveImage?.height,
         type:p.emissiveMap.type,colorSpace:p.emissiveMap.colorSpace,sourceDepth:p.emissiveMap.userData.sourceDepth};
       if(p.map) last.baseTexture={width:baseImage?.width,height:baseImage?.height};
+      if(p.bumpMap) {const image=p.bumpMap.image as {width:number;height:number};last.bumpTexture={width:image.width,height:image.height,colorSpace:p.bumpMap.colorSpace,scale:p.bumpScale};}
     }
   });
   const gl = renderer.getContext(); const debug = gl.getExtension('WEBGL_debug_renderer_info');
-  const data = { id: active.id, viewport: [w, h], gpu: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), hdrSupported: background.hdrSupported, camera: { position: pos.toArray(),
+  const data = { id: active.id, configuration:background.configuration,quality:requestedQuality??'maximum',viewport: [w, h],renderResolution:[canvas.width,canvas.height],captureScale, gpu: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), hdrSupported: background.hdrSupported, camera: { position: pos.toArray(),
     target: background.baseView.target.toArray(), up: background.camera.up.toArray(), fov: background.camera.fov },
+    environment:background.scene.environment?{...background.scene.environment.userData,intensity:background.scene.environmentIntensity,rotation:background.scene.environmentRotation.toArray()}:null,
     memory: { ...renderer.info.memory }, materials, shaderErrors: [...shaderErrors], ...extra };
   $('status').textContent = JSON.stringify(data, null, 2);
   return data;
 }
 async function render() {
   const [w, h] = $<HTMLSelectElement>('viewport').value.split('x').map(Number);
-  renderer.setSize(w, h, false);
+  renderer.setPixelRatio(captureScale);
+  renderer.setSize(w,h,false);
   canvas.style.width = `${w}px`;
-  background.setSize(w, h);
+  background.setSize(canvas.width, canvas.height);
   const def = LIBRARY.find((d) => d.id === select.value)!;
   const patch = JSON.parse(params.get('patch') ?? '{}');
   active = { ...def, parts: def.parts.map((part) => ({ ...part, ...patch })) };
@@ -93,7 +98,7 @@ async function capture() {
     const start = performance.now(); draw(1 / 30); renderer.getContext().finish();
     frameMs.push(performance.now() - start);
   }
-  const metadata = report({ state: 'captured', frameMs, renderer: renderer.getContext().getParameter(renderer.getContext().RENDERER) });
+  const metadata = report({ state: 'captured',animationTime:0,frameMs, renderer: renderer.getContext().getParameter(renderer.getContext().RENDERER) });
   const label = $<HTMLInputElement>('label').value;
   const viewport = $<HTMLSelectElement>('viewport').value;
   const res = await fetch('/__rendering/capture', { method: 'POST', headers: { 'Content-Type': 'application/json' },

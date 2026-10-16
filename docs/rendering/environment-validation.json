@@ -1,0 +1,32 @@
+{
+  "uid": "08468d6fcf9846039cc3e51accddd9f9",
+  "name": "Studio Soft",
+  "metadataUrl": "https://sketchfab.com/i/environments/08468d6fcf9846039cc3e51accddd9f9",
+  "resourceUrl": "https://media.sketchfab.com/environments/08468d6fcf9846039cc3e51accddd9f9/448e97f878304445800618d27841244f.bin.gz",
+  "sourceEncoding": "planar RGBA LogLuv",
+  "cubeFaceSize": 512,
+  "sha256": "a11d698fbf76cdaa34f650d3cac367ee42f00765d6b507b89504609c21ff0747",
+  "linearRadianceRange": [
+    0.006926012294402575,
+    41.933749756925415
+  ],
+  "measuredDiffuseCoefficients": [
+    2.0220455241472326,
+    -0.8080563193831779,
+    0.05767487210930014,
+    -0.2634593110119902
+  ],
+  "expectedDiffuseCoefficients": [
+    2.02487,
+    -0.809192,
+    0.0577008,
+    -0.263872
+  ],
+  "relativeCoefficientErrors": [
+    0.0013948924389058802,
+    0.0014034748450579358,
+    0.0004493506277184394,
+    0.0015639741541723998
+  ],
+  "licenseStatus": "Reference evaluation only; redistribution terms unverified"
+}

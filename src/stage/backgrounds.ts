@@ -46,12 +46,13 @@ export interface BackgroundPart {
   /** Explicit source assets, served only by the local development bridge. */
   sourceUrl?: string;
   emissiveTextureUrl?: string;
-  textureOverrides?: Array<{material:string;slot:'map'|'emissiveMap';url:string;flipY?:boolean;maxDimension?:number;
+  environmentCube?:{url:string;size:number};
+  textureOverrides?: Array<{material:string;slot:'map'|'emissiveMap'|'bumpMap';url:string;flipY?:boolean;scale?:number;maxDimension?:number;
     tiles?:{leftUrl:string;rightUrl:string;innerWidth:number;gutter:number}}>;
   /** Fit this material's geometry without changing the authored viewing angle. */
   fitMaterial?: string;
   /** Screen-space reflections on the actual named opaque surfaces. */
-  reflections?: { materials: string[]; opacity?: number; maxDistance?: number; thickness?: number };
+  reflections?: { materials: string[]; method?:'screen'|'surface'; opacity?: number; maxDistance?: number; thickness?: number };
 }
 
 export interface BackgroundDef {
@@ -111,7 +112,7 @@ export const LIBRARY: BackgroundDef[] = [
     id: 'hangar', label: 'Sci-fi hangar', glyph: '▭', kind: 'indoor', tone: 'dark', floor: true,
     drift: null, // the Earth outside the window rotates on its own
     parts: [{ file: 'hangar.glb', animate: true, envScale: .3, lightScale: .4, bloomScale: .6,
-      reflections: { materials: ['Floor'], maxDistance: 44, thickness: .05 } }],
+      reflections: { materials: ['Floor'], method:'surface', maxDistance: 44, thickness: .05 } }],
     credits: [{ title: 'Sci-Fi Hanger', author: 'dylanheyes', authorUrl: 'https://sketchfab.com/dylanheyes', source: 'https://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c' }],
   },
   {

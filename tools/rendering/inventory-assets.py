@@ -82,7 +82,7 @@ with zipfile.ZipFile(archive) as outer:
                     if entry.filename.lower().endswith(('.png','.jpg','.jpeg','.webp','.tga')):
                         data = nested.read(entry)
                         row.update(image_info(data) or {})
-                        if 'inside-galaxy' in item.filename or (item.filename=='3dbackgrounds/earth.zip' and entry.filename in ('textures/2_no_clouds_16k.jpeg','textures/NIGHT.jpg')):
+                        if 'inside-galaxy' in item.filename or 'vr-exhibition-gallery-baked' in item.filename or (item.filename=='3dbackgrounds/sci-fi-hanger.zip' and entry.filename=='textures/FloorNormal.png') or (item.filename=='3dbackgrounds/earth.zip' and entry.filename in ('textures/2_no_clouds_16k.jpeg','textures/NIGHT.jpg')):
                             safe_write(str(PurePosixPath(item.filename).with_suffix('')) + '/' + entry.filename, data)
                     if entry.filename.lower().endswith('.zip'):
                         with zipfile.ZipFile(io.BytesIO(nested.read(entry))) as inner:
@@ -94,6 +94,14 @@ with zipfile.ZipFile(archive) as outer:
                         if 'inside-galaxy' in item.filename:
                             name = str(PurePosixPath(item.filename).with_suffix('')) + '/' + entry.filename
                             safe_write(name, data)
+                            # Use the source GLB's runtime-oriented 16-bit PNG.
+                            # The separate artist PNG is vertically reversed.
+                            length=struct.unpack_from('<I',data,12)[0]
+                            document=json.loads(data[20:20+length])
+                            texture=document['materials'][0]['emissiveTexture']['index']
+                            view=document['bufferViews'][document['images'][document['textures'][texture]['source']]['bufferView']]
+                            offset=28+length+view.get('byteOffset',0)
+                            safe_write(str(PurePosixPath(item.filename).with_suffix(''))+'/source/Inside-galaxy-emissive.png',data[offset:offset+view['byteLength']])
                     if 'license' in entry.filename.lower() and entry.file_size < 100_000:
                         row['licenseText'] = nested.read(entry).decode('utf8', errors='replace')
                     rows.append(row)

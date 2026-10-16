@@ -18,7 +18,7 @@ try {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   for (const viewport of viewports) for (const id of ids) {
-    await page.goto(`http://127.0.0.1:5175/dev/rendering.html?scene=${id}&label=${label}&viewport=${viewport}&quality=${args.quality ?? 'balanced'}&patch=${encodeURIComponent(args.patch ?? '{}')}`);
+    await page.goto(`http://127.0.0.1:5175/dev/rendering.html?scene=${id}&label=${label}&viewport=${viewport}&quality=${args.quality ?? 'balanced'}&scale=${args.scale??1}&patch=${encodeURIComponent(args.patch ?? '{}')}`);
     await page.waitForFunction(() => /"state": "ready"|ERROR:/.test(document.querySelector('#status').textContent), { timeout: 120000 });
     if ((await page.locator('#status').innerText()).startsWith('ERROR:')) throw new Error(await page.locator('#status').innerText());
     await page.getByRole('button', { name: 'Save capture', exact: true }).click();

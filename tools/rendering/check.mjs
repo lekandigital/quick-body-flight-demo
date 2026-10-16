@@ -7,7 +7,7 @@ const server = await createServer({ server: { host:'127.0.0.1', port:5176, stric
 await server.listen();
 const browser = await chromium.launch({ executablePath: process.env.RENDERING_CHROMIUM_PATH, headless:true,
   args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream'] });
-const results = {};
+const results = {profile:{originals:!!process.env.BODYARCADE_ORIGINALS_DIR,referenceHDR:process.env.BODYARCADE_REFERENCE_HDR==='1'}};
 try {
   const page = await browser.newPage({ viewport:{width:1100,height:1000} });
   page.setDefaultTimeout(45000);
@@ -31,6 +31,20 @@ try {
   });
   assert.ok(Math.abs(results.color[0] - 118) <= 1, `Expected one sRGB conversion of linear .18 → 118, got ${results.color}`);
   console.log('Color pipeline check passed');
+
+  await openLab();
+  const pixel=()=>page.evaluate(()=>{
+    const {draw,renderer}=window.__renderingLab;draw();
+    const gl=renderer.getContext(),rgba=new Uint8Array(4);gl.readPixels(480,300,1,1,gl.RGBA,gl.UNSIGNED_BYTE,rgba);return [...rgba];
+  });
+  const beforeContextLoss=await pixel();
+  await page.evaluate(()=>window.__renderingLab.renderer.forceContextLoss());
+  await page.waitForFunction(()=>window.__renderingLab.background.contextLost);
+  await page.evaluate(()=>window.__renderingLab.renderer.forceContextRestore());
+  await page.waitForFunction(()=>!window.__renderingLab.background.contextLost);
+  results.contextRestore={before:beforeContextLoss,after:await pixel()};
+  assert.deepEqual(results.contextRestore.after,results.contextRestore.before,'Restored targets must reproduce the same static background');
+  console.log('Context restoration check passed');
 
   // Hold a real environment request while a newer selection finishes loading.
   let release; let observed;
@@ -65,7 +79,7 @@ try {
     return {memory,mirrors:roots,afterDispose:{...renderer.info.memory}};
   });
   assert.equal(new Set(results.lifecycle.memory.map((x)=>JSON.stringify(x))).size,1,'GPU object counts must plateau after warmup');
-  assert.ok(results.lifecycle.mirrors.every((n)=>n===0),'Hangar SSR must reflect the actual floor without auxiliary mirror geometry');
+  assert.ok(results.lifecycle.mirrors.every((n)=>n===0),'Hangar must reflect the actual floor without auxiliary visible mirror geometry');
   console.log('Hangar reload/disposal check passed');
 
   await page.goto('http://127.0.0.1:5176/?bg=galaxy&avatar=robot&delegate=cpu');
@@ -96,6 +110,6 @@ try {
   results.errors=errors;
   assert.equal(errors.length,0,errors.join('\n'));
   mkdirSync('docs/rendering/captures',{recursive:true});
-  writeFileSync('docs/rendering/captures/checks.json',JSON.stringify(results,null,2));
+  writeFileSync(`docs/rendering/captures/${results.profile.originals?'checks-originals':'checks'}.json`,JSON.stringify(results,null,2));
   console.log(JSON.stringify(results,null,2));
 } finally {await browser.close();await server.close();}

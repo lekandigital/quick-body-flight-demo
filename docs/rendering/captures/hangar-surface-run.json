@@ -1,0 +1,206 @@
+{
+  "results": [
+    {
+      "id": "hangar",
+      "viewport": [
+        960,
+        600
+      ],
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          -5.448551122983995,
+          -2.4170041002755887,
+          13.907760506717366
+        ],
+        "target": [
+          -4.562517874852374,
+          -2.4462799891523863,
+          10.321698123021358
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "memory": {
+        "geometries": 19,
+        "textures": 29
+      },
+      "materials": [
+        {
+          "name": "Walls",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0.4,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            0.1,
+            0.1
+          ],
+          "baseTexture": {
+            "width": 512,
+            "height": 256
+          }
+        },
+        {
+          "name": "Chrome",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Window",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 0.5,
+          "depthWrite": false,
+          "side": 0,
+          "roughness": 0.16200000000000003,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Floor",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "surfaceReflection": {
+            "deviation": 0.09797621553425583,
+            "extent": 31.890598464968445
+          }
+        },
+        {
+          "name": "Lights",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0.8211145618000169,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 2.9026361519236215,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "LightGlassCover",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 0.3834586315888604,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0.7470177871865296,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ]
+        },
+        {
+          "name": "Doors",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 0.2232794305242984,
+          "normalScale": [
+            0.15047109059761488,
+            0.15047109059761488
+          ],
+          "emissiveTexture": {
+            "width": 512,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          },
+          "baseTexture": {
+            "width": 512,
+            "height": 512
+          }
+        },
+        {
+          "name": "Backdrop",
+          "type": "MeshPhysicalMaterial",
+          "opacity": 1,
+          "depthWrite": true,
+          "side": 0,
+          "roughness": 1,
+          "metalness": 0,
+          "ior": 1.5,
+          "transmission": 0,
+          "emissiveIntensity": 2.9026361519236215,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 1024,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          },
+          "baseTexture": {
+            "width": 1024,
+            "height": 512
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "state": "saved",
+      "file": "docs/rendering/captures/hangar-surface-hangar-960x600.png",
+      "frameMs": [
+        2.2999999998137355,
+        1.3999999999068677,
+        1.2000000001862645,
+        1.3999999999068677,
+        1.8999999999068677,
+        1.8000000002793968
+      ]
+    }
+  ],
+  "errors": [],
+  "softwareRenderer": true
+}

@@ -1,0 +1,29 @@
+{
+  "sourceModel": "https://sketchfab.com/3d-models/alien-space-nebula-2-skybox-a1c688c6e8164fd4ad5a7e56047e8b50",
+  "textureUid": "ae7c6f0e76904fa08733766e6dcce85b",
+  "sourceName": "Alien Space Nebula 4xup.png",
+  "url": "https://media.sketchfab.com/models/a1c688c6e8164fd4ad5a7e56047e8b50/63932c83c0d649e8a775209b7aea0fe5/textures/ae7c6f0e76904fa08733766e6dcce85b/568769ae42da464884193e9181e538d3.png",
+  "size": 38402875,
+  "dimensions": [
+    8192,
+    4096
+  ],
+  "sha256": "3e07f07d8a33f0c16104401330bde29bf020c77145d9bc5c1eb195cf6339cb7a",
+  "archiveContainsNebula": false,
+  "unflippedMAE255": 18.574907938639324,
+  "flippedMAE255": 18.636080423990887,
+  "note": "Public artist texture, recovered separately from the provided ZIP. Source name suggests an authored upscale; native detail is not assumed.",
+  "viewerVariant": {
+    "name": "Alien Space Nebula 4xup.png",
+    "url": "https://media.sketchfab.com/models/a1c688c6e8164fd4ad5a7e56047e8b50/63932c83c0d649e8a775209b7aea0fe5/textures/ae7c6f0e76904fa08733766e6dcce85b/fcf686ec58454c23b568374806f896f3.jpeg",
+    "dimensions": [
+      8192,
+      4096
+    ],
+    "bytes": 2912265,
+    "sha256": "385248a51ab7ad4c7f99644bb060f8c29342e4832a8b19015fed57407c1ddff9",
+    "unflippedMAE255": 18.5640385945638,
+    "flippedMAE255": 18.627601623535156
+  },
+  "decision": "Rejected as a drop-in texture replacement. Both public 8K representations differ in image layout from the committed GLB; tested direct, horizontal/vertical flip and half-turn mappings do not align. Keep the current GLB until an original UV/texture pair can be verified."
+}

@@ -6,7 +6,7 @@
 // avatar's own camera and light rig.
 //
 // Still scenes (corridor, gallery) render once; scenes that move (animations,
-// spins, camera drift) re-render at ≤ 30 fps.
+// spins, camera drift) re-render at the selected quality's rate (Maximum is uncapped).
 
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -21,6 +21,8 @@ import { clone as cloneScene } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { backgroundMaterial, findViewerChannels, type ViewerChannels } from './backgroundMaterials';
 import { BACKGROUND_QUALITY, type BackgroundQuality } from './backgroundQuality';
 import { useTiledTexture } from './tiledTexture';
+import { specularGlossinessPlugin } from './specularGlossiness';
+import { SurfaceReflection } from './planarReflection';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import type { BackgroundDef, BackgroundPart } from './backgrounds';
 import { asset } from '../base';
@@ -90,6 +92,7 @@ const GradeShader = {
 
 const loader = new GLTFLoader();
 loader.setMeshoptDecoder(MeshoptDecoder);
+loader.register(specularGlossinessPlugin);
 const settingsCache = new Map<string, Promise<SfSettings | null>>();
 
 function loadSettings(file: string): Promise<SfSettings | null> {
@@ -116,11 +119,28 @@ export class BackgroundRenderer {
   private mixers: THREE.AnimationMixer[] = [];
   private spinners: Array<{ obj: THREE.Object3D; rate: number }> = [];
   private def: BackgroundDef | null = null;
+  private resolvedParts: BackgroundPart[]=[];
   private base = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
   private dirty = true;
   private sinceRender = 1;
   private token = 0;
   private disposed = false;
+  private contextLost=false;
+  private contextVersion=0;
+  private onContextLost=()=>{this.contextLost=true;this.contextVersion++;};
+  private onContextRestored=()=>{
+    const version=this.contextVersion;
+    // Render-target contents are lost with the context. CPU-backed textures
+    // reupload automatically; prefiltered environment targets must be rebaked.
+    void Promise.all([...this.environments.values()].map(async (pending)=>{
+      const {source,target}=await pending;
+      if(this.disposed || version!==this.contextVersion) return;
+      if((source as THREE.CubeTexture).isCubeTexture) this.pmrem.fromCubemap(source as THREE.CubeTexture,target);
+      else this.pmrem.fromEquirectangular(source,target);
+    })).then(()=>{if(!this.disposed && version===this.contextVersion) {this.contextLost=false;this.dirty=true;}}).catch((error)=>{
+      if(!this.disposed && version===this.contextVersion) {this.contextLost=false;this.dirty=true;console.error('Background environment restoration failed',error);}
+    });
+  };
   private templates = new Map<string, Promise<GLTF>>();
   private environments = new Map<string, Promise<{ source: THREE.Texture; target: THREE.WebGLRenderTarget }>>();
   private precisionTextures = new Map<string, Promise<THREE.Texture>>();
@@ -130,6 +150,7 @@ export class BackgroundRenderer {
   private roots: THREE.Object3D[] = [];
   private renderPass: RenderPass;
   private ssr: SSRPass | null = null;
+  private surfaceReflections: SurfaceReflection[]=[];
   private quality: BackgroundQuality = 'maximum';
   private fitRadius = 0;
   private authoredDistance = 0;
@@ -173,6 +194,8 @@ export class BackgroundRenderer {
 
   constructor(renderer: THREE.WebGLRenderer) {
     this.renderer = renderer;
+    renderer.domElement.addEventListener('webglcontextlost',this.onContextLost);
+    renderer.domElement.addEventListener('webglcontextrestored',this.onContextRestored);
     this.hdrSupported = renderer.extensions.has('EXT_color_buffer_float');
     this.pmrem = new THREE.PMREMGenerator(renderer);
     this.scene.add(this.camera); // camera-attached lights hang off it
@@ -207,6 +230,7 @@ export class BackgroundRenderer {
     this.camera.updateProjectionMatrix();
     this.composer.setPixelRatio(1);
     this.composer.setSize(w, h);
+    this.resizeReflections(w,h);
     this.dirty = true;
   }
 
@@ -226,6 +250,12 @@ export class BackgroundRenderer {
       if (target.samples !== samples) { target.samples = samples; target.dispose(); }
     }
     this.updateFiltering(); this.dirty = true;
+    const size=this.renderer.getDrawingBufferSize(new THREE.Vector2());this.resizeReflections(size.x,size.y);
+  }
+
+  private resizeReflections(w:number,h:number):void {
+    const samples=Math.min(BACKGROUND_QUALITY[this.quality].samples,this.renderer.capabilities.maxSamples);
+    for(const reflection of this.surfaceReflections) reflection.setSize(w,h,samples);
   }
 
   private updateFiltering(): void {
@@ -249,8 +279,23 @@ export class BackgroundRenderer {
   }
 
   private reset(): void {
+    this.resolvedParts=[];
+    for(const reflection of this.surfaceReflections) reflection.dispose();
+    this.surfaceReflections=[];
     if (this.ssr) { this.composer.removePass(this.ssr); this.ssr.dispose(); this.ssr.ssrMaterial.dispose(); this.ssr = null; }
     this.renderPass.enabled = true;
+    // Keep decoded templates for reuse, but release the previous scene's GPU
+    // residency. Three reuploads these CPU-backed resources on next use.
+    const geometries=new Set<THREE.BufferGeometry>(),textures=new Set<THREE.Texture>();
+    for(const root of this.roots) root.traverse((object)=>{
+      const mesh=object as THREE.Mesh;
+      if(mesh.geometry) geometries.add(mesh.geometry);
+      if(mesh.material) for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material]) {
+        for(const value of Object.values(material)) if(value?.isTexture) textures.add(value);
+      }
+    });
+    for(const geometry of geometries) geometry.dispose();
+    for(const texture of textures) texture.dispose();
     for (const mixer of this.mixers) { mixer.stopAllAction(); mixer.uncacheRoot(mixer.getRoot()); }
     for (const mirror of this.mirrors) { mirror.removeFromParent(); mirror.geometry.dispose(); mirror.dispose(); }
     for (const material of this.materials) material.dispose();
@@ -296,9 +341,10 @@ export class BackgroundRenderer {
     // An old environment response can no longer overwrite a newer selection.
     const env = lead.s?.environment;
     const needsEnv = env && ((env.enable && lead.s?.shading?.type !== 'shadeless') || lead.s?.background?.enable === 'environment');
-    const preparedEnv = needsEnv ? await this.envTexture(env.uid) : null;
+    const preparedEnv = needsEnv ? await this.envTexture(env.uid,lead.p.environmentCube) : null;
     if (token !== this.token || this.disposed) return;
     this.reset();
+    this.resolvedParts=parts.map(({p})=>p);
     for (const { p, g, s, texture, overrides } of parts) this.addPart(p, g, s, texture, overrides);
     const root = this.roots[parts.indexOf(lead)];
     if (lead.s) this.applyView(root, lead.s, lead.p, preparedEnv);
@@ -342,10 +388,17 @@ export class BackgroundRenderer {
           if(texture && physical.emissiveMap) {
             physical.emissiveMap=this.bindTexture(texture,physical.emissiveMap);
           }
-          for(const override of overrides) if(override.spec.material===m.name && physical[override.spec.slot]) {
-            const original=physical[override.spec.slot]!;
-            physical[override.spec.slot]=this.bindTexture(override.texture,original,override.spec.flipY);
-            if(override.right && override.spec.tiles) {
+          for(const override of overrides) if(override.spec.material===m.name) {
+            const original=physical[override.spec.slot]??physical.map;
+            physical[override.spec.slot]=original?this.bindTexture(override.texture,original,override.spec.flipY):override.texture.clone();
+            this.instanceTextures.add(physical[override.spec.slot]!);
+            if(override.spec.slot==='bumpMap') {
+              physical.bumpMap!.colorSpace=THREE.NoColorSpace;
+              physical.bumpMap!.flipY=override.spec.flipY??false;
+              physical.bumpMap!.wrapS=physical.bumpMap!.wrapT=THREE.RepeatWrapping;
+              physical.bumpScale=override.spec.scale??1;
+            }
+            if(override.right && override.spec.tiles && override.spec.slot!=='bumpMap' && original) {
               const right=this.bindTexture(override.right,original,override.spec.flipY);
               physical[override.spec.slot]!.wrapS=right.wrapS=THREE.ClampToEdgeWrapping;
               useTiledTexture(physical,override.spec.slot,right,override.spec.tiles.innerWidth,override.spec.tiles.gutter);
@@ -488,7 +541,8 @@ export class BackgroundRenderer {
     if (env?.enable && s.shading?.type !== 'shadeless') {
       this.scene.environment = environment;
       this.scene.environmentIntensity = env.exposure * env.lightIntensity * (p.envScale ?? 0.1);
-      this.scene.environmentRotation.set(0, env.rotation, 0);
+      if(p.environmentCube) this.scene.environmentRotation.setFromRotationMatrix(rot.clone().multiply(new THREE.Matrix4().makeRotationZ(env.rotation)));
+      else this.scene.environmentRotation.set(0, env.rotation, 0);
     }
     const bgMode = s.background?.enable;
     if (bgMode === 'color' || bgMode === 'ambient') {
@@ -497,7 +551,8 @@ export class BackgroundRenderer {
       this.scene.background = environment;
       this.scene.backgroundIntensity = env.backgroundExposure;
       this.scene.backgroundBlurriness = Math.min(0.5, env.blur + 0.05);
-      this.scene.backgroundRotation.set(0, env.rotation, 0);
+      if(p.environmentCube) this.scene.backgroundRotation.copy(this.scene.environmentRotation);
+      else this.scene.backgroundRotation.set(0, env.rotation, 0);
     } else {
       this.scene.background = new THREE.Color(0x000000);
     }
@@ -532,7 +587,10 @@ export class BackgroundRenderer {
         const mesh = object as THREE.Mesh;
         if (mesh.isMesh && (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).some((m) => p.reflections!.materials.includes(m.name) && !m.transparent)) selects.push(mesh);
       });
-      if (selects.length) {
+      if (selects.length && p.reflections.method==='surface') {
+        for(const mesh of selects) this.surfaceReflections.push(new SurfaceReflection(mesh,this.camera));
+        const size=this.renderer.getDrawingBufferSize(new THREE.Vector2());this.resizeReflections(size.x,size.y);
+      } else if (selects.length) {
         const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
         this.ssr = new SSRPass({ renderer: this.renderer, scene: this.scene, camera: this.camera, width: size.x, height: size.y, selects, groundReflector: null });
         this.ssr.opacity = p.reflections.opacity ?? .6;
@@ -544,22 +602,29 @@ export class BackgroundRenderer {
     }
   }
 
-  private async envTexture(uid: string): Promise<THREE.Texture> {
-    if (!this.environments.has(uid)) {
-      const promise = new THREE.TextureLoader().loadAsync(asset(`/backgrounds/env/${uid}.jpg`)).then((source) => {
-        source.mapping = THREE.EquirectangularReflectionMapping;
-        source.colorSpace = THREE.SRGBColorSpace;
-        const target = this.pmrem.fromEquirectangular(source);
+  private async envTexture(uid: string,cube?:BackgroundPart['environmentCube']): Promise<THREE.Texture> {
+    const key=cube?.url??uid;
+    if (!this.environments.has(key)) {
+      const sourcePromise:Promise<THREE.Texture>=cube
+        ? import('./logLuvTexture').then(({loadLogLuvCube})=>loadLogLuvCube(cube.url,cube.size))
+        : new THREE.TextureLoader().loadAsync(asset(`/backgrounds/env/${uid}.jpg`)).then((source)=>{
+          source.mapping=THREE.EquirectangularReflectionMapping;source.colorSpace=THREE.SRGBColorSpace;return source;
+        });
+      const promise = sourcePromise.then((source) => {
+        const target = cube?this.pmrem.fromCubemap(source as THREE.CubeTexture):this.pmrem.fromEquirectangular(source);
+        Object.assign(target.texture.userData,source.userData);
         return { source, target };
-      }).catch((error) => { this.environments.delete(uid); throw error; });
-      this.environments.set(uid, promise);
+      }).catch((error) => { this.environments.delete(key); throw error; });
+      this.environments.set(key, promise);
     }
-    return (await this.environments.get(uid)!).target.texture;
+    return (await this.environments.get(key)!).target.texture;
   }
 
   /** Release renderer-owned GPU resources; cached asset templates stay immutable. */
   dispose(): void {
     this.clear(); this.disposed = true;
+    this.renderer.domElement.removeEventListener('webglcontextlost',this.onContextLost);
+    this.renderer.domElement.removeEventListener('webglcontextrestored',this.onContextRestored);
     for (const template of this.templates.values()) void template.then((g) => {
       const geometries = new Set<THREE.BufferGeometry>();
       const materials = new Set<THREE.Material>();
@@ -583,7 +648,7 @@ export class BackgroundRenderer {
 
   /** advance animations + camera drift; re-render when anything moved */
   render(dt: number, drift: (pos: THREE.Vector3, target: THREE.Vector3) => boolean): void {
-    if (!this.def) return;
+    if (!this.def || this.contextLost) return;
     let moving = false;
     for (const m of this.mixers) {
       m.update(dt);
@@ -604,12 +669,16 @@ export class BackgroundRenderer {
     if (!this.dirty && !(moving && this.sinceRender + 1e-6 >= 1 / BACKGROUND_QUALITY[this.quality].fps)) return;
     this.sinceRender = 0;
     this.dirty = false;
+    for(const reflection of this.surfaceReflections) reflection.render(this.renderer,this.scene,this.camera);
     this.composer.render(dt);
   }
 
   get baseView(): { pos: THREE.Vector3; target: THREE.Vector3 } {
     return this.base;
   }
+
+  /** Effective source/override configuration for the development capture log. */
+  get configuration():readonly BackgroundPart[] {return this.resolvedParts;}
 }
 
 let sprite: THREE.CanvasTexture | null = null;

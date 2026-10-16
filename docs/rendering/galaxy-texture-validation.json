@@ -1,0 +1,13 @@
+{
+  "scene": "galaxy",
+  "comparisonSize": [
+    512,
+    256
+  ],
+  "source": "source/Inside galaxy HDRI.glb \u2192 embedded emissive PNG bytes",
+  "sourcePngSha256": "4497a3d4689ca9a8cd0bc2b22c09f4b5b5d1d61546485ce30fe3c1b7349c85bc",
+  "embeddedVsDownloadedGlbMeanError255": 0.1902135213216146,
+  "rawStandaloneUnflippedMeanError255": 17.39271291097005,
+  "rawStandaloneFlippedMeanError255": 0.1902135213216146,
+  "decision": "Use embedded PNG at native orientation; earlier standalone unflipped captures were incorrect and superseded."
+}
