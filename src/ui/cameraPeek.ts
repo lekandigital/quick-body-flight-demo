@@ -1,8 +1,9 @@
 // Camera peek: the person's own webcam view, shown by the link chip so they
 // can see where they stand — while the pointer is on a chip, and on its own
 // whenever tracking says Disconnected (no one to follow), to help them step
-// back into view. An olive-green Y2K colour layer over the picture keeps it a
-// glance, not a mirror. Local only: the same stream the tracker already has.
+// back into view. It looks like a 2005 webcam: 128×96, scaled up soft, under
+// an olive-green colour layer — a glance, not a mirror. Full frame rate, so
+// it stays easy to line yourself up with. Local only: the same stream the tracker already has.
 
 import type { Link } from './link';
 
@@ -14,15 +15,41 @@ export function createCameraPeek(link: Link, source: HTMLVideoElement): void {
   // hidden by opacity, not display:none, so the glass keeps its measured size
   const frame = document.createElement('div');
   frame.className = 'camera-peek-frame';
+  // the stream plays in a detached video; a tiny canvas shows it
   const video = document.createElement('video');
   video.muted = true;
   video.playsInline = true;
   video.autoplay = true;
+  const LOW_W = 128;
+  const LOW_H = 96;
+  const screen = document.createElement('canvas');
+  screen.width = LOW_W;
+  screen.height = LOW_H;
+  const g = screen.getContext('2d')!;
+  let drawing = false;
+  /** every new camera frame while the peek is open */
+  function loop(): void {
+    if (!drawing) return;
+    draw();
+    const v = video as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number };
+    if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(loop);
+    else requestAnimationFrame(loop);
+  }
+  function draw(): void {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return;
+    // cover-crop to 4:3
+    const scale = Math.max(LOW_W / vw, LOW_H / vh);
+    const sw = LOW_W / scale;
+    const sh = LOW_H / scale;
+    g.drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, LOW_W, LOW_H);
+  }
   const tint = document.createElement('span');
   tint.className = 'camera-peek-tint';
   const tag = document.createElement('span');
   tag.className = 'camera-peek-tag';
-  frame.append(video, tint);
+  frame.append(screen, tint);
   panel.append(frame, tag);
   document.body.append(panel);
 
@@ -53,6 +80,7 @@ export function createCameraPeek(link: Link, source: HTMLVideoElement): void {
     if (!show) {
       if (panel.classList.contains('on')) {
         panel.classList.remove('on');
+        drawing = false;
         video.srcObject = null; // no second decode while nobody is looking
       }
       return;
@@ -60,6 +88,10 @@ export function createCameraPeek(link: Link, source: HTMLVideoElement): void {
     if (video.srcObject !== stream) {
       video.srcObject = stream;
       void video.play().catch(() => {});
+    }
+    if (!drawing) {
+      drawing = true;
+      loop();
     }
     panel.dataset.state = link.state;
     const text = link.state === 'disconnected' ? 'step into view · only you see this' : 'your camera · only you see this';

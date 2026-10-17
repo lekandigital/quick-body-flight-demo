@@ -309,8 +309,8 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
 }
 .link-chip[data-retry] { cursor: pointer; }
 /* camera peek (src/ui/cameraPeek.ts): the person's webcam by the link chip,
-   on hover and while Disconnected; panel glass around it, and one olive-green Y2K
-   colour layer over the picture */
+   on hover and while Disconnected; panel glass around a 2005-webcam picture
+   (128×96, scaled up soft) under one olive-green colour layer */
 .camera-peek {
   position: fixed; z-index: 60; width: 232px; padding: 6px; border-radius: 18px;
   pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(4px) scale(0.98);
@@ -318,7 +318,7 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
 }
 .camera-peek.on { opacity: 1; visibility: visible; transform: none; transition: opacity 0.18s, transform 0.18s; }
 .camera-peek-frame { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; isolation: isolate; background: #071a01; }
-.camera-peek video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); filter: grayscale(1) contrast(1.35) brightness(1.05); }
+.camera-peek canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); filter: grayscale(1) contrast(1.35) brightness(1.05); image-rendering: auto; }
 .camera-peek-tint { position: absolute; inset: 0; background: #80926a; mix-blend-mode: color; }
 .camera-peek-tag { display: block; padding: 6px 4px 1px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-2); }
 @media (max-width: 900px) { .camera-peek { width: 168px; } }
