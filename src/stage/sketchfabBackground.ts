@@ -11,7 +11,7 @@
 import type { BackgroundDef } from './backgrounds';
 import type { BackgroundQuality } from './backgroundQuality';
 import { BackgroundMotionClock, backgroundViewAt, type BackgroundView } from './backgroundMotion';
-import { NO_TURN, turnBetween, turnView, type ViewTurn } from './viewTurn';
+import { NO_TURN, lookAround, turnBetween, turnView, type ViewTurn } from './viewTurn';
 
 const SDK_URL = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js';
 type Callback = (error?: unknown) => void;
@@ -102,9 +102,10 @@ export class SketchfabBackground {
   private playing = false;
   private cameraTimer?: number;
   private quality: BackgroundQuality = 'maximum';
-  /** the visitor's drag/zoom, shared with the avatar camera (./viewTurn.ts) */
-  private turn: ViewTurn = NO_TURN;
-  private sentTurn: ViewTurn | null = null;
+  /** the turn both cameras take — the visitor's plus the loading-screen camera
+   * (./viewTurn.ts) — `ahead` seconds from now; `opening`: for a scene about
+   * to appear */
+  private turnAt: (ahead: number, opening?: boolean) => ViewTurn = () => NO_TURN;
   private sentAt = 0;
   /** the field of view the scene should show (before the crop's widening) */
   private sentFov = NaN;
@@ -240,7 +241,13 @@ export class SketchfabBackground {
       this.pauseCamera();
       this.release(this.current);
       this.current = viewer; this.pending = undefined;
-      this.sentTurn = null; this.sentFov = viewer.camera?.fov ?? NaN;
+      this.sentFov = viewer.camera?.fov ?? NaN;
+      // open on the loading-screen camera's first pose, not the authored view
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 1500);
+        this.sendCamera(viewer, 0, true, () => { clearTimeout(timer); resolve(); });
+      });
+      if (this.current !== viewer) return false;
       frame.style.opacity = '1';
       this.updateVisibility();
       return true;
@@ -260,13 +267,17 @@ export class SketchfabBackground {
     return this.quality === 'maximum' ? 'hd' : this.quality === 'balanced' ? 'sd' : 'ld';
   }
 
-  /** where the camera should be `ahead` seconds from now: the drift, then the visitor's turn */
-  private cameraAt(viewer: Viewer, ahead: number): BackgroundView {
+  setTurnSource(source: (ahead: number, opening?: boolean) => ViewTurn): void {
+    this.turnAt = source;
+  }
+
+  /** where the camera should be `ahead` seconds from now: the drift, then the shared turn */
+  private cameraAt(viewer: Viewer, ahead: number, opening = false): BackgroundView {
     const sky = viewer.def.parts.some((part) => part.sky);
     const drifted = viewer.def.drift
       ? backgroundViewAt(viewer.camera!, viewer.def.drift, viewer.clock.seconds(performance.now()) + ahead, [0, 0, 1], sky)
       : viewer.camera!;
-    return turnView(drifted, this.turn, [0, 0, 1], sky);
+    return turnView(drifted, this.turnAt(ahead, opening), [0, 0, 1], lookAround(viewer.def));
   }
 
   /** how far the drift has carried the view now, for the avatar to follow */
@@ -274,30 +285,26 @@ export class SketchfabBackground {
     const viewer = this.current;
     if (!viewer?.camera || !viewer.def.drift) return NO_TURN;
     const sky = viewer.def.parts.some((part) => part.sky);
-    return turnBetween(viewer.camera, backgroundViewAt(viewer.camera, viewer.def.drift, viewer.clock.seconds(now), [0, 0, 1], sky), [0, 0, 1], sky);
+    return turnBetween(viewer.camera, backgroundViewAt(viewer.camera, viewer.def.drift, viewer.clock.seconds(now), [0, 0, 1], sky), [0, 0, 1], lookAround(viewer.def));
   }
 
-  /** The visitor's drag/zoom, every avatar frame. Changes go to the viewer at
-   * most 20×/s with a short glide, so the scene keeps pace with the avatar. */
-  setTurn(turn: ViewTurn): void {
-    this.turn = { ...turn };
+  /** A drag or zoom in progress: update the viewer now, at most 20×/s with a
+   * short glide, so the scene keeps pace with the avatar. */
+  nudge(): void {
     const viewer = this.current;
     if (!viewer?.api || !viewer.camera || !this.playing) return;
-    const last = this.sentTurn;
-    const changed = !last || Math.abs(last.yaw - turn.yaw) > 1e-4 || Math.abs(last.pitch - turn.pitch) > 1e-4 || Math.abs(last.zoom - turn.zoom) > 1e-4;
-    const now = performance.now();
-    if (!changed || now - this.sentAt < 50) return;
+    if (performance.now() - this.sentAt < 50) return;
     this.sendCamera(viewer, 0.08);
   }
 
-  private sendCamera(viewer: Viewer, duration: number): void {
-    const camera = this.cameraAt(viewer, duration);
-    this.sentTurn = { ...this.turn };
+  private sendCamera(viewer: Viewer, duration: number, opening = false, done?: () => void): void {
+    const camera = this.cameraAt(viewer, duration, opening);
     this.sentAt = performance.now();
     viewer.requestedCamera = camera;
     viewer.commands++;
     try {
       viewer.api!.setCameraLookAt(camera.position, camera.target, duration, (error) => {
+        done?.();
         if (this.current !== viewer) return;
         viewer.acknowledgements++;
         viewer.cameraError = error ? String(error) : null;
@@ -314,14 +321,14 @@ export class SketchfabBackground {
 
   private driveCamera = (): void => {
     const viewer = this.current;
-    if (!viewer?.api || !viewer.camera || !viewer.def.drift || !this.playing) return;
-    // Let the viewer interpolate on its own animation loop. Sending an update
-    // once per second avoids tying camera motion to expensive avatar frames.
-    // Schedule before calling the API: a missing reply must never stop motion.
-    // (a drag sends its own quick updates in between: setTurn)
+    if (!viewer?.api || !viewer.camera || !this.playing) return;
+    // Every scene moves (the loading-screen camera, plus its drift). Let the
+    // viewer interpolate on its own animation loop: an update once per second
+    // avoids tying camera motion to expensive avatar frames. Schedule before
+    // calling the API: a missing reply must never stop motion. (A drag sends
+    // its own quick updates in between: nudge.)
     const duration = 1.4;
     const camera = this.cameraAt(viewer, duration);
-    this.sentTurn = { ...this.turn };
     if (camera.fov !== undefined && camera.fov !== this.sentFov && viewer.api.setFov) {
       this.sentFov = camera.fov;
       viewer.api.setFov(this.viewerFov(camera.fov));
@@ -362,7 +369,6 @@ export class SketchfabBackground {
       this.playing = true;
       this.current.clock.resume(performance.now());
       this.driveCamera();
-      if (!this.current.def.drift && this.current.camera) this.sendCamera(this.current, 0);
     } else if (!show) {
       this.pauseCamera();
       this.current?.api?.stop();

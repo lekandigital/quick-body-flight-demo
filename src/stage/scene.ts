@@ -10,7 +10,7 @@ import { BACKGROUND_QUALITY, isBackgroundQuality, type BackgroundQuality } from 
 import { FIDELITY_CATALOG } from './backgrounds';
 import { SketchfabBackground } from './sketchfabBackground';
 import { backgroundViewAt } from './backgroundMotion';
-import { NO_TURN, combineTurns, turnBetween, turnView, type ViewTurn } from './viewTurn';
+import { NO_TURN, cinematicTurn, combineTurns, lookAround, turnBetween, turnView, type ViewTurn } from './viewTurn';
 
 export interface Stage {
   scene: THREE.Scene;
@@ -262,6 +262,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     if (token !== bgToken) return;
     bgDef = def;
     bgElapsed = 0;
+    cineClock = 0; // every scene opens with the loading-screen sweep
     bgLast.pos.set(NaN, 0, 0); // place the new scene's camera on the first frame
     bgBaseFov = NaN;
     applyBackdrop();
@@ -288,7 +289,18 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   const ZOOM_MAX = 1.8;
   const view = { yaw: 0, pitch: 0, zoom: 1 }; // where the visitor put it
   const shown = { yaw: 0, pitch: 0, zoom: 1 }; // eased toward view
-  let frameTurn: ViewTurn = NO_TURN; // shown + drift, for this frame
+  let frameTurn: ViewTurn = NO_TURN; // the avatar's turn this frame
+  // seconds since the current scene appeared: drives the loading-screen camera
+  // (cinematicTurn), which both cameras take like the visitor's own turn
+  let cineClock = 0;
+  /** the turn both cameras take: the visitor's, plus the loading-screen camera */
+  const sceneTurn = (): ViewTurn => combineTurns(shown, cinematicTurn(cineClock));
+  /** someone is dragging or zooming, or the view is still easing after it */
+  const interacting = () =>
+    pointers.size > 0 || Math.abs(view.yaw - shown.yaw) > 1e-4 || Math.abs(view.pitch - shown.pitch) > 1e-4 || Math.abs(view.zoom - shown.zoom) > 1e-4;
+  // Sketchfab's viewer glides between camera updates, so it asks ahead
+  externalBackground?.setTurnSource((ahead, opening) =>
+    combineTurns(ahead > 0.5 ? view : shown, cinematicTurn((opening ? 0 : cineClock) + ahead)));
 
   function stepView(dt: number): void {
     const k = 1 - Math.exp(-dt * 12);
@@ -312,7 +324,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     if (!bgRenderer.active) return NO_TURN;
     const base = bgRenderer.baseView;
     const rest = { position: base.pos.toArray(), target: base.target.toArray(), fov: Number.isNaN(bgBaseFov) ? bgRenderer.camera.fov : bgBaseFov };
-    return turnBetween(rest, nativeView(base.pos, base.target), [0, 1, 0], isSky(bgDef));
+    return turnBetween(rest, nativeView(base.pos, base.target), [0, 1, 0], lookAround(bgDef));
   }
 
   const pivot = new THREE.Vector3();
@@ -327,7 +339,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   function applyView(): void {
     savedPos.copy(camera.position);
     savedQuat.copy(camera.quaternion);
-    frameTurn = pip ? NO_TURN : combineTurns(shown, bgDef ? driftTurn() : NO_TURN);
+    frameTurn = pip || !bgDef ? (pip ? NO_TURN : shown) : combineTurns(sceneTurn(), driftTurn());
     if (pip) return;
     pivot.copy(api.framing().look);
     off.copy(camera.position).sub(pivot);
@@ -351,7 +363,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   /** the native background camera: drift, then the visitor's turn; true when
    *  it moved since the last background frame */
   function bgView(pos: THREE.Vector3, target: THREE.Vector3): boolean {
-    const turned = turnView(nativeView(pos, target), shown, [0, 1, 0], !!bgDef && isSky(bgDef));
+    const turned = turnView(nativeView(pos, target), sceneTurn(), [0, 1, 0], !!bgDef && lookAround(bgDef));
     pos.fromArray(turned.position);
     target.fromArray(turned.target);
     const fov = turned.fov ?? bgBaseFov;
@@ -473,13 +485,16 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     }
     for (const cb of tickCbs) cb(dt, now);
     stepView(dt);
-    if (externalActive && !pip) externalBackground?.setTurn(shown);
+    if (externalActive && !pip && interacting()) externalBackground?.nudge();
     renderFrame(dt, document.hidden ? 0 : elapsed);
     requestAnimationFrame(loop);
   }
 
   function renderFrame(dt: number, cameraElapsed = dt): void {
-    if (bgDef && !pip) bgElapsed += cameraElapsed;
+    if (bgDef && !pip) {
+      bgElapsed += cameraElapsed;
+      cineClock += cameraElapsed;
+    }
     applyView();
     if (bgDef && !pip && !externalActive && bgRenderer.active) {
       bgRenderer.render(dt, bgView);

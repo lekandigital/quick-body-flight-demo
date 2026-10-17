@@ -308,6 +308,20 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
   --glass-fill: var(--panel-fill);
 }
 .link-chip[data-retry] { cursor: pointer; }
+/* camera peek (src/ui/cameraPeek.ts): the person's webcam by the link chip,
+   on hover and while Disconnected; panel glass around it, and one green Y2K
+   colour layer over the picture */
+.camera-peek {
+  position: fixed; z-index: 60; width: 232px; padding: 6px; border-radius: 18px;
+  pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(4px) scale(0.98);
+  transition: opacity 0.18s, transform 0.18s, visibility 0s 0.18s;
+}
+.camera-peek.on { opacity: 1; visibility: visible; transform: none; transition: opacity 0.18s, transform 0.18s; }
+.camera-peek-frame { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; isolation: isolate; background: #021a0c; }
+.camera-peek video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); filter: contrast(1.15) brightness(1.08); }
+.camera-peek-tint { position: absolute; inset: 0; background: #2bff88; mix-blend-mode: color; }
+.camera-peek-tag { display: block; padding: 6px 4px 1px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-2); }
+@media (max-width: 900px) { .camera-peek { width: 168px; } }
 .link-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; background: var(--ink-3); }
 /* [D] LiquidSwitch colours: on #3BBF4E, off #94949F */
 .link-chip[data-state="connected"] .link-dot { background: #3bbf4e; box-shadow: 0 0 0 4px #3bbf4e33; }

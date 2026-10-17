@@ -14,6 +14,34 @@ export function combineTurns(a: ViewTurn, b: ViewTurn): ViewTurn {
   return { yaw: a.yaw + b.yaw, pitch: a.pitch + b.pitch, zoom: a.zoom * b.zoom };
 }
 
+/** Skies and interiors look around from where the camera stands (orbiting
+ * them would leave the sphere or pass through walls); scenes with a model in
+ * the middle orbit it. */
+export function lookAround(def: { kind: string; parts: Array<{ sky?: boolean }> }): boolean {
+  return def.kind === 'indoor' || def.parts.some((part) => part.sky);
+}
+
+/** seconds the opening sweep takes to settle into the slow cruise */
+export const OPENING_SECONDS = 7;
+
+/** The loading-screen camera, deterministic in the seconds since a scene
+ * appeared: it opens further out, raised and turned ~35° away, sweeps in over
+ * OPENING_SECONDS, then keeps a slow, wide sweep (±20°, a little rise and
+ * fall, a slow push in and out). */
+export function cinematicTurn(seconds: number): ViewTurn {
+  const t = Math.max(0, seconds);
+  const wave = (period: number) => Math.sin((t * 2 * Math.PI) / period);
+  const cruise = { yaw: 0.35 * wave(48), pitch: 0.06 * wave(34), zoom: 1 + 0.1 * wave(28) };
+  const opening = { yaw: -0.6, pitch: 0.22, zoom: 1.55 };
+  const k = Math.min(t / OPENING_SECONDS, 1);
+  const ease = 1 - (1 - k) ** 3;
+  return {
+    yaw: opening.yaw + (cruise.yaw - opening.yaw) * ease,
+    pitch: opening.pitch + (cruise.pitch - opening.pitch) * ease,
+    zoom: opening.zoom + (cruise.zoom - opening.zoom) * ease,
+  };
+}
+
 const MAX_ELEVATION = 1.4; // ~80°: never over the pole
 const FOV_MIN = 5;
 const FOV_MAX = 100;
@@ -29,16 +57,17 @@ function frame(direction: Vector3, up: Vector3): { right: Vector3; viewUp: Vecto
 
 /**
  * Turn a background view. Scenes with a model in them orbit their target about
- * the world up, like Sketchfab's own orbit. Sky spheres (seen from inside)
- * turn the view direction in place about the camera's own axes — orbiting a
- * near-polar sky camera about the world up would only spin the picture — and
- * zoom widens or narrows the field of view, so the eye never leaves the sphere.
+ * the world up, like Sketchfab's own orbit. Look-around scenes (lookAround:
+ * skies, interiors) turn the view direction in place about the camera's own
+ * axes — orbiting a near-polar sky camera about the world up would only spin
+ * the picture — and zoom widens or narrows the field of view, so the eye
+ * never leaves the sphere or the room.
  */
-export function turnView(view: BackgroundView, turn: ViewTurn, up: number[], sky: boolean): BackgroundView {
+export function turnView(view: BackgroundView, turn: ViewTurn, up: number[], look: boolean): BackgroundView {
   const position = new Vector3().fromArray(view.position);
   const target = new Vector3().fromArray(view.target);
   const axis = new Vector3().fromArray(up).normalize();
-  if (sky) {
+  if (look) {
     const direction = target.clone().sub(position);
     const length = direction.length() || 1;
     direction.normalize();
@@ -63,9 +92,9 @@ export function turnView(view: BackgroundView, turn: ViewTurn, up: number[], sky
 
 /** The turn that carries `base` to `moved` (how far a drift has taken the
  * background), in the same terms as turnView, so the avatar can follow it. */
-export function turnBetween(base: BackgroundView, moved: BackgroundView, up: number[], sky: boolean): ViewTurn {
+export function turnBetween(base: BackgroundView, moved: BackgroundView, up: number[], look: boolean): ViewTurn {
   const axis = new Vector3().fromArray(up).normalize();
-  if (sky) {
+  if (look) {
     const d0 = new Vector3().fromArray(base.target).sub(new Vector3().fromArray(base.position)).normalize();
     const d1 = new Vector3().fromArray(moved.target).sub(new Vector3().fromArray(moved.position)).normalize();
     const { right, viewUp } = frame(d0, axis);

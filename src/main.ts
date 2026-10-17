@@ -28,6 +28,7 @@ import type { BodyTracking, TrackingState } from '@bodyarcade/body-input';
 import { openFlight, defaultFlightUrl, activeExperience } from './bodyinput/flightBridge';
 import { glassifyAll, watchGlass, upgradeControls } from '@bodyarcade/glass';
 import { createLink } from './ui/link';
+import { createCameraPeek } from './ui/cameraPeek';
 import { asset } from './base';
 import { BACKGROUNDS, backgroundById, initialBackgroundId } from './stage/backgrounds';
 import { createBackgroundPicker } from './ui/backgroundPicker';
@@ -148,6 +149,7 @@ async function boot() {
 
   // link state replaces the camera view: is the model following someone?
   const link = createLink(document.getElementById('link-state')!);
+  createCameraPeek(link, video);
 
   // theme before anything paints; persisted via the config store
   document.documentElement.dataset.theme = config.theme;

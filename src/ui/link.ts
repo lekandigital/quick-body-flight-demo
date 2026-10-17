@@ -12,6 +12,8 @@ export interface Link {
   set(state: LinkState, label: string, detail: string, onRetry?: () => void): void;
   /** mirror the state onto another chip/container (sets data-state on it) */
   attach(el: HTMLElement): () => void;
+  /** called whenever the state changes */
+  onChange(cb: (state: LinkState) => void): void;
 }
 
 export function createLink(chip: HTMLElement): Link {
@@ -20,6 +22,7 @@ export function createLink(chip: HTMLElement): Link {
   let label = 'Connecting';
   let detail = 'starting the camera…';
   let retry: (() => void) | undefined;
+  const listeners: Array<(state: LinkState) => void> = [];
 
   function paint(el: HTMLElement): void {
     el.dataset.state = state;
@@ -54,6 +57,10 @@ export function createLink(chip: HTMLElement): Link {
       detail = d;
       retry = onRetry;
       targets.forEach(paint);
+      for (const cb of listeners) cb(state);
+    },
+    onChange(cb) {
+      listeners.push(cb);
     },
     attach(el) {
       targets.add(el);

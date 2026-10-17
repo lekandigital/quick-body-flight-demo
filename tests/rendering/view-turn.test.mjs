@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { NO_TURN, turnView, turnBetween } from '../../src/stage/viewTurn.ts';
+import { NO_TURN, OPENING_SECONDS, cinematicTurn, lookAround, turnView, turnBetween } from '../../src/stage/viewTurn.ts';
 
 const near = (a, b, eps = 1e-9) => a.every((v, i) => Math.abs(v - b[i]) < eps);
 
@@ -40,4 +40,25 @@ test('elevation never passes over the pole', () => {
   const top = turnView(view, { yaw: 0, pitch: 3, zoom: 1 }, [0, 1, 0], false);
   const offset = top.position;
   assert.ok(Math.asin(offset[1] / Math.hypot(...offset)) <= 1.4 + 1e-9);
+});
+
+test('the loading-screen camera opens wide and turned, settles into a bounded sweep, and never jumps', () => {
+  const open = cinematicTurn(0);
+  assert.ok(open.yaw < -0.5 && open.zoom > 1.4 && open.pitch > 0.15);
+  let previous = open;
+  for (let t = 0.05; t < 600; t += 0.05) {
+    const turn = cinematicTurn(t);
+    if (t > OPENING_SECONDS) assert.ok(Math.abs(turn.yaw) <= 0.35 + 1e-9 && Math.abs(turn.pitch) <= 0.06 + 1e-9 && Math.abs(turn.zoom - 1) <= 0.1 + 1e-9);
+    assert.ok(Math.abs(turn.yaw - previous.yaw) < 0.02 && Math.abs(turn.zoom - previous.zoom) < 0.02, `smooth at ${t}`);
+    previous = turn;
+  }
+});
+
+test('skies and interiors look around; scenes with a model orbit it', () => {
+  assert.equal(lookAround({ kind: 'space', parts: [{ sky: true }] }), true);
+  assert.equal(lookAround({ kind: 'indoor', parts: [{}] }), true);
+  assert.equal(lookAround({ kind: 'space', parts: [{}] }), false);
+  // looking around never moves the eye: an interior's walls stay where they are
+  const room = { position: [0, 1, 0], target: [0, 1, -10], fov: 50 };
+  assert.ok(near(turnView(room, cinematicTurn(0), [0, 1, 0], true).position, room.position));
 });
