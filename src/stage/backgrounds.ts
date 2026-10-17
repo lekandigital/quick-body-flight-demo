@@ -6,6 +6,8 @@
 // rotating Earth, the spinning EARTH) keeps a still camera; a static space
 // scene gets a slow camera drift; indoor scenes stay still.
 
+import type { LocalProbeSpec } from './localReflectionProbe';
+
 export interface Credit {
   title: string;
   author: string;
@@ -47,6 +49,7 @@ export interface BackgroundPart {
   sourceUrl?: string;
   emissiveTextureUrl?: string;
   environmentCube?:{url:string;size:number};
+  localProbe?:LocalProbeSpec;
   textureOverrides?: Array<{material:string;slot:'map'|'emissiveMap'|'bumpMap';url:string;flipY?:boolean;scale?:number;maxDimension?:number;
     tiles?:{leftUrl:string;rightUrl:string;innerWidth:number;gutter:number}}>;
   /** Fit this material's geometry without changing the authored viewing angle. */
@@ -112,6 +115,9 @@ export const LIBRARY: BackgroundDef[] = [
     id: 'hangar', label: 'Sci-fi hangar', glyph: '▭', kind: 'indoor', tone: 'dark', floor: true,
     drift: null, // the Earth outside the window rotates on its own
     parts: [{ file: 'hangar.glb', animate: true, envScale: .3, lightScale: .4, bloomScale: .6,
+      // Scene radiance, filtered through the imported BRDF. Explicit scale is
+      // provisional reference calibration; source F0/roughness are unchanged.
+      localProbe:{materials:['Walls','Chrome','Doors'],boundsMaterials:['Walls','Floor'],iterations:1,captureFloor:true,intensity:.5},
       reflections: { materials: ['Floor'], method:'surface', maxDistance: 44, thickness: .05 } }],
     credits: [{ title: 'Sci-Fi Hanger', author: 'dylanheyes', authorUrl: 'https://sketchfab.com/dylanheyes', source: 'https://sketchfab.com/3d-models/sci-fi-hanger-8f10be0e8b5644e1845a2a5f12af5d6c' }],
   },

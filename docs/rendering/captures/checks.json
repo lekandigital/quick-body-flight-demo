@@ -1,4 +1,9 @@
 {
+  "profile": {
+    "originals": false,
+    "referenceHDR": false,
+    "lifecycleProbeResolution": 512
+  },
   "color": [
     118,
     118,
@@ -23,31 +28,45 @@
     "id": "nebula",
     "environment": false
   },
+  "probeContextRestore": {
+    "before": [
+      122,
+      146,
+      168,
+      255
+    ],
+    "after": [
+      122,
+      146,
+      168,
+      255
+    ]
+  },
   "lifecycle": {
     "memory": [
       {
-        "geometries": 19,
-        "textures": 30
+        "geometries": 31,
+        "textures": 33
       },
       {
-        "geometries": 19,
-        "textures": 30
+        "geometries": 31,
+        "textures": 33
       },
       {
-        "geometries": 19,
-        "textures": 30
+        "geometries": 31,
+        "textures": 33
       },
       {
-        "geometries": 19,
-        "textures": 30
+        "geometries": 31,
+        "textures": 33
       },
       {
-        "geometries": 19,
-        "textures": 30
+        "geometries": 31,
+        "textures": 33
       },
       {
-        "geometries": 19,
-        "textures": 30
+        "geometries": 31,
+        "textures": 33
       }
     ],
     "mirrors": [

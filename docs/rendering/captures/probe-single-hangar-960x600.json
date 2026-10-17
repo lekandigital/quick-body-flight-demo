@@ -1,0 +1,331 @@
+{
+  "id": "hangar",
+  "configuration": [
+    {
+      "file": "hangar.glb",
+      "animate": true,
+      "envScale": 0.3,
+      "lightScale": 0.4,
+      "bloomScale": 0.6,
+      "reflections": {
+        "materials": [
+          "Floor"
+        ],
+        "method": "surface",
+        "maxDistance": 44,
+        "thickness": 0.05
+      },
+      "localProbe": {
+        "materials": [
+          "Walls",
+          "Chrome",
+          "Doors"
+        ],
+        "boundsMaterials": [
+          "Walls",
+          "Floor"
+        ],
+        "resolution": 512,
+        "iterations": 1,
+        "captureFloor": true
+      },
+      "sourceUrl": "/__original-assets/hangar.glb",
+      "textureOverrides": [
+        {
+          "material": "Floor",
+          "slot": "bumpMap",
+          "url": "/__original-assets/hangar-floor-bump.png",
+          "flipY": true,
+          "scale": 1.7
+        }
+      ],
+      "environmentCube": {
+        "url": "/__original-assets/env-studio-soft.bin",
+        "size": 512
+      }
+    }
+  ],
+  "quality": "maximum",
+  "viewport": [
+    960,
+    600
+  ],
+  "renderResolution": [
+    960,
+    600
+  ],
+  "captureScale": 1,
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "hdrSupported": true,
+  "camera": {
+    "position": [
+      -5.448551122983995,
+      -2.4170041002755887,
+      13.907760506717366
+    ],
+    "target": [
+      -4.562517874852374,
+      -2.4462799891523863,
+      10.321698123021358
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 45
+  },
+  "environment": {
+    "sourceEncoding": "LogLuv",
+    "sourceUrl": "/__original-assets/env-studio-soft.bin",
+    "intensity": 0.03742291807596959,
+    "rotation": [
+      -1.5707963267948963,
+      0,
+      1.8745237368712537,
+      "XYZ"
+    ]
+  },
+  "memory": {
+    "geometries": 34,
+    "textures": 34
+  },
+  "materials": [
+    {
+      "name": "Walls",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.4,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        0.1,
+        0.1
+      ],
+      "localReflectionProbe": {
+        "position": [
+          -2.1955264273287867e-9,
+          2.432388637174654e-7,
+          -0.0032688944851368973
+        ],
+        "min": [
+          -12.329548293125116,
+          -4.130690986958391,
+          -14.144132205011381
+        ],
+        "max": [
+          12.329548288734063,
+          4.130691473436118,
+          14.137594416041107
+        ],
+        "resolution": 512,
+        "intensity": 1,
+        "iterations": 1,
+        "captureFloor": true
+      },
+      "baseTexture": {
+        "width": 512,
+        "height": 256
+      }
+    },
+    {
+      "name": "Chrome",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ],
+      "localReflectionProbe": {
+        "position": [
+          -2.1955264273287867e-9,
+          2.432388637174654e-7,
+          -0.0032688944851368973
+        ],
+        "min": [
+          -12.329548293125116,
+          -4.130690986958391,
+          -14.144132205011381
+        ],
+        "max": [
+          12.329548288734063,
+          4.130691473436118,
+          14.137594416041107
+        ],
+        "resolution": 512,
+        "intensity": 1,
+        "iterations": 1,
+        "captureFloor": true
+      }
+    },
+    {
+      "name": "Window",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 0.5,
+      "depthWrite": false,
+      "side": 0,
+      "roughness": 0.16200000000000003,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Floor",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ],
+      "surfaceReflection": {
+        "deviation": 0.09797621553425583,
+        "extent": 31.890598464968445
+      },
+      "bumpTexture": {
+        "width": 512,
+        "height": 512,
+        "colorSpace": "",
+        "scale": 1.7
+      }
+    },
+    {
+      "name": "Lights",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0.8211145618000169,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 2.9026361519236215,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "LightGlassCover",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 0.3834586315888604,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 0.7470177871865296,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ]
+    },
+    {
+      "name": "Doors",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "roughness": 0,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 0.2232794305242984,
+      "normalScale": [
+        0.15047109059761488,
+        0.15047109059761488
+      ],
+      "localReflectionProbe": {
+        "position": [
+          -2.1955264273287867e-9,
+          2.432388637174654e-7,
+          -0.0032688944851368973
+        ],
+        "min": [
+          -12.329548293125116,
+          -4.130690986958391,
+          -14.144132205011381
+        ],
+        "max": [
+          12.329548288734063,
+          4.130691473436118,
+          14.137594416041107
+        ],
+        "resolution": 512,
+        "intensity": 1,
+        "iterations": 1,
+        "captureFloor": true
+      },
+      "emissiveTexture": {
+        "width": 512,
+        "height": 512,
+        "type": 1009,
+        "colorSpace": "srgb"
+      },
+      "baseTexture": {
+        "width": 512,
+        "height": 512
+      }
+    },
+    {
+      "name": "Backdrop",
+      "type": "MeshPhysicalMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 0,
+      "roughness": 1,
+      "metalness": 0,
+      "ior": 1.5,
+      "transmission": 0,
+      "emissiveIntensity": 2.9026361519236215,
+      "normalScale": [
+        1,
+        -1
+      ],
+      "emissiveTexture": {
+        "width": 1024,
+        "height": 512,
+        "type": 1009,
+        "colorSpace": "srgb"
+      },
+      "baseTexture": {
+        "width": 1024,
+        "height": 512
+      }
+    }
+  ],
+  "shaderErrors": [],
+  "loadAndFirstFrameMs": 1142.0999999998603,
+  "state": "captured",
+  "animationTime": 0,
+  "frameMs": [
+    9.600000000093132
+  ],
+  "backgroundRedrawn": [
+    true
+  ],
+  "renderer": "WebKit WebGL"
+}

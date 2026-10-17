@@ -7,6 +7,7 @@ const label = args.label ?? 'current';
 const ids = (args.scenes ?? 'galaxy,nebula,earth,orbit,corridor,hangar,gallery,space').split(',');
 const viewports = (args.viewports ?? '960x600').split(',');
 const software = args.software === 'true' || (args.software !== 'false' && process.platform === 'linux');
+const timeout=Number(args.timeout??180000);
 const server = await createServer({ server: { host: '127.0.0.1', port: 5175, strictPort: true } });
 await server.listen();
 const browser = await chromium.launch({ executablePath: process.env.RENDERING_CHROMIUM_PATH, headless: true,
@@ -14,15 +15,15 @@ const browser = await chromium.launch({ executablePath: process.env.RENDERING_CH
 const results = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1100, height: 1000 }, deviceScaleFactor: 1 });
-  page.setDefaultTimeout(180000);
+  page.setDefaultTimeout(timeout);
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   for (const viewport of viewports) for (const id of ids) {
-    await page.goto(`http://127.0.0.1:5175/dev/rendering.html?scene=${id}&label=${label}&viewport=${viewport}&quality=${args.quality ?? 'balanced'}&scale=${args.scale??1}&patch=${encodeURIComponent(args.patch ?? '{}')}`);
-    await page.waitForFunction(() => /"state": "ready"|ERROR:/.test(document.querySelector('#status').textContent), { timeout: 120000 });
+    await page.goto(`http://127.0.0.1:5175/dev/rendering.html?scene=${id}&label=${label}&viewport=${viewport}&quality=${args.quality ?? 'balanced'}&scale=${args.scale??1}&frames=${args.frames??6}&patch=${encodeURIComponent(args.patch ?? '{}')}`);
+    await page.waitForFunction(() => /"state": "ready"|ERROR:/.test(document.querySelector('#status').textContent), { timeout });
     if ((await page.locator('#status').innerText()).startsWith('ERROR:')) throw new Error(await page.locator('#status').innerText());
     await page.getByRole('button', { name: 'Save capture', exact: true }).click();
-    await page.waitForFunction(() => /"state": "saved"|ERROR:/.test(document.querySelector('#status').textContent), { timeout: 120000 });
+    await page.waitForFunction(() => /"state": "saved"|ERROR:/.test(document.querySelector('#status').textContent), { timeout });
     const text = await page.locator('#status').innerText();
     if (text.startsWith('ERROR:')) throw new Error(text);
     const result = JSON.parse(text);

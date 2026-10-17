@@ -25,6 +25,7 @@ const select = $<HTMLSelectElement>('scene');
 for (const def of LIBRARY) select.add(new Option(def.label, def.id));
 let active: BackgroundDef;
 let busy = false;
+let loadAndFirstFrameMs=0;
 const shaderErrors: string[] = [];
 renderer.debug.onShaderError = (gl, program, vs, fs) => {
   shaderErrors.push([gl.getProgramInfoLog(program), gl.getShaderInfoLog(vs), gl.getShaderInfoLog(fs)].join('\n'));
@@ -35,10 +36,13 @@ if (params.has('scene')) select.value = params.get('scene')!;
 if (params.has('label')) $<HTMLInputElement>('label').value = params.get('label')!;
 if (params.has('viewport')) $<HTMLSelectElement>('viewport').value = params.get('viewport')!;
 function draw(dt = 0) {
+  const frame=renderer.info.render.frame;
   background.render(dt, () => false);
+  const backgroundRedrawn=renderer.info.render.frame!==frame;
   renderer.setRenderTarget(null);
   quadMaterial.uniforms.map.value = background.texture;
   renderer.render(quadScene, quadCamera);
+  return backgroundRedrawn;
 }
 function report(extra: Record<string, unknown> = {}) {
   const [w, h] = $<HTMLSelectElement>('viewport').value.split('x').map(Number);
@@ -54,6 +58,7 @@ function report(extra: Record<string, unknown> = {}) {
         transmission: p.transmission, emissiveIntensity: p.emissiveIntensity, normalScale: p.normalScale?.toArray() });
       materials[materials.length-1].fullResolutionTextures=p.userData.fullResolutionTextures;
       materials[materials.length-1].surfaceReflection=p.userData.surfaceReflection;
+      materials[materials.length-1].localReflectionProbe=p.userData.localReflectionProbe;
       const last=materials[materials.length-1];
       const emissiveImage=p.emissiveMap?.image as {width?:number;height?:number}|undefined;
       const baseImage=p.map?.image as {width?:number;height?:number}|undefined;
@@ -67,7 +72,7 @@ function report(extra: Record<string, unknown> = {}) {
   const data = { id: active.id, configuration:background.configuration,quality:requestedQuality??'maximum',viewport: [w, h],renderResolution:[canvas.width,canvas.height],captureScale, gpu: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), hdrSupported: background.hdrSupported, camera: { position: pos.toArray(),
     target: background.baseView.target.toArray(), up: background.camera.up.toArray(), fov: background.camera.fov },
     environment:background.scene.environment?{...background.scene.environment.userData,intensity:background.scene.environmentIntensity,rotation:background.scene.environmentRotation.toArray()}:null,
-    memory: { ...renderer.info.memory }, materials, shaderErrors: [...shaderErrors], ...extra };
+    memory: { ...renderer.info.memory }, materials, shaderErrors: [...shaderErrors], loadAndFirstFrameMs,...extra };
   $('status').textContent = JSON.stringify(data, null, 2);
   return data;
 }
@@ -83,28 +88,32 @@ async function render() {
   const start = performance.now();
   await background.load(active);
   draw();
+  renderer.getContext().finish();
+  loadAndFirstFrameMs=performance.now()-start;
   $('credit').replaceChildren(...active.credits.map((c) => {
     const a = document.createElement('a'); a.href = c.source; a.textContent = `${c.title} by ${c.author} · CC BY 4.0`; return a;
   }));
-  report({ state: 'ready', loadAndFirstFrameMs: performance.now() - start });
+  report({ state: 'ready' });
 }
 async function capture() {
   draw();
   const png = canvas.toDataURL('image/png'); // exact authored animation time 0
   const frameMs: number[] = [];
+  const backgroundRedrawn:boolean[]=[];
   // dt forces animated scenes through the same render path; fixed stills
   // report their cached draw cost separately from the initial render above.
-  for (let i = 0; i < 6; i++) {
-    const start = performance.now(); draw(1 / 30); renderer.getContext().finish();
+  const frames=Math.max(0,Math.min(60,Number(params.get('frames')??6)));
+  for (let i = 0; i < frames; i++) {
+    const start = performance.now();backgroundRedrawn.push(draw(1 / 30));renderer.getContext().finish();
     frameMs.push(performance.now() - start);
   }
-  const metadata = report({ state: 'captured',animationTime:0,frameMs, renderer: renderer.getContext().getParameter(renderer.getContext().RENDERER) });
+  const metadata = report({ state: 'captured',animationTime:0,frameMs,backgroundRedrawn,renderer: renderer.getContext().getParameter(renderer.getContext().RENDERER) });
   const label = $<HTMLInputElement>('label').value;
   const viewport = $<HTMLSelectElement>('viewport').value;
   const res = await fetch('/__rendering/capture', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: `${label}-${active.id}-${viewport}`, png, metadata }) });
   if (!res.ok) throw new Error(await res.text());
-  report({ state: 'saved', file: await res.text(), frameMs });
+  report({ state: 'saved', file: await res.text(), frameMs,backgroundRedrawn });
 }
 async function action(fn: () => Promise<void>) {
   if (busy) return; busy = true;

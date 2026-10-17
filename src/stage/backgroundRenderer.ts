@@ -23,6 +23,7 @@ import { BACKGROUND_QUALITY, type BackgroundQuality } from './backgroundQuality'
 import { useTiledTexture } from './tiledTexture';
 import { specularGlossinessPlugin } from './specularGlossiness';
 import { SurfaceReflection } from './planarReflection';
+import { LocalReflectionProbe,type LocalProbeSpec } from './localReflectionProbe';
 import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 import type { BackgroundDef, BackgroundPart } from './backgrounds';
 import { asset } from '../base';
@@ -115,7 +116,6 @@ export class BackgroundRenderer {
   private gtao: GTAOPass;
   private bloom: UnrealBloomPass;
   private grade: ShaderPass;
-  private pmrem: THREE.PMREMGenerator;
   private mixers: THREE.AnimationMixer[] = [];
   private spinners: Array<{ obj: THREE.Object3D; rate: number }> = [];
   private def: BackgroundDef | null = null;
@@ -130,19 +130,20 @@ export class BackgroundRenderer {
   private onContextLost=()=>{this.contextLost=true;this.contextVersion++;};
   private onContextRestored=()=>{
     const version=this.contextVersion;
+    for(const {probe} of this.localProbes) probe.invalidate();
     // Render-target contents are lost with the context. CPU-backed textures
     // reupload automatically; prefiltered environment targets must be rebaked.
     void Promise.all([...this.environments.values()].map(async (pending)=>{
-      const {source,target}=await pending;
+      const {source,target,generator}=await pending;
       if(this.disposed || version!==this.contextVersion) return;
-      if((source as THREE.CubeTexture).isCubeTexture) this.pmrem.fromCubemap(source as THREE.CubeTexture,target);
-      else this.pmrem.fromEquirectangular(source,target);
+      if((source as THREE.CubeTexture).isCubeTexture) generator.fromCubemap(source as THREE.CubeTexture,target);
+      else generator.fromEquirectangular(source,target);
     })).then(()=>{if(!this.disposed && version===this.contextVersion) {this.contextLost=false;this.dirty=true;}}).catch((error)=>{
       if(!this.disposed && version===this.contextVersion) {this.contextLost=false;this.dirty=true;console.error('Background environment restoration failed',error);}
     });
   };
   private templates = new Map<string, Promise<GLTF>>();
-  private environments = new Map<string, Promise<{ source: THREE.Texture; target: THREE.WebGLRenderTarget }>>();
+  private environments = new Map<string, Promise<{ source: THREE.Texture; target: THREE.WebGLRenderTarget;generator:THREE.PMREMGenerator }>>();
   private precisionTextures = new Map<string, Promise<THREE.Texture>>();
   private instanceTextures = new Set<THREE.Texture>();
   private materials = new Set<THREE.Material>();
@@ -151,6 +152,7 @@ export class BackgroundRenderer {
   private renderPass: RenderPass;
   private ssr: SSRPass | null = null;
   private surfaceReflections: SurfaceReflection[]=[];
+  private localProbes:Array<{probe:LocalReflectionProbe;spec:LocalProbeSpec}>=[];
   private quality: BackgroundQuality = 'maximum';
   private fitRadius = 0;
   private authoredDistance = 0;
@@ -197,7 +199,6 @@ export class BackgroundRenderer {
     renderer.domElement.addEventListener('webglcontextlost',this.onContextLost);
     renderer.domElement.addEventListener('webglcontextrestored',this.onContextRestored);
     this.hdrSupported = renderer.extensions.has('EXT_color_buffer_float');
-    this.pmrem = new THREE.PMREMGenerator(renderer);
     this.scene.add(this.camera); // camera-attached lights hang off it
     const target = new THREE.WebGLRenderTarget(1, 1, { type: this.hdrSupported ? THREE.HalfFloatType : THREE.UnsignedByteType });
     if (!this.hdrSupported) console.warn('Background HDR targets are unavailable on this device; highlights are limited to LDR.');
@@ -245,6 +246,7 @@ export class BackgroundRenderer {
 
   setQuality(quality: BackgroundQuality): void {
     this.quality = quality;
+    for(const {probe,spec} of this.localProbes) probe.setResolution(this.probeResolution(spec));
     const samples = Math.min(BACKGROUND_QUALITY[quality].samples, this.renderer.capabilities.maxSamples);
     for (const target of [this.composer.renderTarget1, this.composer.renderTarget2]) {
       if (target.samples !== samples) { target.samples = samples; target.dispose(); }
@@ -256,6 +258,18 @@ export class BackgroundRenderer {
   private resizeReflections(w:number,h:number):void {
     const samples=Math.min(BACKGROUND_QUALITY[this.quality].samples,this.renderer.capabilities.maxSamples);
     for(const reflection of this.surfaceReflections) reflection.setSize(w,h,samples);
+  }
+
+  private probeResolution(spec:LocalProbeSpec):number {
+    const requested=spec.resolution??({maximum:2048,balanced:512,mobile:128}[this.quality]);
+    if(!Number.isFinite(requested) || requested<16) throw new Error('Reflection probe resolution must be at least 16 pixels');
+    const gl=this.renderer.getContext();
+    const atlasLimit=Math.min(this.renderer.capabilities.maxTextureSize,gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),...gl.getParameter(gl.MAX_VIEWPORT_DIMS));
+    const limit=Math.min(this.renderer.capabilities.maxCubemapSize,atlasLimit/4);
+    const actual=2**Math.floor(Math.log2(Math.min(requested,limit)));
+    if(actual<16) throw new Error('This GPU cannot allocate the reflection probe atlas');
+    if(actual<requested) console.warn(`Reflection probe ${requested}px constrained to ${actual}px by GPU texture/viewport limits.`);
+    return actual;
   }
 
   private updateFiltering(): void {
@@ -279,6 +293,8 @@ export class BackgroundRenderer {
   }
 
   private reset(): void {
+    for(const {probe} of this.localProbes) probe.dispose();
+    this.localProbes=[];
     this.resolvedParts=[];
     for(const reflection of this.surfaceReflections) reflection.dispose();
     this.surfaceReflections=[];
@@ -600,6 +616,26 @@ export class BackgroundRenderer {
         this.composer.insertPass(this.ssr, 1);
       }
     }
+    if(p.localProbe && this.hdrSupported) this.localProbes.push({probe:new LocalReflectionProbe(root,this.renderer,p.localProbe,this.probeResolution(p.localProbe)),spec:p.localProbe});
+  }
+
+  private renderLocalProbes():void {
+    for(const {probe} of this.localProbes) {
+      const before=this.scene.onBeforeRender;
+      const enabled=this.surfaceReflections.map((reflection)=>reflection.enabled);
+      let reflecting=false;
+      if(probe.captureFloor) this.scene.onBeforeRender=(...args)=>{
+        const [renderer,scene,camera]=args;
+        before.apply(this.scene,args);
+        if(reflecting) return;
+        reflecting=true;
+        try {for(const reflection of this.surfaceReflections) reflection.render(renderer,scene,camera);}
+        finally {reflecting=false;}
+      };
+      else for(const reflection of this.surfaceReflections) reflection.enabled=false;
+      try {probe.render(this.renderer,this.scene);}
+      finally {this.scene.onBeforeRender=before;this.surfaceReflections.forEach((reflection,i)=>{reflection.enabled=enabled[i];});}
+    }
   }
 
   private async envTexture(uid: string,cube?:BackgroundPart['environmentCube']): Promise<THREE.Texture> {
@@ -611,9 +647,14 @@ export class BackgroundRenderer {
           source.mapping=THREE.EquirectangularReflectionMapping;source.colorSpace=THREE.SRGBColorSpace;return source;
         });
       const promise = sourcePromise.then((source) => {
-        const target = cube?this.pmrem.fromCubemap(source as THREE.CubeTexture):this.pmrem.fromEquirectangular(source);
-        Object.assign(target.texture.userData,source.userData);
-        return { source, target };
+        // Reusing a target requires the generator's matching LOD meshes and
+        // filtering shaders. Cached JPEG/HDR sources can have different sizes.
+        const generator=new THREE.PMREMGenerator(this.renderer);
+        try {
+          const target = cube?generator.fromCubemap(source as THREE.CubeTexture):generator.fromEquirectangular(source);
+          Object.assign(target.texture.userData,source.userData);
+          return { source, target, generator };
+        } catch(error) {source.dispose();generator.dispose();throw error;}
       }).catch((error) => { this.environments.delete(key); throw error; });
       this.environments.set(key, promise);
     }
@@ -639,11 +680,11 @@ export class BackgroundRenderer {
       for (const material of materials) material.dispose();
       for (const texture of textures) { texture.dispose(); if (typeof ImageBitmap !== 'undefined' && texture.image instanceof ImageBitmap) texture.image.close(); }
     }).catch(() => {});
-    for (const environment of this.environments.values()) void environment.then(({ source, target }) => { source.dispose(); target.dispose(); }).catch(() => {});
+    for (const environment of this.environments.values()) void environment.then(({ source, target,generator }) => { source.dispose(); target.dispose();generator.dispose(); }).catch(() => {});
     for(const texture of this.precisionTextures.values()) void texture.then((t)=>t.dispose()).catch(()=>{});
     this.precisionTextures.clear();
     this.templates.clear(); this.environments.clear();
-    this.pmrem.dispose(); this.gtao.dispose(); this.gtao.blendMaterial.dispose(); this.bloom.dispose(); this.grade.dispose(); this.composer.dispose();
+    this.gtao.dispose(); this.gtao.blendMaterial.dispose(); this.bloom.dispose(); this.grade.dispose(); this.composer.dispose();
   }
 
   /** advance animations + camera drift; re-render when anything moved */
@@ -669,6 +710,7 @@ export class BackgroundRenderer {
     if (!this.dirty && !(moving && this.sinceRender + 1e-6 >= 1 / BACKGROUND_QUALITY[this.quality].fps)) return;
     this.sinceRender = 0;
     this.dirty = false;
+    this.renderLocalProbes();
     for(const reflection of this.surfaceReflections) reflection.render(this.renderer,this.scene,this.camera);
     this.composer.render(dt);
   }

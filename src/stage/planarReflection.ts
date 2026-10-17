@@ -12,6 +12,7 @@ export class SurfaceReflection {
   private inverseProjection = new THREE.Matrix4();
   private reflectedCameraPosition=new THREE.Vector3();
   private maxMip={value:0};
+  private active={value:1};
   readonly deviation: number;
   readonly extent: number;
   private mesh: THREE.Mesh;
@@ -61,6 +62,7 @@ export class SurfaceReflection {
     material.onBeforeCompile=(shader,renderer)=>{
       previous.call(material,shader,renderer);
       shader.uniforms.surfaceReflection={value:this.reflector.getRenderTarget().texture};
+      shader.uniforms.surfaceActive=this.active;
       shader.uniforms.surfaceProjection={value:this.projection};
       shader.uniforms.surfaceInverseProjection={value:this.inverseProjection};
       shader.uniforms.surfaceCameraPosition={value:this.reflectedCameraPosition};
@@ -71,6 +73,7 @@ export class SurfaceReflection {
         .replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nsurfaceWorld=(modelMatrix*vec4(transformed,1.0)).xyz;surfaceCoord=surfaceProjection * vec4(surfaceWorld,1.0);');
       shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
         uniform sampler2D surfaceReflection;
+        uniform float surfaceActive;
         uniform float surfaceMaxMip;
         uniform float surfaceExtent;
         uniform sampler2D surfaceDepth;
@@ -83,6 +86,7 @@ export class SurfaceReflection {
           return position.xyz/position.w;
         }
         vec3 surfaceRadiance(vec3 fallback, float roughness, vec3 normal, vec3 viewDir) {
+          if(surfaceActive<.5) return fallback;
           vec2 uv=surfaceCoord.xy/surfaceCoord.w;
           if(surfaceCoord.w<=0.0 || any(lessThan(uv,vec2(0.0))) || any(greaterThan(uv,vec2(1.0)))) return fallback;
           #if defined(USE_BUMPMAP) || defined(USE_NORMALMAP)
@@ -138,6 +142,8 @@ export class SurfaceReflection {
   }
 
   render(renderer:THREE.WebGLRenderer,scene:THREE.Scene,camera:THREE.Camera):void {
+    if(!this.enabled) return;
+    const target=renderer.getRenderTarget(),face=renderer.getActiveCubeFace(),level=renderer.getActiveMipmapLevel();
     const visible=this.mesh.visible;
     this.mesh.visible=false;
     try {
@@ -150,8 +156,11 @@ export class SurfaceReflection {
         .multiply(reflectionCamera.projectionMatrix).multiply(reflectionCamera.matrixWorldInverse);
       this.inverseProjection.copy(this.projection).invert();
       this.reflectedCameraPosition.setFromMatrixPosition(reflectionCamera.matrixWorld);
-    } finally {this.mesh.visible=visible;}
+    } finally {renderer.setRenderTarget(target,face,level);this.mesh.visible=visible;}
   }
+
+  get enabled():boolean {return this.active.value===1;}
+  set enabled(value:boolean) {this.active.value=value?1:0;}
 
   dispose():void {this.reflector.geometry.dispose();this.reflector.dispose();}
 }

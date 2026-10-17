@@ -7,13 +7,18 @@ const server = await createServer({ server: { host:'127.0.0.1', port:5176, stric
 await server.listen();
 const browser = await chromium.launch({ executablePath: process.env.RENDERING_CHROMIUM_PATH, headless:true,
   args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader','--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream'] });
-const results = {profile:{originals:!!process.env.BODYARCADE_ORIGINALS_DIR,referenceHDR:process.env.BODYARCADE_REFERENCE_HDR==='1'}};
+let phase='startup';
+const watchdog=setTimeout(()=>{console.error(`Browser checks timed out during ${phase}`);void browser.close();},300000);
+watchdog.unref();
+const results = {profile:{originals:!!process.env.BODYARCADE_ORIGINALS_DIR,referenceHDR:process.env.BODYARCADE_REFERENCE_HDR==='1',lifecycleProbeResolution:512}};
 try {
   const page = await browser.newPage({ viewport:{width:1100,height:1000} });
   page.setDefaultTimeout(45000);
   const errors = []; page.on('pageerror', (e) => errors.push(String(e)));
   const openLab = async (id='galaxy') => {
-    await page.goto(`http://127.0.0.1:5176/dev/rendering.html?scene=${id}`);
+    // Full 2048px/2x Maximum renders are captured separately. Repeated forced
+    // context/reload fixtures use 512px probes to bound software-GPU memory.
+    await page.goto(`http://127.0.0.1:5176/dev/rendering.html?scene=${id}&quality=${id==='hangar'?'balanced':'maximum'}`);
     await page.waitForFunction(() => document.querySelector('#status').textContent.includes('"state": "ready"'));
   };
   await openLab();
@@ -64,10 +69,47 @@ try {
   console.log('Delayed-environment race check passed');
   await page.unroute('**/backgrounds/env/*.jpg');
 
+  phase='hangar load';console.log('Loading hangar reflection fixture');
   await openLab('hangar');
+  const ceilingPixel=()=>page.evaluate(()=>{
+    const {draw,renderer}=window.__renderingLab;draw();
+    const gl=renderer.getContext(),rgba=new Uint8Array(4);gl.readPixels(480,520,1,1,gl.RGBA,gl.UNSIGNED_BYTE,rgba);return [...rgba];
+  });
+  const hangarQuality=async(quality)=>{
+    phase=`hangar ${quality} source/quality switch`;console.log(phase);
+    await page.evaluate(async(quality)=>{
+      const {background:bg,LIBRARY,draw}=window.__renderingLab;
+      const def=LIBRARY.find((x)=>x.id==='hangar');
+      const fixture={...def,parts:def.parts.map((part)=>({...part,localProbe:{...part.localProbe,resolution:512}}))};
+      bg.setQuality(quality);await bg.load(fixture);draw();
+    },quality);
+  };
+  let beforeBalancedRestore;
+  if(results.profile.referenceHDR && results.profile.originals) {
+    // Keep both 256px JPEG and 512px HDR environments cached. Rebaking a
+    // differently sized PMREM with another generator's LOD state is invalid.
+    await hangarQuality('balanced');beforeBalancedRestore=await ceilingPixel();
+    await hangarQuality('maximum');
+  }
+  const beforeProbeContextLoss=await ceilingPixel();
+  phase='hangar context loss/restore';console.log(phase);
+  await page.evaluate(()=>window.__renderingLab.renderer.forceContextLoss());
+  await page.waitForFunction(()=>window.__renderingLab.background.contextLost);
+  await page.evaluate(()=>window.__renderingLab.renderer.forceContextRestore());
+  await page.waitForFunction(()=>!window.__renderingLab.background.contextLost);
+  results.probeContextRestore={before:beforeProbeContextLoss,after:await ceilingPixel()};
+  assert.deepEqual(results.probeContextRestore.after,results.probeContextRestore.before,'Room reflections must reproduce the same ceiling after context restoration');
+  if(beforeBalancedRestore) {
+    await hangarQuality('balanced');
+    results.balancedContextRestore={before:beforeBalancedRestore,after:await ceilingPixel()};
+    assert.deepEqual(results.balancedContextRestore.after,beforeBalancedRestore,'The cached JPEG environment must also restore after rendering the higher-resolution HDR environment');
+    await hangarQuality('maximum');
+  }
+  console.log('Hangar reflection context restoration check passed');
+  phase='hangar reload/disposal';
   results.lifecycle = await page.evaluate(async () => {
-    const {background:bg,renderer,LIBRARY,draw} = window.__renderingLab;
-    const hangar=LIBRARY.find((x)=>x.id==='hangar');
+    const {background:bg,renderer,draw} = window.__renderingLab;
+    const hangar=bg.def;
     const memory=[]; const roots=[];
     for(let i=0;i<6;i++) {
       await bg.load(hangar); draw(); renderer.getContext().finish();
@@ -82,6 +124,7 @@ try {
   assert.ok(results.lifecycle.mirrors.every((n)=>n===0),'Hangar must reflect the actual floor without auxiliary visible mirror geometry');
   console.log('Hangar reload/disposal check passed');
 
+  phase='application integration';
   await page.goto('http://127.0.0.1:5176/?bg=galaxy&avatar=robot&delegate=cpu');
   await page.waitForFunction(() => document.body.dataset.bg==='galaxy');
   assert.equal(await page.locator('#bg-cards button').count(),2);
@@ -112,4 +155,4 @@ try {
   mkdirSync('docs/rendering/captures',{recursive:true});
   writeFileSync(`docs/rendering/captures/${results.profile.originals?'checks-originals':'checks'}.json`,JSON.stringify(results,null,2));
   console.log(JSON.stringify(results,null,2));
-} finally {await browser.close();await server.close();}
+} finally {clearTimeout(watchdog);await browser.close();await server.close();}
