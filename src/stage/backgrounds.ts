@@ -1,3 +1,5 @@
+import { chooseOpeningBackground } from './openingBackground';
+
 // 3D backgrounds for the stage: original Sketchfab models (all CC-BY-4.0, so
 // every one is credited on screen while it shows), optimized copies in
 // public/backgrounds/ (textures ≤ 4K WebP, meshopt geometry — see ASSETS.md).
@@ -153,15 +155,11 @@ export function backgroundById(id: string): BackgroundDef | undefined {
 }
 
 /** A different random 3D background every page load. */
-export function randomBackgroundId(): string {
-  const initial=LIBRARY.filter((b)=>LIVE_IDS.includes(b.id));
-  return initial[Math.floor(Math.random() * initial.length)].id;
-}
-
-/** This author's embed currently permits a clean Sketchfab landing view.
- * Keep the native/live opening restricted to the two approved skyboxes. */
 export function initialBackgroundId(): string {
-  const native = new URLSearchParams(location.search).get('backgroundRenderer') === 'three';
-  if (FIDELITY_CATALOG && !native && BACKGROUNDS.some((b) => b.id === 'space')) return 'space';
-  return randomBackgroundId();
+  const key = 'bodyarcade:last-opening-background';
+  let previous: string | null = null;
+  try { previous = sessionStorage.getItem(key); } catch { /* Storage may be disabled. */ }
+  const id = chooseOpeningBackground(BACKGROUNDS.map((background) => background.id), previous);
+  try { sessionStorage.setItem(key, id); } catch { /* Random selection still works. */ }
+  return id;
 }

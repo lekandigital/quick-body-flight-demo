@@ -6,8 +6,8 @@
   "motion": {
     "id": "galaxy",
     "running": true,
-    "seconds": 4.772699999999953,
-    "commands": 4,
+    "seconds": 2.878099999999977,
+    "commands": 3,
     "acknowledgements": 0,
     "lastError": null,
     "requested": {
@@ -17,9 +17,9 @@
         2
       ],
       "target": [
-        -0.3389521075696993,
-        -0.18741841367420342,
-        0.07894370246113191
+        -0.2301558344639938,
+        -0.12404425678469266,
+        0.05291272016792292
       ],
       "fov": 45
     },
@@ -30,9 +30,9 @@
         2
       ],
       "target": [
-        -0.3389521075696993,
-        -0.18741841367420342,
-        0.07894370246113191
+        -0.16158127284066204,
+        -0.08572282681151577,
+        0.03676702342747351
       ],
       "duration": 1.4
     }
@@ -53,7 +53,7 @@
     "readyState": 4
   },
   "recording": {
-    "size": 48787,
+    "size": 40284,
     "type": "video/webm;codecs=vp9"
   },
   "selected": [
@@ -72,5 +72,9 @@
   "race": "latest selection wins",
   "games": "Flight and Rowing suspend the viewer",
   "fallback": "three",
-  "initialScene": "space"
+  "openingScenes": [
+    "orbit",
+    "corridor",
+    "nebula"
+  ]
 }

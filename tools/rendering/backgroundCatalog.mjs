@@ -9,7 +9,7 @@ export function selectBackgroundCatalog({deployment='',target='',branch='',reque
   if(branch==='bodyarcade-flight-fable'||((deployment==='production'||target==='production')&&!isolatedPreview)) return 'live';
   if(requested && !['all','live'].includes(requested)) throw new Error('BODYARCADE_BACKGROUND_CATALOG must be all or live');
   if(requested) return requested;
-  return isolatedPreview||deployment==='preview'||branch==='feature/sketchfab-fidelity'?'all':'live';
+  return isolatedPreview||deployment==='preview'||['feature/sketchfab-fidelity','main'].includes(branch)?'all':'live';
 }
 
 export function buildBackgroundCatalog(env=process.env) {

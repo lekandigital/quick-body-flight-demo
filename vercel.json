@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  },
   "installCommand": "npm ci && npm --prefix apps/flight ci --workspace client --include-workspace-root",
   "buildCommand": "node scripts/build-bodyarcade.mjs",
   "outputDirectory": "deploy/bodyarcade-site",

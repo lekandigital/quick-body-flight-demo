@@ -188,10 +188,15 @@ try {
     assert.equal(await page.evaluate(()=>window.sketchfabAPIinstances),undefined,'SDK instances must remain inside disposable controller frames');
     result.selected=selected;result.controlsRequestedHidden=true;result.inputDisabled=true;result.cameraMovesAutonomously=true;result.race='latest selection wins';result.games='Flight and Rowing suspend the viewer';result.fallback='three';
     // Verify the actual default opening separately from explicit ?bg choices.
-    await page.goto(`http://127.0.0.1:5179/${built?'bodyarcade/':''}?avatar=robot&delegate=cpu&quality=mobile`);
-    await page.waitForFunction(()=>document.body.dataset.bg==='space');
-    assert.equal(await page.evaluate(()=>document.body.dataset.backgroundRenderer),'sketchfab');
-    result.initialScene='space';
+    result.openingScenes=[];
+    for(let reload=0;reload<3;reload++){
+      await page.goto(`http://127.0.0.1:5179/${built?'bodyarcade/':''}?avatar=robot&delegate=cpu&quality=mobile`);
+      await page.waitForFunction(()=>!!document.body.dataset.bg&&document.body.dataset.backgroundRenderer==='sketchfab');
+      const id=await page.evaluate(()=>document.body.dataset.bg);
+      assert.ok(selected.includes(id));
+      assert.notEqual(id,result.openingScenes.at(-1),'Consecutive openings must differ');
+      result.openingScenes.push(id);
+    }
     assert.deepEqual(result.errors,[]);
     console.log(JSON.stringify(result,null,2));
   }
