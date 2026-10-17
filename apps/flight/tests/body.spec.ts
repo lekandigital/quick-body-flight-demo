@@ -95,9 +95,8 @@ test.describe("body flies the plane", () => {
     const page = await browser.newPage();
     await page.goto(`${FLIGHT}/?autostart=1`);
     await waitForFlying(page);
-    // Pin the profile: the default is Superman (Gate-2 pick), whose
-    // arms-down arming gate would treat this pump's neutral arms as
-    // "stabilize" — these specs test the Pilot Lean mapping.
+    // Pin the profile: these specs test the Pilot Lean mapping (the
+    // default is Shoulders, which automates speed).
     await page.evaluate(() => (window as any).__FLIGHT.setProfile("pilot-lean"));
     await startSignalPump(page);
 

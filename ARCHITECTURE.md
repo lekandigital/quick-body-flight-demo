@@ -25,7 +25,7 @@ posepuppet repo root ───────────────────�
       npm workspaces: shared / client / server
       three.js 0.172 (its own renderer — never shared)
       client/src/input/bodyControls.ts   profiles·assist·autopilot
-      client/src/input/flightTuner.ts    raw→intent→plane overlay
+      client/src/input/settingsBridge.ts options → BodyArcade overlay
       client/src/runtime/localWorlds.ts  LocalWorldProvider
       server/                            dormant; docker-compose opt-in
 ```
@@ -49,13 +49,13 @@ serves the **built** flight app at `/flight/` (flight builds with
 `FlightControls.getState()` (keyboard, byte-identical to upstream) and
 `BodyFlightControls.merge()` meet at ONE call site in `Game.tick`.
 Merge law: any keyboard/touch activity owns the plane for 1.5 s.
-Body intent = profile map (data: Superman default / Pilot Lean /
-Head Pilot) → assist clamps (Full/Standard/Expert) → analog
+Body intent = profile map (data: Shoulders default / Superman /
+Pilot Lean) → assist clamps (Full/Standard/Expert) → analog
 `speedAxis`/`elevateAxis` fields on ControlState that Plane consumes
 through its existing smoothing (undefined = upstream behavior).
 Tracking loss: intent decays to neutral (τ 0.3 s) → straight and level;
 re-entry is slew-bounded (1.2 intent/s). T-pose recenter is package-side;
-the game surfaces it (tuner banner + toast).
+the game surfaces it (toast).
 
 ## Flight-companion mode
 

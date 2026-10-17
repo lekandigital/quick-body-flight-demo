@@ -35,3 +35,8 @@ export { HoldToFire, ImpulseDetector } from './events';
 export { StrokeDetector } from './stroke';
 export { OneEuro } from './oneEuro';
 export type { NeutralState } from './extract';
+
+export { GAME_SETTINGS_ENVELOPE, isGameSettingsMessage } from './gameSettings';
+export type {
+  GameSetting, GameSettingOption, GameSettingsMessage, GameSettingsSection, GameSettingsState,
+} from './gameSettings';

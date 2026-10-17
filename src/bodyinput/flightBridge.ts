@@ -9,10 +9,14 @@
 // approach: one browsing context, no popup to lose). The tracker keeps
 // running here, and instead of a camera view the player sees their own 3D
 // model in a glass window bottom-left — the stage canvas moves into it.
+// Above it sits the game's control switcher; the gear on the model view opens
+// the game's settings (src/ui/gameSettings.ts) — games have no panels of
+// their own.
 
 import type { BodyInputAdapter } from './adapter';
 import { asset } from '../base';
 import { linkChipMarkup } from '../ui/link';
+import { mountGameSettings } from '../ui/gameSettings';
 
 const ENVELOPE = 'bodyarcade.body-input.v1';
 const FULLSCREEN = 'bodyarcade.fullscreen';
@@ -27,6 +31,8 @@ export interface FlightCompanionDeps {
   useLiteModel?: () => () => void;
   /** Mirror the link state (connected/disconnected) into the model view. */
   attachLink?: (el: HTMLElement) => () => void;
+  /** Capture the current pose as neutral (settings sheet → Recenter). */
+  recenter?: () => boolean;
 }
 
 export function defaultFlightUrl(): string {
@@ -84,7 +90,11 @@ export function openFlight(
   // the exit lives on the model view's corner — the game's own HUD owns the
   // screen corners (fullscreen, menu, quest panel)
   pip.append(close);
-  layer.append(iframe, pip);
+  const dock = document.createElement('div');
+  dock.className = 'ba-dock';
+  dock.append(pip);
+  layer.append(iframe, dock);
+  const settings = mountGameSettings(layer, iframe, target.origin, dock, pip, { recenter: deps.recenter });
   document.body.appendChild(layer);
   document.body.classList.add('playing');
 
@@ -125,6 +135,7 @@ export function openFlight(
     unsub();
     window.removeEventListener('message', onMessage);
     window.removeEventListener('popstate', onPop);
+    settings.dispose();
     if (document.fullscreenElement === layer) void document.exitFullscreen().catch(() => {});
     detachLink?.();
     deps.exitPip?.();

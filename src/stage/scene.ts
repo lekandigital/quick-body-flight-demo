@@ -10,6 +10,7 @@ import { BACKGROUND_QUALITY, isBackgroundQuality, type BackgroundQuality } from 
 import { FIDELITY_CATALOG } from './backgrounds';
 import { SketchfabBackground } from './sketchfabBackground';
 import { backgroundViewAt } from './backgroundMotion';
+import { NO_TURN, combineTurns, turnBetween, turnView, type ViewTurn } from './viewTurn';
 
 export interface Stage {
   scene: THREE.Scene;
@@ -48,6 +49,8 @@ export interface Stage {
   hasDrift(): boolean;
   /** put the camera on framing() now (drift without the auto-director) */
   applyFraming(): void;
+  /** ease the visitor's orbit/zoom back to the resting view */
+  resetView(): void;
 }
 
 export function createStage(canvas: HTMLCanvasElement): Stage {
@@ -259,6 +262,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     if (token !== bgToken) return;
     bgDef = def;
     bgElapsed = 0;
+    bgLast.pos.set(NaN, 0, 0); // place the new scene's camera on the first frame
+    bgBaseFov = NaN;
     applyBackdrop();
     applyPixelRatio();
     if (externalActive) void externalBackground?.capture(canvas.width, canvas.height);
@@ -269,14 +274,149 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     resize();
   }
 
-  /** a slow drift of the BACKGROUND camera around its Sketchfab view, for
-   *  still space scenes; returns false when there's nothing to move */
-  function drift(pos: THREE.Vector3, target: THREE.Vector3): boolean {
-    if (!bgDef?.drift || pip) return false;
-    const view = backgroundViewAt({position:pos.toArray(),target:target.toArray(),fov:bgRenderer.camera.fov}, bgDef.drift, bgElapsed, [0,1,0], bgDef.parts.some((part) => part.sky));
-    pos.fromArray(view.position); target.fromArray(view.target);
-    return true;
+  // ── the view: one turn for the avatar AND the 3D background ──────────
+  // Drag orbits, wheel / pinch zooms, double-click eases back. The visitor's
+  // turn and a still scene's drift move the avatar camera and the background
+  // camera together, as if the avatar stood in the scene (./viewTurn.ts): the
+  // native renderer takes the turn below, Sketchfab's viewer through its
+  // camera API. The auto-director's small moves stay with the avatar. The
+  // in-game model view keeps its fixed framing.
+  const UP = new THREE.Vector3(0, 1, 0);
+  const PITCH_MIN = -0.15; // just above the floor
+  const PITCH_MAX = 1.2;
+  const ZOOM_MIN = 0.55;
+  const ZOOM_MAX = 1.8;
+  const view = { yaw: 0, pitch: 0, zoom: 1 }; // where the visitor put it
+  const shown = { yaw: 0, pitch: 0, zoom: 1 }; // eased toward view
+  let frameTurn: ViewTurn = NO_TURN; // shown + drift, for this frame
+
+  function stepView(dt: number): void {
+    const k = 1 - Math.exp(-dt * 12);
+    shown.yaw += (view.yaw - shown.yaw) * k;
+    shown.pitch += (view.pitch - shown.pitch) * k;
+    shown.zoom += (view.zoom - shown.zoom) * k;
   }
+
+  const isSky = (def: BackgroundDef) => def.parts.some((part) => part.sky);
+  let bgBaseFov = NaN;
+  /** the native background's view before any turn: its Sketchfab default, drifting */
+  function nativeView(position: THREE.Vector3, target: THREE.Vector3) {
+    if (Number.isNaN(bgBaseFov)) bgBaseFov = bgRenderer.camera.fov;
+    const base = { position: position.toArray(), target: target.toArray(), fov: bgBaseFov };
+    return bgDef?.drift ? backgroundViewAt(base, bgDef.drift, bgElapsed, [0, 1, 0], isSky(bgDef)) : base;
+  }
+  /** how far the background's drift has carried its view, for the avatar to follow */
+  function driftTurn(): ViewTurn {
+    if (!bgDef?.drift || pip) return NO_TURN;
+    if (externalActive) return externalBackground?.driftTurn(performance.now()) ?? NO_TURN;
+    if (!bgRenderer.active) return NO_TURN;
+    const base = bgRenderer.baseView;
+    const rest = { position: base.pos.toArray(), target: base.target.toArray(), fov: Number.isNaN(bgBaseFov) ? bgRenderer.camera.fov : bgBaseFov };
+    return turnBetween(rest, nativeView(base.pos, base.target), [0, 1, 0], isSky(bgDef));
+  }
+
+  const pivot = new THREE.Vector3();
+  const off = new THREE.Vector3();
+  const right = new THREE.Vector3();
+  const qYaw = new THREE.Quaternion();
+  const qPitch = new THREE.Quaternion();
+  const savedPos = new THREE.Vector3();
+  const savedQuat = new THREE.Quaternion();
+  /** turn the avatar camera about the resting look point; restoreView() puts
+   *  it back after rendering so other camera code never sees the turn */
+  function applyView(): void {
+    savedPos.copy(camera.position);
+    savedQuat.copy(camera.quaternion);
+    frameTurn = pip ? NO_TURN : combineTurns(shown, bgDef ? driftTurn() : NO_TURN);
+    if (pip) return;
+    pivot.copy(api.framing().look);
+    off.copy(camera.position).sub(pivot);
+    right.crossVectors(off, UP);
+    if (right.lengthSq() < 1e-8) right.set(-1, 0, 0);
+    qPitch.setFromAxisAngle(right.normalize(), frameTurn.pitch);
+    qYaw.setFromAxisAngle(UP, frameTurn.yaw);
+    qYaw.multiply(qPitch);
+    off.applyQuaternion(qYaw).multiplyScalar(frameTurn.zoom);
+    camera.position.copy(pivot).add(off);
+    camera.quaternion.premultiply(qYaw);
+    camera.updateMatrixWorld();
+  }
+  function restoreView(): void {
+    camera.position.copy(savedPos);
+    camera.quaternion.copy(savedQuat);
+    camera.updateMatrixWorld();
+  }
+
+  const bgLast = { pos: new THREE.Vector3(NaN, 0, 0), target: new THREE.Vector3(), fov: NaN };
+  /** the native background camera: drift, then the visitor's turn; true when
+   *  it moved since the last background frame */
+  function bgView(pos: THREE.Vector3, target: THREE.Vector3): boolean {
+    const turned = turnView(nativeView(pos, target), shown, [0, 1, 0], !!bgDef && isSky(bgDef));
+    pos.fromArray(turned.position);
+    target.fromArray(turned.target);
+    const fov = turned.fov ?? bgBaseFov;
+    if (fov !== bgRenderer.camera.fov) {
+      bgRenderer.camera.fov = fov;
+      bgRenderer.camera.updateProjectionMatrix();
+    }
+    const moved =
+      Number.isNaN(bgLast.pos.x) || fov !== bgLast.fov || pos.distanceToSquared(bgLast.pos) > 1e-12 || target.distanceToSquared(bgLast.target) > 1e-12;
+    bgLast.pos.copy(pos);
+    bgLast.target.copy(target);
+    bgLast.fov = fov;
+    return moved;
+  }
+
+  // input: the stage canvas, only while it's the main stage (not the model view)
+  const pointers = new Map<number, { x: number; y: number }>();
+  let pinchDist = 0;
+  const pinchSpan = () => {
+    const [p1, p2] = [...pointers.values()];
+    return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (pip || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    canvas.setPointerCapture(e.pointerId);
+    canvas.classList.add('grabbing');
+    if (pointers.size === 2) pinchDist = pinchSpan();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    const p = pointers.get(e.pointerId);
+    if (!p || pip) return;
+    if (pointers.size === 1) {
+      // Sketchfab's feel: a full-height drag turns the view half way round
+      const k = Math.PI / Math.max(canvas.clientHeight, 1);
+      view.yaw -= (e.clientX - p.x) * k;
+      view.pitch = THREE.MathUtils.clamp(view.pitch + (e.clientY - p.y) * k, PITCH_MIN, PITCH_MAX);
+    }
+    p.x = e.clientX;
+    p.y = e.clientY;
+    if (pointers.size === 2) {
+      const span = pinchSpan();
+      if (pinchDist > 0 && span > 0) view.zoom = THREE.MathUtils.clamp(view.zoom * (pinchDist / span), ZOOM_MIN, ZOOM_MAX);
+      pinchDist = span;
+    }
+  });
+  const release = (e: PointerEvent) => {
+    if (!pointers.delete(e.pointerId)) return;
+    pinchDist = pointers.size === 2 ? pinchSpan() : 0;
+    if (pointers.size === 0) canvas.classList.remove('grabbing');
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      if (pip) return;
+      e.preventDefault();
+      view.zoom = THREE.MathUtils.clamp(view.zoom * Math.exp(e.deltaY * 0.0012), ZOOM_MIN, ZOOM_MAX);
+    },
+    { passive: false },
+  );
+  canvas.addEventListener('dblclick', () => {
+    if (!pip) api.resetView();
+  });
 
   const homeHost = canvas.parentElement!;
   function resize() {
@@ -332,14 +472,17 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       fpsCount = 0;
     }
     for (const cb of tickCbs) cb(dt, now);
+    stepView(dt);
+    if (externalActive && !pip) externalBackground?.setTurn(shown);
     renderFrame(dt, document.hidden ? 0 : elapsed);
     requestAnimationFrame(loop);
   }
 
   function renderFrame(dt: number, cameraElapsed = dt): void {
     if (bgDef && !pip) bgElapsed += cameraElapsed;
+    applyView();
     if (bgDef && !pip && !externalActive && bgRenderer.active) {
-      bgRenderer.render(dt, drift);
+      bgRenderer.render(dt, bgView);
       quadMat.uniforms.map.value = bgRenderer.texture;
       renderer.autoClear = true;
       renderer.render(quadScene, quadCam);
@@ -350,6 +493,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     } else {
       renderer.render(scene, camera);
     }
+    restoreView();
   }
   requestAnimationFrame(loop);
 
@@ -435,11 +579,16 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       if (import.meta.env.DEV && bgDef && !externalActive) void bgRenderer.load(bgDef).catch((e) => console.warn('Background source quality switch failed',e));
       try { localStorage.setItem('bodyarcade-background-quality', value); } catch { /* optional persistence */ }
     },
-    hasDrift: () => false, // the background camera drifts, not the avatar's
+    hasDrift: () => false, // the drift lives in the view turn, applied at render time
     applyFraming() {
       const f = api.framing();
       camera.position.copy(f.pos);
       camera.lookAt(f.look);
+    },
+    resetView() {
+      view.yaw = Math.round(view.yaw / (2 * Math.PI)) * 2 * Math.PI; // the short way round
+      view.pitch = 0;
+      view.zoom = 1;
     },
     onTick: (cb) => tickCbs.push(cb),
     renderFps: () => fps,

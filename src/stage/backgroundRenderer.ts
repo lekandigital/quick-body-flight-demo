@@ -224,6 +224,7 @@ export class BackgroundRenderer {
     return !!this.def;
   }
 
+
   setSize(w: number, h: number): void {
     if (w <= 0 || h <= 0) return;
     this.camera.aspect = w / h;

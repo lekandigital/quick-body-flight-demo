@@ -27,7 +27,10 @@ const SIGNAL_STALE_MS = 350;
 /** Below this confidence the body source is treated as lost (package decays too). */
 const MIN_CONFIDENCE = 0.35;
 const MESSAGE_ENVELOPE = "bodyarcade.body-input.v1";
-const PROFILE_STORE_KEY = "bodyarcade_flight_profile_v1";
+// v2: Shoulders became the default (2026-10-16); bumping the key lets the
+// new default reach everyone who had Superman saved from before.
+const PROFILE_STORE_KEY = "bodyarcade_flight_profile_v2";
+const GAIN_STORE_KEY = "bodyarcade_flight_gains_v3";
 const ASSIST_STORE_KEY = "bodyarcade_flight_assist_v1";
 
 /**
@@ -63,6 +66,8 @@ export interface BodyFlightProfile {
   speedGain: number;
   climbGain: number;
   descendGain: number;
+  /** Gains this profile actually reads (the settings sheet shows only these). */
+  tunable: readonly GainKey[];
   /** Sustained handsForward triggers Plane.speedBoost() (hysteresis + refractory). */
   boostOnHandsForward: boolean;
   notes: string;
@@ -80,6 +85,9 @@ export interface BodyFlightProfile {
 
 const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
 
+export type GainKey = "turnGain" | "speedGain" | "climbGain" | "descendGain";
+export const GAIN_KEYS: readonly GainKey[] = ["turnGain", "speedGain", "climbGain", "descendGain"];
+
 /**
  * Profiles are data + one mapping function each. Sign convention: leanX +1
  * = user leans to THEIR right; keyboard A (turn left) = +turnRate, so
@@ -87,7 +95,35 @@ const clamp1 = (v: number) => Math.max(-1, Math.min(1, v));
  */
 export const BODY_PROFILES: BodyFlightProfile[] = [
   {
-    // Gate-2 outcome: Lekan's pick for the default standing profile.
+    // The default since 2026-10-16. Id kept from its Gate-2 name (Head
+    // Pilot) so saved gains and the eval specs still resolve.
+    id: "head-pilot",
+    label: "Shoulders",
+    turnGain: 1.1,
+    speedGain: 0,
+    // Gate-2: climbing needed an uncomfortably deep backward lean while
+    // seated — seated leans are small, so the climb side gets high gain.
+    climbGain: 3.0,
+    descendGain: 2.0,
+    tunable: ["turnGain", "climbGain", "descendGain"],
+    boostOnHandsForward: false,
+    notes: "tilt your shoulders to bank · lean back to climb, forward to dive · speed is automatic",
+    map(s, p) {
+      return {
+        turnRate: -s.axes.leanX * p.turnGain,
+        // Speed automated: hold a comfortable cruise (~70% of max band).
+        speedAxis: 0.4,
+        // Lean back (−) climbs, lean toward camera (+) descends.
+        elevateAxis: clamp1(
+          s.axes.leanY <= 0
+            ? -s.axes.leanY * p.climbGain
+            : -s.axes.leanY * p.descendGain,
+        ),
+      };
+    },
+  },
+  {
+    // Gate-2 outcome: was the default standing profile until 2026-10-16.
     // Gains are the exact Gate-2-approved values — the post-Gate-2 bump
     // (turn 1.35 / climb 1.7) failed the Gate-3 retest and was reverted.
     id: "superman",
@@ -96,6 +132,7 @@ export const BODY_PROFILES: BodyFlightProfile[] = [
     speedGain: 1.2,
     climbGain: 1.5,
     descendGain: 1.0,
+    tunable: ["turnGain", "speedGain", "climbGain", "descendGain"],
     boostOnHandsForward: true,
     notes: "arms out to fly (drop arms = stabilize) · lean banks · arms high climbs · hands forward dives+boosts",
     map(s, p) {
@@ -121,6 +158,7 @@ export const BODY_PROFILES: BodyFlightProfile[] = [
     speedGain: 1.6,
     climbGain: 1.4,
     descendGain: 1.2,
+    tunable: ["turnGain", "speedGain", "climbGain", "descendGain"],
     boostOnHandsForward: true,
     notes: "lean L/R turns · lean F/B speed · stand/crouch climbs/descends · hands forward boosts",
     map(s, p) {
@@ -131,32 +169,12 @@ export const BODY_PROFILES: BodyFlightProfile[] = [
       };
     },
   },
-  {
-    id: "head-pilot",
-    label: "Head Pilot",
-    turnGain: 1.1,
-    speedGain: 0,
-    // Gate-2: climbing needed an uncomfortably deep backward lean while
-    // seated — seated leans are small, so the climb side gets high gain.
-    climbGain: 3.0,
-    descendGain: 2.0,
-    boostOnHandsForward: false,
-    notes: "seated: shoulder-line lean turns · lean F/B climbs/descends · speed automated",
-    map(s, p) {
-      return {
-        turnRate: -s.axes.leanX * p.turnGain,
-        // Speed automated: hold a comfortable cruise (~70% of max band).
-        speedAxis: 0.4,
-        // Lean back (−) climbs, lean toward camera (+) descends.
-        elevateAxis: clamp1(
-          s.axes.leanY <= 0
-            ? -s.axes.leanY * p.climbGain
-            : -s.axes.leanY * p.descendGain,
-        ),
-      };
-    },
-  },
 ];
+
+/** Shipped gains, captured before any saved values are applied (reset). */
+const DEFAULT_GAINS = new Map(
+  BODY_PROFILES.map((p) => [p.id, Object.fromEntries(GAIN_KEYS.map((k) => [k, p[k]])) as Record<GainKey, number>]),
+);
 
 export interface AssistLevel {
   id: string;
@@ -254,6 +272,7 @@ export class BodyFlightControls {
       bc.close();
     };
     window.addEventListener("message", this.onWindowMessage);
+    this.loadGains();
     try {
       const savedP = localStorage.getItem(PROFILE_STORE_KEY);
       const pi = BODY_PROFILES.findIndex((p) => p.id === savedP);
@@ -337,6 +356,51 @@ export class BodyFlightControls {
     this.assistIdx = idx;
     this.persist(ASSIST_STORE_KEY, this.assist.id);
     return true;
+  }
+
+  /** Sensitivity of the active profile (BodyArcade settings sheet). */
+  setGain(key: GainKey, value: number) {
+    if (!Number.isFinite(value)) return;
+    this.profile[key] = Math.max(0, Math.min(3, value));
+    this.saveGains();
+  }
+
+  /** Back to the shipped profile, assist level and gains. */
+  resetDefaults() {
+    for (const p of BODY_PROFILES) Object.assign(p, DEFAULT_GAINS.get(p.id));
+    this.profileIdx = 0;
+    this.assistIdx = 0;
+    try {
+      localStorage.removeItem(PROFILE_STORE_KEY);
+      localStorage.removeItem(ASSIST_STORE_KEY);
+      localStorage.removeItem(GAIN_STORE_KEY);
+    } catch {
+      /* session-only */
+    }
+  }
+
+  private loadGains() {
+    try {
+      const raw = localStorage.getItem(GAIN_STORE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Record<string, Partial<Record<GainKey, number>>>;
+      for (const p of BODY_PROFILES) {
+        for (const k of GAIN_KEYS) {
+          const v = saved[p.id]?.[k];
+          if (typeof v === "number") p[k] = v;
+        }
+      }
+    } catch {
+      /* defaults */
+    }
+  }
+
+  private saveGains() {
+    const out: Record<string, Record<GainKey, number>> = {};
+    for (const p of BODY_PROFILES) {
+      out[p.id] = Object.fromEntries(GAIN_KEYS.map((k) => [k, p[k]])) as Record<GainKey, number>;
+    }
+    this.persist(GAIN_STORE_KEY, JSON.stringify(out));
   }
 
   private persist(key: string, value: string) {
@@ -482,7 +546,7 @@ export class BodyFlightControls {
     return v;
   }
 
-  /** Everything the tuner overlay needs, one call per frame. */
+  /** Live state for the BodyArcade settings sheet and the eval specs. */
   debugState(): BodyDebugState {
     const now = performance.now();
     let reason: BodySourceStatus;
@@ -515,7 +579,7 @@ export class BodyFlightControls {
       assist: this.assist,
       boostArmedIn: Math.max(0, BOOST_REFRACTORY_MS - (now - this.lastBoostAtMs)),
       // Gate-2 feedback: the recenter confirmation was easy to miss — hold
-      // the flash long enough to register (tuner banner + in-game toast).
+      // the flash long enough to register (in-game toast).
       recenterFlashMs: Math.max(0, 4000 - (now - this.lastRecenterAtMs)),
       transport: this.lastTransport,
       senderConnected: recent.length > 0,

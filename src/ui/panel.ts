@@ -1,7 +1,7 @@
 // Debug/settings panel (plain DOM). Writes config via setConfig; the hot
 // loop reads config directly. Toggle with the ⚙ button or "d".
 
-import { config, setConfig, resetConfig, type Config } from '../config';
+import { config, setConfig, resetConfig, onConfigChange, type Config } from '../config';
 import type { BoneName } from '../rig/types';
 import type { PpcGroupInfo } from '../pose/continuity';
 
@@ -86,6 +86,10 @@ function toggle(key: keyof Config & ('mirror' | 'smoothing' | 'rootMotion' | 'pp
   input.type = 'checkbox';
   input.checked = config[key] as boolean;
   input.onchange = () => setConfig(key, input.checked);
+  // the rail and the shortcuts change these too
+  onConfigChange((k) => {
+    if (k === key) input.checked = config[key] as boolean;
+  });
   return input;
 }
 
@@ -104,6 +108,9 @@ export function createPanel(rig?: PanelRigApi): void {
   fullBody.id = 'full-body-toggle';
   fullBody.checked = config.bodyMode === 'full';
   fullBody.onchange = () => setConfig('bodyMode', fullBody.checked ? 'full' : 'upper');
+  onConfigChange((k) => {
+    if (k === 'bodyMode') fullBody.checked = config.bodyMode === 'full';
+  });
 
   // Predictive Pose Continuity: per-limb tracking state, updated from the
   // render loop at HUD cadence while the panel is open
