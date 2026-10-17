@@ -19,7 +19,8 @@ const ALL = BACKGROUNDS;
 
 function creditHtml(c: Credit): string {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  return `<a href="${c.source}" target="_blank" rel="noopener noreferrer">${esc(c.title)}</a> by <a href="${c.authorUrl}" target="_blank" rel="noopener noreferrer">${esc(c.author)}</a>`;
+  // only the title may be shortened: the author, licence and viewer always show
+  return `<a class="bg-credit-title" href="${c.source}" target="_blank" rel="noopener noreferrer">${esc(c.title)}</a><span class="bg-credit-keep">&nbsp;by <a href="${c.authorUrl}" target="_blank" rel="noopener noreferrer">${esc(c.author)}</a></span>`;
 }
 
 export function createBackgroundPicker(stage: Stage, initial: string): BackgroundPicker {
@@ -78,7 +79,7 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
       return;
     }
     credit.hidden = false;
-    credit.innerHTML = `${bg.credits.map(creditHtml).join(' · ')} · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>`;
+    credit.innerHTML = `${bg.credits.map(creditHtml).join('<span class="bg-credit-keep">&nbsp;·&nbsp;</span>')}<span class="bg-credit-keep">&nbsp;· <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></span><span class="bg-credit-keep bg-credit-viewer">&nbsp;· rendered by <a href="https://sketchfab.com" target="_blank" rel="noopener noreferrer">Sketchfab</a></span>`;
   }
 
   const api: BackgroundPicker = {

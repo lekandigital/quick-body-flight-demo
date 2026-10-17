@@ -137,9 +137,12 @@ body.glass-ui::after { display: none; }
 .glass-ui #stage { z-index: 1; cursor: grab; touch-action: none; }
 .glass-ui #stage.grabbing { cursor: grabbing; }
 .glass-ui .ba-pip #stage { cursor: default; touch-action: auto; }
-.sketchfab-background { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.sketchfab-background { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .sketchfab-background[hidden] { display: none; }
 .sketchfab-background iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
+/* the viewer's own logo is cropped (sketchfabBackground.ts): credit Sketchfab in the credit line */
+.bg-credit-viewer { display: none; }
+body[data-background-renderer="sketchfab"] .bg-credit-viewer { display: inline; }
 .glass-ui .camera-pane {
   position: fixed; left: 0; top: 0; width: 160px;
   opacity: 0; pointer-events: none; z-index: -1; border: 0; background: none;
@@ -910,10 +913,12 @@ body.glass-ui[data-bg]:not([data-bg="sky"]) .stage-backdrop { display: none; }
   border-radius: 999px;
   border: 1px solid var(--rule);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  align-items: baseline;
 }
 .glass-ui .bg-credit[hidden] { display: none; }
+.glass-ui .bg-credit .bg-credit-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.glass-ui .bg-credit .bg-credit-keep { flex: none; }
 .glass-ui .bg-credit a { color: var(--ink-2); text-decoration: none; }
 .glass-ui .bg-credit a:hover { color: var(--accent); }
 body.glass-ui.playing .bg-credit { visibility: hidden; }
@@ -923,5 +928,8 @@ body.glass-ui.playing .bg-credit { visibility: hidden; }
   .glass-ui .bg-credit { bottom: calc(var(--gap) * 2 + var(--bar-h)); right: calc(var(--gap) + 320px); max-width: 40vw; }
 }
 @media (max-width: 900px) {
-  .glass-ui .bg-credit { right: var(--gap); left: var(--gap); max-width: none; bottom: calc(var(--gap) * 3 + var(--bar-h) + 120px); }
+  /* the Experiences panel fills the bottom on phones: the credit sits under the link chip */
+  .glass-ui .bg-credit { left: var(--gap); right: auto; max-width: calc(100vw - 2 * var(--gap)); bottom: auto; top: calc(var(--gap) * 3 + var(--bar-h) + 48px);
+    flex-wrap: wrap; border-radius: 12px; }
+  .glass-ui .bg-credit .bg-credit-title { max-width: 100%; }
 }

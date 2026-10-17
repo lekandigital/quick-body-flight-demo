@@ -1,5 +1,13 @@
 // Sketchfab renders only the background. The avatar, webcam and pose landmarks
-// never enter this frame or its API. Use documented embed options, not DOM hacks.
+// never enter this frame or its API.
+//
+// Crop: the free embed keeps a "click & hold to rotate" hint and the Sketchfab
+// logo in the bottom ~140 px of the viewer. The viewer renders CROP_PX larger
+// than the stage on every side (same aspect, centred) with a matching wider
+// field of view, so the visible framing is unchanged and that strip falls
+// outside the stage. Sketchfab and each model's author are credited in the
+// stage's credit line instead. Lekan has permission for this (2026-10-17);
+// Sketchfab's terms otherwise reserve hiding the logo to Premium/Enterprise.
 import type { BackgroundDef } from './backgrounds';
 import type { BackgroundQuality } from './backgroundQuality';
 import { BackgroundMotionClock, backgroundViewAt, type BackgroundView } from './backgroundMotion';
@@ -25,8 +33,11 @@ interface ViewerOptions { success(api: ViewerApi): void; error(error?: unknown):
 type SketchfabConstructor = new (version: string, frame: HTMLIFrameElement) => { init(uid: string, options: ViewerOptions): void };
 type SdkWindow = Window & { Sketchfab?: SketchfabConstructor };
 
-/** Some UI/branding switches depend on the model owner's Sketchfab plan.
- * Request the supported options; do not crop or modify the cross-origin UI. */
+/** how far the viewer reaches past the stage on each side, in CSS px (covers the hint and logo) */
+const CROP_PX = 160;
+
+/** Some UI/branding switches depend on the model owner's Sketchfab plan; the
+ * rest is cropped (see the note at the top). */
 export const SKETCHFAB_BACKGROUND_OPTIONS = {
   autostart: 1, preload: 1, camera: 0, autospin: 0, animation_autoplay: 1,
   annotations_visible: 0, annotation_tooltip_visible: 0, dnt: 1,
@@ -95,7 +106,11 @@ export class SketchfabBackground {
   private turn: ViewTurn = NO_TURN;
   private sentTurn: ViewTurn | null = null;
   private sentAt = 0;
+  /** the field of view the scene should show (before the crop's widening) */
   private sentFov = NaN;
+  /** the viewer's size over the stage's */
+  private scale = 1;
+  private resize = new ResizeObserver(() => this.layout());
   private visibility = () => this.updateVisibility();
 
   constructor(parent: HTMLElement) {
@@ -105,6 +120,34 @@ export class SketchfabBackground {
     this.host.inert = true;
     parent.prepend(this.host);
     document.addEventListener('visibilitychange', this.visibility);
+    this.resize.observe(this.host);
+  }
+
+  /** size every viewer frame past the stage (see the crop note at the top) */
+  private layout(): void {
+    const width = this.host.clientWidth;
+    const height = this.host.clientHeight;
+    if (!width || !height) return;
+    const scale = (height + 2 * CROP_PX) / height;
+    this.scale = scale;
+    for (const frame of this.host.querySelectorAll<HTMLIFrameElement>(':scope > iframe')) this.sizeFrame(frame);
+    const viewer = this.current;
+    if (viewer?.api?.setFov && Number.isFinite(this.sentFov)) viewer.api.setFov(this.viewerFov(this.sentFov));
+  }
+
+  private sizeFrame(frame: HTMLIFrameElement): void {
+    const width = this.host.clientWidth;
+    const height = this.host.clientHeight;
+    if (!width || !height) return;
+    Object.assign(frame.style, {
+      width: `${width * this.scale}px`, height: `${height * this.scale}px`,
+      left: `${(width - width * this.scale) / 2}px`, top: `${-CROP_PX}px`, right: 'auto', bottom: 'auto',
+    });
+  }
+
+  /** the wider field of view that shows `fov` across the visible stage */
+  private viewerFov(fov: number): number {
+    return Math.min(170, 2 * Math.atan(Math.tan((fov * Math.PI) / 360) * this.scale) * 180 / Math.PI);
   }
 
   get active(): boolean { return !!this.current; }
@@ -131,6 +174,7 @@ export class SketchfabBackground {
     frame.style.opacity = '0'; // keep the previous scene while this loads
     frame.setAttribute('execution-while-not-rendered', '');
     this.host.append(frame);
+    this.sizeFrame(frame);
     // The published SDK has global message listeners and no public dispose.
     // Its own small, same-origin realm is destroyed with the background, so
     // switches release SDK listeners/requests without relying on private APIs.
@@ -181,7 +225,8 @@ export class SketchfabBackground {
                   api.getFov((error, fov) => {
                     if (error || !Number.isFinite(fov) || fov <= 0 || fov >= 180) { finish(error || new Error('Invalid Sketchfab field of view')); return; }
                     viewer.camera = { position: [...camera.position], target: [...camera.target], fov };
-                    finish();
+                    // widen for the crop before the scene shows
+                    if (api.setFov) api.setFov(this.viewerFov(fov), () => finish()); else finish();
                   });
                 });
               } catch (error) { finish(error); }
@@ -259,7 +304,7 @@ export class SketchfabBackground {
       });
       if (camera.fov !== undefined && camera.fov !== this.sentFov && viewer.api!.setFov) {
         this.sentFov = camera.fov;
-        viewer.api!.setFov(camera.fov);
+        viewer.api!.setFov(this.viewerFov(camera.fov));
       }
     } catch (error) {
       viewer.cameraError = String(error);
@@ -279,7 +324,7 @@ export class SketchfabBackground {
     this.sentTurn = { ...this.turn };
     if (camera.fov !== undefined && camera.fov !== this.sentFov && viewer.api.setFov) {
       this.sentFov = camera.fov;
-      viewer.api.setFov(camera.fov);
+      viewer.api.setFov(this.viewerFov(camera.fov));
     }
     viewer.requestedCamera = camera;
     viewer.commands++;
@@ -346,7 +391,13 @@ export class SketchfabBackground {
   }
 
   drawCaptured(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
-    if (this.current?.screenshot) context.drawImage(this.current.screenshot, x, y, width, height);
+    const shot = this.current?.screenshot;
+    if (shot) {
+      // the stage's part of the wider render: its centre 1/scale
+      const sw = shot.naturalWidth / this.scale;
+      const sh = shot.naturalHeight / this.scale;
+      context.drawImage(shot, (shot.naturalWidth - sw) / 2, (shot.naturalHeight - sh) / 2, sw, sh, x, y, width, height);
+    }
     void this.capture(Math.round(width), Math.round(height));
   }
 
@@ -369,5 +420,6 @@ export class SketchfabBackground {
   dispose(): void {
     this.clear(); this.host.remove();
     document.removeEventListener('visibilitychange', this.visibility);
+    this.resize.disconnect();
   }
 }
