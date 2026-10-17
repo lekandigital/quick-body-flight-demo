@@ -134,7 +134,9 @@ body.glass-ui::after { display: none; }
   100% { background-position: 120px 120px; }
 }
 @media (prefers-reduced-motion: reduce) { .glass-ui .stage-backdrop::after { animation: none; } }
-.glass-ui #stage { z-index: 1; }
+.glass-ui #stage { z-index: 1; cursor: grab; touch-action: none; }
+.glass-ui #stage.grabbing { cursor: grabbing; }
+.glass-ui .ba-pip #stage { cursor: default; touch-action: auto; }
 .glass-ui .camera-pane {
   position: fixed; left: 0; top: 0; width: 160px;
   opacity: 0; pointer-events: none; z-index: -1; border: 0; background: none;

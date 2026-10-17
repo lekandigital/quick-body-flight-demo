@@ -37,6 +37,8 @@ export interface Stage {
   hasDrift(): boolean;
   /** put the camera on framing() now (drift without the auto-director) */
   applyFraming(): void;
+  /** ease the visitor's orbit/zoom back to the resting view */
+  resetView(): void;
 }
 
 export function createStage(canvas: HTMLCanvasElement): Stage {
@@ -221,6 +223,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     await bgRenderer.load(def);
     if (token !== bgToken) return;
     bgDef = def;
+    bgLast.pos.set(NaN, 0, 0); // place the new scene's camera on the first frame
     applyBackdrop();
     applyPixelRatio();
   }
@@ -232,25 +235,176 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     resize();
   }
 
-  /** a slow drift of the BACKGROUND camera around its Sketchfab view, for
-   *  still space scenes; returns false when there's nothing to move */
-  function drift(pos: THREE.Vector3, target: THREE.Vector3): boolean {
-    if (!bgDef?.drift || pip) return false;
-    const t = performance.now() / 1000;
-    const wave = (period: number) => Math.sin((t * 2 * Math.PI) / period);
-    const off = pos.clone().sub(target);
-    if (bgDef.drift === 'orbit') {
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), wave(48) * 0.08); // ±4.5° around the view
-      pos.copy(target).add(off);
-    } else if (bgDef.drift === 'dolly') {
-      pos.copy(target).add(off.multiplyScalar(1 + wave(30) * 0.12)); // a slow breath in and out
-    } else if (bgDef.drift === 'pan') {
-      const side = new THREE.Vector3().crossVectors(off, new THREE.Vector3(0, 1, 0)).normalize().multiplyScalar(off.length() * 0.05 * wave(36));
-      pos.add(side);
-      target.add(side);
-    }
-    return true;
+  // ── the view: one camera rig for the avatar AND the 3D background ──────
+  // Drag orbits, wheel / pinch zooms, double-click eases back. The avatar and
+  // the background turn by the same angles, as if the avatar stood in the
+  // scene: whatever moved the avatar's camera (the visitor, the auto-
+  // director's lean and idle orbit, the replay angle, a still scene's drift)
+  // turns the background camera the same way about its own target, and zoom
+  // moves both cameras in or out by the same factor (a sky scene's camera stops
+  // short of its sphere's wall). The in-game model view keeps its fixed framing.
+  const UP = new THREE.Vector3(0, 1, 0);
+  const PITCH_MIN = -0.15; // just above the floor
+  const PITCH_MAX = 1.2;
+  const ZOOM_MIN = 0.55;
+  const ZOOM_MAX = 1.8;
+  const view = { yaw: 0, pitch: 0, zoom: 1 }; // where the visitor put it
+  const shown = { yaw: 0, pitch: 0, zoom: 1 }; // eased toward view
+  let dragging = false;
+  let lastInput = -Infinity;
+  // a still scene's drift runs on its own clock, which pauses while someone
+  // holds the view (no jumps when it resumes)
+  let driftClock = 0;
+  let driftRate = 1;
+
+  function stepView(dt: number): void {
+    const k = 1 - Math.exp(-dt * 12);
+    shown.yaw += (view.yaw - shown.yaw) * k;
+    shown.pitch += (view.pitch - shown.pitch) * k;
+    shown.zoom += (view.zoom - shown.zoom) * k;
+    const idle = !dragging && performance.now() - lastInput > 2500;
+    driftRate += ((idle ? 1 : 0) - driftRate) * (1 - Math.exp(-dt * 1.5));
+    driftClock += dt * driftRate;
   }
+
+  /** a still space scene's slow drift, as an orbit/zoom of the shared rig */
+  function driftOffset(): { yaw: number; zoom: number } {
+    const wave = (period: number) => Math.sin((driftClock * 2 * Math.PI) / period);
+    switch (bgDef?.drift) {
+      case 'orbit':
+        return { yaw: wave(48) * 0.08, zoom: 1 }; // ±4.5° around the view
+      case 'dolly':
+        return { yaw: 0, zoom: 1 + wave(30) * 0.12 }; // a slow breath in and out
+      case 'pan':
+        return { yaw: wave(36) * 0.05, zoom: 1 };
+      default:
+        return { yaw: 0, zoom: 1 };
+    }
+  }
+
+  const pivot = new THREE.Vector3();
+  const off = new THREE.Vector3();
+  const right = new THREE.Vector3();
+  const qYaw = new THREE.Quaternion();
+  const qPitch = new THREE.Quaternion();
+  const savedPos = new THREE.Vector3();
+  const savedQuat = new THREE.Quaternion();
+  /** turn the avatar camera by the view about the resting look point; the
+   *  caller restores it after rendering so other camera code never sees it */
+  function applyView(): void {
+    savedPos.copy(camera.position);
+    savedQuat.copy(camera.quaternion);
+    if (pip) return;
+    const d = bgDef && !pip ? driftOffset() : { yaw: 0, zoom: 1 };
+    pivot.copy(api.framing().look);
+    off.copy(camera.position).sub(pivot);
+    right.crossVectors(off, UP);
+    if (right.lengthSq() < 1e-8) right.set(-1, 0, 0);
+    qPitch.setFromAxisAngle(right.normalize(), shown.pitch);
+    qYaw.setFromAxisAngle(UP, shown.yaw + d.yaw);
+    qYaw.multiply(qPitch);
+    off.applyQuaternion(qYaw).multiplyScalar(shown.zoom * d.zoom);
+    camera.position.copy(pivot).add(off);
+    camera.quaternion.premultiply(qYaw);
+    camera.updateMatrixWorld();
+  }
+  function restoreView(): void {
+    camera.position.copy(savedPos);
+    camera.quaternion.copy(savedQuat);
+    camera.updateMatrixWorld();
+  }
+
+  const bgLast = { pos: new THREE.Vector3(NaN, 0, 0), target: new THREE.Vector3() };
+  const sph = (v: THREE.Vector3) => ({
+    yaw: Math.atan2(v.x, v.z),
+    elev: Math.asin(THREE.MathUtils.clamp(v.y / (v.length() || 1), -1, 1)),
+    len: v.length(),
+  });
+  /** the background camera follows the avatar camera's turn away from its
+   *  resting framing; true when it moved since the last background frame */
+  function bgView(pos: THREE.Vector3, target: THREE.Vector3): boolean {
+    const rest = api.framing();
+    const a = sph(rest.pos.clone().sub(rest.look));
+    const b = sph(camera.position.clone().sub(rest.look));
+    const o = sph(pos.clone().sub(target));
+    const yaw = o.yaw + (b.yaw - a.yaw);
+    const elev = THREE.MathUtils.clamp(o.elev + (b.elev - a.elev), -1.45, 1.45);
+    const dir = new THREE.Vector3(Math.cos(elev) * Math.sin(yaw), Math.sin(elev), Math.cos(elev) * Math.cos(yaw));
+    let len = o.len * (b.len / (a.len || 1));
+    const sky = bgRenderer.skySphere;
+    if (sky) {
+      // longest step along dir from the target that stays within 85 % of the sky's radius
+      const w = target.clone().sub(sky.center);
+      const dw = dir.dot(w);
+      const disc = dw * dw - w.lengthSq() + (sky.radius * 0.85) ** 2;
+      if (disc > 0) len = Math.min(len, -dw + Math.sqrt(disc));
+    }
+    pos.copy(dir).multiplyScalar(len).add(target);
+    const moved =
+      Number.isNaN(bgLast.pos.x) || pos.distanceToSquared(bgLast.pos) > 1e-12 || target.distanceToSquared(bgLast.target) > 1e-12;
+    bgLast.pos.copy(pos);
+    bgLast.target.copy(target);
+    return moved;
+  }
+
+  // input: the stage canvas, only while it's the main stage (not the model view)
+  const pointers = new Map<number, { x: number; y: number }>();
+  let pinchDist = 0;
+  const pinchSpan = () => {
+    const [p1, p2] = [...pointers.values()];
+    return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+  };
+  canvas.addEventListener('pointerdown', (e) => {
+    if (pip || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    canvas.setPointerCapture(e.pointerId);
+    dragging = true;
+    lastInput = performance.now();
+    canvas.classList.add('grabbing');
+    if (pointers.size === 2) pinchDist = pinchSpan();
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    const p = pointers.get(e.pointerId);
+    if (!p || pip) return;
+    lastInput = performance.now();
+    if (pointers.size === 1) {
+      // Sketchfab's feel: a full-height drag turns the view half way round
+      const k = Math.PI / Math.max(canvas.clientHeight, 1);
+      view.yaw -= (e.clientX - p.x) * k;
+      view.pitch = THREE.MathUtils.clamp(view.pitch + (e.clientY - p.y) * k, PITCH_MIN, PITCH_MAX);
+    }
+    p.x = e.clientX;
+    p.y = e.clientY;
+    if (pointers.size === 2) {
+      const span = pinchSpan();
+      if (pinchDist > 0 && span > 0) view.zoom = THREE.MathUtils.clamp(view.zoom * (pinchDist / span), ZOOM_MIN, ZOOM_MAX);
+      pinchDist = span;
+    }
+  });
+  const release = (e: PointerEvent) => {
+    if (!pointers.delete(e.pointerId)) return;
+    pinchDist = pointers.size === 2 ? pinchSpan() : 0;
+    if (pointers.size === 0) {
+      dragging = false;
+      canvas.classList.remove('grabbing');
+    }
+    lastInput = performance.now();
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener(
+    'wheel',
+    (e) => {
+      if (pip) return;
+      e.preventDefault();
+      lastInput = performance.now();
+      view.zoom = THREE.MathUtils.clamp(view.zoom * Math.exp(e.deltaY * 0.0012), ZOOM_MIN, ZOOM_MAX);
+    },
+    { passive: false },
+  );
+  canvas.addEventListener('dblclick', () => {
+    if (!pip) api.resetView();
+  });
 
   const homeHost = canvas.parentElement!;
   function resize() {
@@ -297,8 +451,10 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       fpsCount = 0;
     }
     for (const cb of tickCbs) cb(dt, now);
+    stepView(dt);
+    applyView();
     if (bgDef && !pip && bgRenderer.active) {
-      bgRenderer.render(dt, drift);
+      bgRenderer.render(dt, bgView);
       quadMat.uniforms.map.value = bgRenderer.texture;
       renderer.autoClear = true;
       renderer.render(quadScene, quadCam);
@@ -309,6 +465,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     } else {
       renderer.render(scene, camera);
     }
+    restoreView();
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -373,11 +530,17 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     canvas,
     setBackground,
     backgroundId: () => bgDef?.id ?? null,
-    hasDrift: () => false, // the background camera drifts, not the avatar's
+    hasDrift: () => false, // the drift lives in the view rig, applied at render time
     applyFraming() {
       const f = api.framing();
       camera.position.copy(f.pos);
       camera.lookAt(f.look);
+    },
+    resetView() {
+      view.yaw = Math.round(view.yaw / (2 * Math.PI)) * 2 * Math.PI; // the short way round
+      view.pitch = 0;
+      view.zoom = 1;
+      lastInput = performance.now();
     },
     onTick: (cb) => tickCbs.push(cb),
     renderFps: () => fps,

@@ -125,6 +125,8 @@ export class BackgroundRenderer {
   private base = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
   private dirty = true;
   private sinceRender = 1;
+  /** the sky sphere, for scenes viewed from inside one (the camera must stay in it) */
+  private sky: THREE.Sphere | null = null;
   private token = 0;
 
   constructor(renderer: THREE.WebGLRenderer) {
@@ -152,6 +154,10 @@ export class BackgroundRenderer {
     return !!this.def;
   }
 
+  get skySphere(): THREE.Sphere | null {
+    return this.sky;
+  }
+
   setSize(w: number, h: number): void {
     this.composer.setPixelRatio(1);
     this.composer.setSize(w, h);
@@ -172,6 +178,7 @@ export class BackgroundRenderer {
     for (const c of [...this.camera.children]) this.camera.remove(c);
     this.mixers = [];
     this.spinners = [];
+    this.sky = null;
     this.scene.environment = null;
     this.scene.background = null;
   }
@@ -241,6 +248,12 @@ export class BackgroundRenderer {
       });
     }
     this.scene.add(root);
+    if (p.sky) {
+      const sphere = new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
+      // a box's bounding sphere overshoots a sphere's radius by √3: use the inscribed one
+      sphere.radius /= Math.sqrt(3);
+      if (!this.sky || sphere.radius < this.sky.radius) this.sky = sphere;
+    }
   }
 
   /** a planar mirror under a glossy floor — Sketchfab's SSR on the hangar floor */
