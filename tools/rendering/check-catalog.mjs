@@ -31,7 +31,7 @@ try {
     page.setDefaultTimeout(90000);
     const errors=[];page.on('pageerror',(e)=>errors.push(String(e)));
     const warnings=[];page.on('console',(m)=>{if(/background .*failed to load|THREE.WebGLProgram: Shader Error/.test(m.text())) warnings.push(m.text());});
-    const url=`http://127.0.0.1:5178/${prefix}/?bg=galaxy&avatar=robot&delegate=cpu&quality=mobile${name==='production'?'&backgrounds=all':''}`;
+    const url=`http://127.0.0.1:5178/${prefix}/?bg=galaxy&avatar=robot&delegate=cpu&quality=mobile${name==='production'?'&backgrounds=all':'&backgroundRenderer=three'}`;
     await page.goto(url);await page.waitForFunction(()=>!!window.__bodyarcadeBg);
     const available=await page.locator('#bg-cards button').evaluateAll((buttons)=>buttons.map((button)=>button.dataset.bg));
     assert.deepEqual([...available].sort(),[...expected].sort());
@@ -42,6 +42,10 @@ try {
       await page.waitForFunction((id)=>document.body.dataset.bg===id,id);
       assert.ok((await page.locator('#bg-credit').innerText()).includes('CC BY 4.0'));
       selected.push(id);console.log(`${name}: selected ${id}`);
+    }
+    if(name==='production') {
+      assert.equal(await page.evaluate(()=>document.body.dataset.backgroundRenderer),'three');
+      assert.equal(await page.locator('.sketchfab-background').count(),0);
     }
     results[name]={catalog,available,selected,errors,warnings};
     assert.deepEqual(errors,[]);assert.deepEqual(warnings,[]);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BodyArcade</title>
-    <meta name="description" content="Games you play with your body, in a browser tab. Just a webcam — tracking runs in your browser, nothing leaves your machine." />
+    <meta name="description" content="Games you play with your body, in a browser tab. Just a webcam — tracking runs in your browser and camera frames stay on your device." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body class="glass-ui">
@@ -55,7 +55,7 @@
           <button id="mode-hand" disabled title="hand-only mode lands later this pass">Hand-only</button>
           <button id="mode-setup" title="recalibrate your neutral pose">Setup</button>
         </nav>
-        <div id="net-receipt" title="live counter of network requests made after load — this app makes none">LOCAL · —</div>
+        <div id="net-receipt" title="Tracking runs locally. Background services are disclosed here when used.">LOCAL · —</div>
         <div id="controls" class="controls"></div>
       </header>
 
@@ -104,6 +104,7 @@
           <div class="privacy-line">
             all inference runs in your browser — no frame, landmark, or recording
             ever leaves this machine
+            <span id="background-privacy" hidden>Backgrounds load from Sketchfab, an external service. Camera and body data stay here.</span>
           </div>
         </div>
       </aside>

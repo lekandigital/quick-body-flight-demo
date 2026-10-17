@@ -1,0 +1,16 @@
+{
+  "fixture": false,
+  "softwareGpu": true,
+  "errors": [],
+  "telemetryPolicy": "Only model/API/CDN resources allowed; telemetry and external sockets blocked",
+  "blockedOrigins": {
+    "https://sentry.io": 2
+  },
+  "engine": "three",
+  "viewerText": [
+    "Inside Galaxy Skybox HDRI 360 panorama\nby Aliaksandr.melas\n\nLoading 3D model\n\nModel is too heavy for your device and can not be rendered properly\n\nModel Inspector\n\n                        \n00:00.00\n\nx0.1\nx0.5\nx1\nx2",
+    "Inside Galaxy Skybox HDRI 360 panorama\nby Aliaksandr.melas\n\nLoading 3D model\n\nModel is too heavy for your device and can not be rendered properly\n\nModel Inspector\n\n                        \n00:00.00\n\nx0.1\nx0.5\nx1\nx2\nclick & hold\nto rotate"
+  ],
+  "realViewerVerified": false,
+  "limit": "Real viewer did not become ready on SwiftShader; local Three.js fallback rendered. Hardware verification remains required."
+}

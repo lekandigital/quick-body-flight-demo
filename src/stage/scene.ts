@@ -7,6 +7,9 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import type { BackgroundDef } from './backgrounds';
 import { BackgroundRenderer } from './backgroundRenderer';
 import { BACKGROUND_QUALITY, isBackgroundQuality, type BackgroundQuality } from './backgroundQuality';
+import { FIDELITY_CATALOG } from './backgrounds';
+import { SketchfabBackground } from './sketchfabBackground';
+import { backgroundViewAt } from './backgroundMotion';
 
 export interface Stage {
   scene: THREE.Scene;
@@ -36,6 +39,10 @@ export interface Stage {
   backgroundId(): string | null;
   setBackgroundQuality(quality: BackgroundQuality): void;
   backgroundQuality(): BackgroundQuality;
+  backgroundEngine(): 'three' | 'sketchfab';
+  /** Local export compositing; cross-origin backgrounds use their screenshot API. */
+  drawTo(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void;
+  capture(): Promise<HTMLCanvasElement>;
   /** the current background wants a slow camera drift */
   hasDrift(): boolean;
   /** put the camera on framing() now (drift without the auto-director) */
@@ -197,13 +204,17 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   }
 
   // ── 3D backgrounds ────────────────────────────────────────────────────
-  // Each background renders with its own scene, camera (the model's Sketchfab
-  // default view), lights, environment and post-process into a texture
-  // (./backgroundRenderer.ts); the avatar composites over it with its own
-  // camera and studio light — so a scene can look exactly like its Sketchfab
-  // view without moving the avatar's framing.
+  // Native backgrounds have their own scene/camera and offscreen texture;
+  // the hosted path renders in a layer behind this transparent canvas.
+  // The avatar retains its own camera and studio lighting in either case.
   const bgRenderer = new BackgroundRenderer(renderer);
   bgRenderer.setQuality(quality);
+  // The fidelity preview now uses Sketchfab by request. Keep the native path
+  // intact for production, explicit comparison, export and unavailable embeds.
+  const useSketchfab = FIDELITY_CATALOG && new URLSearchParams(location.search).get('backgroundRenderer') !== 'three';
+  const externalBackground = useSketchfab ? new SketchfabBackground(canvas.parentElement!) : null;
+  externalBackground?.setQuality(quality);
+  let externalActive = false;
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; // the avatar's soft fill over 3D scenes
   const quadMat = new THREE.ShaderMaterial({
@@ -221,21 +232,35 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   quadScene.add(quad);
   const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   let bgToken = 0;
+  let bgElapsed = 0;
 
   async function setBackground(def: BackgroundDef | null): Promise<void> {
     const token = ++bgToken;
     if (!def) {
       bgRenderer.clear();
+      externalBackground?.clear(); externalActive = false;
       bgDef = null;
       applyBackdrop();
       applyPixelRatio();
       return;
     }
-    await bgRenderer.load(def);
+    if (externalBackground) {
+      try {
+        if (!await externalBackground.load(def) || token !== bgToken) return;
+        bgRenderer.clear(); externalActive = true;
+      } catch (error) {
+        if (token !== bgToken) return;
+        console.warn('Sketchfab background unavailable; using the local Three.js renderer.', error);
+        externalBackground.clear(); externalActive = false;
+        await bgRenderer.load(def);
+      }
+    } else await bgRenderer.load(def);
     if (token !== bgToken) return;
     bgDef = def;
+    bgElapsed = 0;
     applyBackdrop();
     applyPixelRatio();
+    if (externalActive) void externalBackground?.capture(canvas.width, canvas.height);
   }
 
   /** Explicit quality controls density; only actual device limits constrain it. */
@@ -247,19 +272,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
    *  still space scenes; returns false when there's nothing to move */
   function drift(pos: THREE.Vector3, target: THREE.Vector3): boolean {
     if (!bgDef?.drift || pip) return false;
-    const t = performance.now() / 1000;
-    const wave = (period: number) => Math.sin((t * 2 * Math.PI) / period);
-    const off = pos.clone().sub(target);
-    if (bgDef.drift === 'orbit') {
-      off.applyAxisAngle(new THREE.Vector3(0, 1, 0), wave(48) * 0.08); // ±4.5° around the view
-      pos.copy(target).add(off);
-    } else if (bgDef.drift === 'dolly') {
-      pos.copy(target).add(off.multiplyScalar(1 + wave(30) * 0.12)); // a slow breath in and out
-    } else if (bgDef.drift === 'pan') {
-      const side = new THREE.Vector3().crossVectors(off, new THREE.Vector3(0, 1, 0)).normalize().multiplyScalar(off.length() * 0.05 * wave(36));
-      pos.add(side);
-      target.add(side);
-    }
+    const view = backgroundViewAt({position:pos.toArray(),target:target.toArray(),fov:bgRenderer.camera.fov}, bgDef.drift, bgElapsed, [0,1,0]);
+    pos.fromArray(view.position); target.fromArray(view.target);
     return true;
   }
 
@@ -316,7 +330,14 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       fpsCount = 0;
     }
     for (const cb of tickCbs) cb(dt, now);
-    if (bgDef && !pip && bgRenderer.active) {
+    renderFrame(dt);
+    requestAnimationFrame(loop);
+  }
+
+  function renderFrame(dt: number): void {
+    if (bgDef && !pip) bgElapsed += dt;
+    if (externalActive && !pip) externalBackground?.tick(dt);
+    if (bgDef && !pip && !externalActive && bgRenderer.active) {
       bgRenderer.render(dt, drift);
       quadMat.uniforms.map.value = bgRenderer.texture;
       renderer.autoClear = true;
@@ -328,7 +349,6 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     } else {
       renderer.render(scene, camera);
     }
-    requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
 
@@ -346,6 +366,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
           : backdrop(treatment === 'hand' ? 'hand' : theme);
     document.body.dataset.treatment = treatment;
     document.body.dataset.bg = bg3d ? bgDef!.id : 'sky';
+    document.body.dataset.backgroundRenderer = bg3d && externalActive ? 'sketchfab' : 'three';
     document.body.dataset.tone = bg3d ? bgDef!.tone : theme;
     // floors: the contact shadow sits a hair above the scene's own floor
     ground.visible = pip || !bg3d || bgDef!.floor;
@@ -393,9 +414,23 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     setBackground,
     backgroundId: () => bgDef?.id ?? null,
     backgroundQuality: () => quality,
+    backgroundEngine: () => externalActive ? 'sketchfab' : 'three',
+    drawTo(context, x, y, width, height) {
+      if (externalActive && !pip) externalBackground?.drawCaptured(context, x, y, width, height);
+      context.drawImage(canvas, x, y, width, height);
+    },
+    async capture() {
+      if (externalActive && !pip) await externalBackground?.capture(canvas.width, canvas.height);
+      renderFrame(0);
+      const image = document.createElement('canvas'); image.width = canvas.width; image.height = canvas.height;
+      const context = image.getContext('2d')!;
+      if (externalActive && !pip) externalBackground?.drawCaptured(context, 0, 0, image.width, image.height);
+      context.drawImage(canvas, 0, 0);
+      return image;
+    },
     setBackgroundQuality(value) {
-      quality = value; bgRenderer.setQuality(value); applyPixelRatio();
-      if (import.meta.env.DEV && bgDef) void bgRenderer.load(bgDef).catch((e) => console.warn('Background source quality switch failed',e));
+      quality = value; bgRenderer.setQuality(value); externalBackground?.setQuality(value); applyPixelRatio();
+      if (import.meta.env.DEV && bgDef && !externalActive) void bgRenderer.load(bgDef).catch((e) => console.warn('Background source quality switch failed',e));
       try { localStorage.setItem('bodyarcade-background-quality', value); } catch { /* optional persistence */ }
     },
     hasDrift: () => false, // the background camera drifts, not the avatar's
@@ -409,6 +444,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     setTreatment,
     setSuspended: (v) => {
       suspended = v;
+      externalBackground?.setVisible(!v && !pip);
     },
     setHost(host) {
       const target = host ?? homeHost;
@@ -420,6 +456,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     },
     setPip(v) {
       pip = v;
+      externalBackground?.setVisible(!v && !suspended);
       applyBackdrop();
       if (showcase && v) frameShowcaseCamera();
       applyPixelRatio();

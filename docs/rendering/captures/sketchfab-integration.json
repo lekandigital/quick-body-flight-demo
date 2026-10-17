@@ -1,0 +1,40 @@
+{
+  "fixture": true,
+  "softwareGpu": true,
+  "errors": [],
+  "export": {
+    "pixel": [
+      16,
+      32,
+      64,
+      255
+    ],
+    "width": 825,
+    "height": 675
+  },
+  "webcam": {
+    "width": 1280,
+    "height": 720,
+    "readyState": 4
+  },
+  "recording": {
+    "size": 26884,
+    "type": "video/webm;codecs=vp9"
+  },
+  "selected": [
+    "nebula",
+    "space",
+    "earth",
+    "orbit",
+    "hangar",
+    "corridor",
+    "gallery",
+    "galaxy"
+  ],
+  "controlsHidden": true,
+  "inputDisabled": true,
+  "cameraMovesAutonomously": true,
+  "race": "latest selection wins",
+  "games": "Flight and Rowing suspend the viewer",
+  "fallback": "three"
+}

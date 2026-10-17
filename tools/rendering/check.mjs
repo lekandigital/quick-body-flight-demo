@@ -125,7 +125,7 @@ try {
   console.log('Hangar reload/disposal check passed');
 
   phase='application integration';
-  await page.goto('http://127.0.0.1:5176/?backgrounds=live&bg=galaxy&avatar=robot&delegate=cpu');
+  await page.goto('http://127.0.0.1:5176/?backgrounds=live&backgroundRenderer=three&bg=galaxy&avatar=robot&delegate=cpu');
   await page.waitForFunction(() => document.body.dataset.bg==='galaxy');
   assert.equal(await page.locator('#bg-cards button').count(),2);
   await page.getByLabel('Background quality').selectOption('maximum');

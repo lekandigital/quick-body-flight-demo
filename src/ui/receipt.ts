@@ -15,11 +15,23 @@ export function createReceipt(): Receipt {
   const el = document.getElementById('net-receipt')!;
   let armed = false;
   let n = 0;
+  let externalBackgroundUsed = false;
 
   function render(): void {
-    el.textContent = `LOCAL · ${n} EXTERNAL REQUEST${n === 1 ? '' : 'S'} SINCE LOAD`;
-    el.classList.toggle('dirty', n > 0);
+    el.textContent = externalBackgroundUsed ? 'LOCAL TRACKING · SKETCHFAB BACKGROUNDS' : `LOCAL · ${n} EXTERNAL REQUEST${n === 1 ? '' : 'S'} SINCE LOAD`;
+    el.title = externalBackgroundUsed
+      ? 'Tracking stays on your device. Sketchfab loads backgrounds externally; its iframe requests cannot be counted by this page. No camera frames or landmarks are sent to it.'
+      : 'External resource requests observed by this page after startup.';
+    el.classList.toggle('dirty', n > 0 || externalBackgroundUsed);
   }
+
+  window.addEventListener('bodyarcade-external-background', (event) => {
+    if (!(event as CustomEvent<{active:boolean}>).detail.active) return;
+    externalBackgroundUsed = true;
+    const disclosure = document.getElementById('background-privacy');
+    if (disclosure) disclosure.hidden = false;
+    render();
+  });
 
   function isExternal(url: string): boolean {
     try {

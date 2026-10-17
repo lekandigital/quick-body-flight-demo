@@ -55,6 +55,7 @@ interface Deps {
   video: HTMLVideoElement;
   overlay: HTMLCanvasElement;
   stage: HTMLCanvasElement;
+  drawStage?: (context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) => void;
   onState?: (recording: boolean, elapsedSec: number) => void;
   onSaved?: (sizeBytes: number) => void;
 }
@@ -128,7 +129,7 @@ export function createRecorder(deps: Deps): Recorder {
       ctx.font = '500 18px "JetBrains Mono Variable", monospace';
       ctx.fillStyle = 'rgba(102, 116, 143, 0.85)';
       ctx.textAlign = 'right';
-      ctx.fillText('POSEPUPPET · ALL LOCAL', canvas.width - 22, canvas.height - 20);
+      ctx.fillText('POSEPUPPET · LOCAL RECORDING', canvas.width - 22, canvas.height - 20);
     }
     if (config.recGrade) {
       // vignette
@@ -177,7 +178,7 @@ export function createRecorder(deps: Deps): Recorder {
     ctx.font = `500 ${Math.round(canvas.width * 0.013)}px "JetBrains Mono Variable", monospace`;
     ctx.fillStyle = '#c8ffdf';
     ctx.fillText(
-      'ALL INFERENCE LOCAL — NOTHING UPLOADED',
+      'LOCAL TRACKING — CAMERA DATA STAYS HERE',
       canvas.width / 2,
       canvas.height / 2 + Math.round(canvas.width * 0.028),
     );
@@ -207,9 +208,10 @@ export function createRecorder(deps: Deps): Recorder {
     fitPane(ctx, layout.camera, overlay.width, overlay.height, m, (x, y, w, h) =>
       ctx.drawImage(overlay, x, y, w, h),
     );
-    fitPane(ctx, layout.stage, stage.width, stage.height, false, (x, y, w, h) =>
-      ctx.drawImage(stage, x, y, w, h),
-    );
+    fitPane(ctx, layout.stage, stage.width, stage.height, false, (x, y, w, h) => {
+      if (deps.drawStage) deps.drawStage(ctx, x, y, w, h);
+      else ctx.drawImage(stage, x, y, w, h);
+    });
     drawChrome();
   }
 

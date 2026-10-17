@@ -888,6 +888,7 @@ async function boot() {
     video,
     overlay,
     stage: stageCanvas,
+    drawStage: (context, x, y, width, height) => stage.drawTo(context, x, y, width, height),
     onState: (recording, elapsedSec) => {
       updateRecordButton(recording, elapsedSec);
       hud.setRec(recording, elapsedSec);
@@ -1124,7 +1125,7 @@ async function boot() {
       config.mode === 'hand'
         ? `a ${handMode.puppetId()} hand puppet`
         : `the ${getAvatarDef(config.avatar).label}`;
-    return `puppeteering ${subject} live from my webcam — all inference local in the browser, nothing uploaded. posepuppet.`;
+    return `puppeteering ${subject} live from my webcam — body tracking runs in the browser and camera frames stay on my device. posepuppet.`;
   }
 
   // first-run onboarding (skippable, persisted, reopenable via ⌘K)
@@ -1208,9 +1209,9 @@ async function boot() {
       const inset = 54;
       const frameW = poster.width - inset * 2;
       const frameH = poster.height - inset * 2 - 120;
-      stage.renderer.render(stage.scene, stage.camera);
-      const sw = stageCanvas.width;
-      const sh = stageCanvas.height;
+      const snapshot = await stage.capture();
+      const sw = snapshot.width;
+      const sh = snapshot.height;
       const scale = Math.max(frameW / sw, frameH / sh); // cover
       const dw = sw * scale;
       const dh = sh * scale;
@@ -1218,7 +1219,7 @@ async function boot() {
       g.beginPath();
       g.rect(inset, inset, frameW, frameH);
       g.clip();
-      g.drawImage(stageCanvas, inset + (frameW - dw) / 2, inset + (frameH - dh) / 2, dw, dh);
+      g.drawImage(snapshot, inset + (frameW - dw) / 2, inset + (frameH - dh) / 2, dw, dh);
       g.restore();
       g.strokeStyle = '#2a3650';
       g.lineWidth = 1;

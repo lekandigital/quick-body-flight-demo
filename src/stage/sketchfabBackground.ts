@@ -1,0 +1,248 @@
+// Sketchfab renders only the background. The avatar, webcam and pose landmarks
+// never enter this frame or its API. Use documented embed options, not DOM hacks.
+import type { BackgroundDef } from './backgrounds';
+import type { BackgroundQuality } from './backgroundQuality';
+import { backgroundViewAt, type BackgroundView } from './backgroundMotion';
+
+const SDK_URL = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js';
+type Callback = (error?: unknown) => void;
+interface ViewerApi {
+  start(callback?: Callback): void;
+  stop(callback?: Callback): void;
+  addEventListener(event: string, callback: () => void): void;
+  setUserInteraction(enabled: boolean, callback?: Callback): void;
+  setTextureQuality(quality: 'hd' | 'sd' | 'ld', callback?: Callback): void;
+  getCameraLookAt(callback: (error: unknown, camera: BackgroundView) => void): void;
+  getFov(callback: (error: unknown, fov: number) => void): void;
+  setCameraLookAt(position: number[], target: number[], seconds: number, callback?: Callback): void;
+  getScreenShot(width: number, height: number, mime: string, callback: (error: unknown, data: string) => void): void;
+}
+interface ViewerOptions { success(api: ViewerApi): void; error(error?: unknown): void; [key: string]: unknown }
+type SketchfabConstructor = new (version: string, frame: HTMLIFrameElement) => { init(uid: string, options: ViewerOptions): void };
+type SdkWindow = Window & { Sketchfab?: SketchfabConstructor };
+
+/** Some UI/branding switches depend on the model owner's Sketchfab plan.
+ * Request the supported options; do not crop or modify the cross-origin UI. */
+export const SKETCHFAB_BACKGROUND_OPTIONS = {
+  autostart: 1, preload: 1, camera: 0, autospin: 0, animation_autoplay: 1,
+  annotations_visible: 0, annotation_tooltip_visible: 0, dnt: 1,
+  ui_hint: 0, ui_controls: 0, ui_infos: 0, ui_stop: 0, ui_watermark: 0,
+  ui_annotations: 0, ui_animations: 0, ui_general_controls: 0, ui_help: 0,
+  ui_settings: 0, ui_inspector: 0, ui_vr: 0, ui_ar: 0, ui_fullscreen: 0,
+  ui_loading: 0, ui_start: 0,
+  double_click: 0, prevent_user_light_rotation: 1,
+};
+
+export function sketchfabModelId(def: BackgroundDef): string {
+  const id = new URL(def.credits[0].source).pathname.match(/([a-f0-9]{32})\/?$/)?.[1];
+  if (!id) throw new Error(`No Sketchfab model ID for ${def.id}`);
+  return id;
+}
+
+function loadSdk(frame: HTMLIFrameElement, signal: AbortSignal): Promise<SketchfabConstructor> {
+  const owner = frame.contentWindow as SdkWindow;
+  const document = frame.contentDocument!;
+  const existing = owner.Sketchfab;
+  if (existing) return Promise.resolve(existing);
+  return new Promise<SketchfabConstructor>((resolve, reject) => {
+    const script = document.createElement('script');
+    const timer = setTimeout(() => fail(), 15000);
+    const cleanup = () => { clearTimeout(timer); signal.removeEventListener('abort', fail); };
+    const fail = () => { cleanup(); script.remove(); reject(new Error('Sketchfab API could not load')); };
+    script.src = SDK_URL; script.async = true; script.referrerPolicy = 'strict-origin-when-cross-origin';
+    script.onerror = fail;
+    script.onload = () => {
+      cleanup();
+      const Constructor = owner.Sketchfab;
+      if (Constructor) resolve(Constructor); else fail();
+    };
+    signal.addEventListener('abort', fail, {once: true});
+    if (signal.aborted) { fail(); return; }
+    document.head.append(script);
+  });
+}
+
+interface Viewer {
+  frame: HTMLIFrameElement;
+  api?: ViewerApi;
+  def: BackgroundDef;
+  camera?: BackgroundView;
+  elapsed: number;
+  cameraPending: boolean;
+  screenshotPending?: Promise<HTMLImageElement | null>;
+  screenshot?: HTMLImageElement;
+  cancel(): void;
+}
+
+export class SketchfabBackground {
+  private host: HTMLDivElement;
+  private current?: Viewer;
+  private pending?: Viewer;
+  private token = 0;
+  private visible = true;
+  private quality: BackgroundQuality = 'maximum';
+  private visibility = () => this.updateVisibility();
+
+  constructor(parent: HTMLElement) {
+    this.host = document.createElement('div');
+    this.host.className = 'sketchfab-background';
+    this.host.setAttribute('aria-hidden', 'true');
+    this.host.inert = true;
+    parent.prepend(this.host);
+    document.addEventListener('visibilitychange', this.visibility);
+  }
+
+  get active(): boolean { return !!this.current; }
+
+  async load(def: BackgroundDef): Promise<boolean> {
+    const token = ++this.token;
+    this.release(this.pending); this.pending = undefined;
+    window.dispatchEvent(new CustomEvent('bodyarcade-external-background', { detail: { active: true } }));
+    const frame = document.createElement('iframe');
+    frame.title = `${def.label} background`;
+    frame.tabIndex = -1; frame.inert = true;
+    frame.allow = 'autoplay'; // deliberately no camera or microphone permission
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.style.opacity = '0'; // keep the previous scene while this loads
+    frame.setAttribute('execution-while-not-rendered', '');
+    this.host.append(frame);
+    // The published SDK has global message listeners and no public dispose.
+    // Its own small, same-origin realm is destroyed with the background, so
+    // switches release SDK listeners/requests without relying on private APIs.
+    const controller = frame.contentDocument!;
+    controller.documentElement.style.cssText = 'width:100%;height:100%;margin:0;overflow:hidden';
+    controller.body.style.cssText = 'width:100%;height:100%;margin:0;overflow:hidden';
+    const embed = controller.createElement('iframe');
+    embed.title = frame.title; embed.tabIndex = -1; embed.inert = true; embed.allow = 'autoplay';
+    embed.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none';
+    embed.referrerPolicy = frame.referrerPolicy;
+    controller.body.append(embed);
+    const abort = new AbortController();
+    const viewer: Viewer = { frame, def, elapsed: 0, cameraPending: false, cancel: () => abort.abort() };
+    this.pending = viewer;
+    try {
+      const Constructor = await loadSdk(frame, abort.signal);
+      if (token !== this.token) { this.release(viewer); return false; }
+      const ready = await new Promise<boolean>((resolve, reject) => {
+        let finished = false;
+        const finish = (error?: unknown, cancelled = false) => {
+          if (finished) return;
+          finished = true; clearTimeout(timer);
+          if (error) reject(error); else resolve(!cancelled);
+        };
+        const timer = setTimeout(() => finish(new Error(`Sketchfab ${def.id} did not become ready`)), 60000);
+        viewer.cancel = () => { abort.abort(); finish(undefined, true); };
+        new Constructor('1.12.1', embed).init(sketchfabModelId(def), {
+          ...SKETCHFAB_BACKGROUND_OPTIONS,
+          success: (api) => {
+            if (token !== this.token) { api.stop(); finish(undefined, true); return; }
+            viewer.api = api;
+            api.addEventListener('viewerready', () => {
+              if (token !== this.token) { finish(undefined, true); return; }
+              try {
+                api.setUserInteraction(false);
+                api.setTextureQuality(this.textureQuality());
+                api.getCameraLookAt((error, camera) => {
+                  if (error) { finish(error); return; }
+                  if (!camera || ![camera.position, camera.target].every((v) => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite))) {
+                    finish(new Error('Sketchfab returned an invalid camera')); return;
+                  }
+                  api.getFov((error, fov) => {
+                    if (error || !Number.isFinite(fov) || fov <= 0 || fov >= 180) { finish(error || new Error('Invalid Sketchfab field of view')); return; }
+                    viewer.camera = { position: [...camera.position], target: [...camera.target], fov };
+                    finish();
+                  });
+                });
+              } catch (error) { finish(error); }
+            });
+            api.start();
+          },
+          error: (error) => finish(error || new Error('Sketchfab viewer initialization failed')),
+        });
+      });
+      if (!ready || token !== this.token) { this.release(viewer); return false; }
+      this.release(this.current);
+      this.current = viewer; this.pending = undefined;
+      frame.style.opacity = '1';
+      this.updateVisibility();
+      return true;
+    } catch (error) {
+      this.release(viewer);
+      if (this.pending === viewer) this.pending = undefined;
+      throw error;
+    }
+  }
+
+  setQuality(quality: BackgroundQuality): void {
+    this.quality = quality;
+    this.current?.api?.setTextureQuality(this.textureQuality());
+  }
+
+  private textureQuality(): 'hd' | 'sd' | 'ld' {
+    return this.quality === 'maximum' ? 'hd' : this.quality === 'balanced' ? 'sd' : 'ld';
+  }
+
+  tick(dt: number): void {
+    const viewer = this.current;
+    if (!viewer?.api || !viewer.camera || !this.visible || document.hidden) return;
+    viewer.elapsed += dt;
+    if (!viewer.def.drift || viewer.cameraPending) return;
+    const camera = backgroundViewAt(viewer.camera, viewer.def.drift, viewer.elapsed);
+    viewer.cameraPending = true;
+    viewer.api.setCameraLookAt(camera.position, camera.target, 0, () => { viewer.cameraPending = false; });
+  }
+
+  setVisible(visible: boolean): void { this.visible = visible; this.updateVisibility(); }
+
+  private updateVisibility(): void {
+    const show = this.visible && !document.hidden;
+    this.host.hidden = !show;
+    if (show) this.current?.api?.start(); else this.current?.api?.stop();
+  }
+
+  /** Official screenshot API keeps cross-origin frames out of canvas drawing.
+   * Only requested background pixels travel back; body data is never sent. */
+  async capture(width: number, height: number): Promise<HTMLImageElement | null> {
+    const viewer = this.current;
+    if (!viewer?.api) return null;
+    if (viewer.screenshotPending) return viewer.screenshotPending;
+    viewer.screenshotPending = new Promise<HTMLImageElement | null>((resolve) => {
+      let finished = false;
+      const finish = (image: HTMLImageElement | null) => { if (finished) return; finished = true; clearTimeout(timer); resolve(image); };
+      const timer = setTimeout(() => finish(null), 8000);
+      viewer.api!.getScreenShot(width, height, 'image/png', (error, data) => {
+        if (finished || error || this.current !== viewer || !data?.startsWith('data:image/')) { finish(null); return; }
+        const image = new Image();
+        image.onload = () => { if (!finished && this.current === viewer) viewer.screenshot = image; finish(image); };
+        image.onerror = () => finish(null);
+        image.src = data;
+      });
+    }).catch(() => null).finally(() => { viewer.screenshotPending = undefined; });
+    return viewer.screenshotPending;
+  }
+
+  drawCaptured(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void {
+    if (this.current?.screenshot) context.drawImage(this.current.screenshot, x, y, width, height);
+    void this.capture(Math.round(width), Math.round(height));
+  }
+
+  private release(viewer?: Viewer): void {
+    if (!viewer) return;
+    viewer.cancel();
+    try { viewer.api?.stop(); } catch { /* frame may already have navigated */ }
+    viewer.frame.remove();
+    viewer.screenshot = undefined;
+  }
+
+  clear(): void {
+    ++this.token;
+    this.release(this.pending); this.release(this.current);
+    this.pending = this.current = undefined;
+    window.dispatchEvent(new CustomEvent('bodyarcade-external-background', { detail: { active: false } }));
+  }
+
+  dispose(): void {
+    this.clear(); this.host.remove();
+    document.removeEventListener('visibilitychange', this.visibility);
+  }
+}

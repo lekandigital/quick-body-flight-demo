@@ -105,6 +105,8 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
   (window as unknown as { __bodyarcadeBg: unknown }).__bodyarcadeBg = {
     api,
     defs: BACKGROUNDS,
+    engine: () => stage.backgroundEngine(),
+    capture: () => stage.capture(),
     tune(id: string, patch: Partial<(typeof BACKGROUNDS)[number]>) {
       const def = backgroundById(id);
       if (!def) return false;

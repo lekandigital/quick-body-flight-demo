@@ -135,6 +135,9 @@ body.glass-ui::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .glass-ui .stage-backdrop::after { animation: none; } }
 .glass-ui #stage { z-index: 1; }
+.sketchfab-background { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.sketchfab-background[hidden] { display: none; }
+.sketchfab-background iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
 .glass-ui .camera-pane {
   position: fixed; left: 0; top: 0; width: 160px;
   opacity: 0; pointer-events: none; z-index: -1; border: 0; background: none;

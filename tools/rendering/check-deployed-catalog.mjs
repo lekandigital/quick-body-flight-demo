@@ -20,7 +20,9 @@ try {
     assert.equal(response.status(),200,file);return {file,status:response.status()};
   }));
   for(const asset of assets) if(asset.status==='rejected') throw asset.reason;
-  await page.goto(`${base}/?bg=galaxy&quality=mobile&avatar=robot&delegate=cpu`);
+  // Catalog/assets check, not a live third-party-renderer test. Use the
+  // guarded --live check-sketchfab runner for external viewer verification.
+  await page.goto(`${base}/?backgroundRenderer=three&bg=galaxy&quality=mobile&avatar=robot&delegate=cpu`);
   await page.waitForFunction(()=>!!window.__bodyarcadeBg);
   const available=await page.locator('#bg-cards button').evaluateAll((buttons)=>buttons.map((button)=>button.dataset.bg));
   assert.deepEqual([...available].sort(),['galaxy','nebula','earth','orbit','hangar','corridor','gallery','space'].sort());
