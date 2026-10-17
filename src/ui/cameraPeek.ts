@@ -1,7 +1,7 @@
 // Camera peek: the person's own webcam view, shown by the link chip so they
 // can see where they stand — while the pointer is on a chip, and on its own
 // whenever tracking says Disconnected (no one to follow), to help them step
-// back into view. A green Y2K colour layer over the picture keeps it a
+// back into view. An olive-green Y2K colour layer over the picture keeps it a
 // glance, not a mirror. Local only: the same stream the tracker already has.
 
 import type { Link } from './link';
