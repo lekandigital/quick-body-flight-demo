@@ -2,13 +2,17 @@
 // the avatar and the 3D scene come up, then fades into the scene's opening
 // flight. main.ts staggers the work behind it (the scene starts once the
 // tracker is in), so the first seconds aren't a fight for bandwidth and GPU.
+//
+// Like a device powering on: the wordmark above, then one small glass pill
+// per part with a single status light (grey waiting, amber working, green
+// ready, red failed), and the progress in its own glass bar.
 
 export type LoadStep = 'camera' | 'tracking' | 'avatar' | 'scene';
 type StepState = 'waiting' | 'working' | 'done' | 'failed';
 
 const STEPS: Array<[LoadStep, string]> = [
   ['camera', 'Camera'],
-  ['tracking', 'Body tracking'],
+  ['tracking', 'Tracking'],
   ['avatar', 'Avatar'],
   ['scene', 'Scene'],
 ];
@@ -24,50 +28,59 @@ export function createLoadingVeil(): LoadingVeil {
   veil.className = 'loading-veil';
   veil.setAttribute('role', 'status');
   veil.setAttribute('aria-live', 'polite');
-  const card = document.createElement('div');
-  card.className = 'loading-card';
-  card.dataset.glass = 'panel';
-  card.innerHTML = `<div class="exp-eyebrow">Loading</div><div class="loading-brand">bodyarcade</div>`;
-  const list = document.createElement('ul');
-  list.className = 'loading-steps';
-  const rows = new Map<LoadStep, { li: HTMLLIElement; detail: HTMLElement }>();
+  const stack = document.createElement('div');
+  stack.className = 'loading-stack';
+  const logo = document.createElement('div');
+  logo.className = 'loading-logo';
+  logo.textContent = 'bodyarcade';
+  const lights = document.createElement('div');
+  lights.className = 'loading-lights';
+  const pills = new Map<LoadStep, HTMLElement>();
   for (const [id, label] of STEPS) {
-    const li = document.createElement('li');
-    li.dataset.state = 'waiting';
-    li.innerHTML = `<span class="loading-dot" aria-hidden="true"></span><b>${label}</b>`;
-    const detail = document.createElement('small');
-    li.append(detail);
-    list.append(li);
-    rows.set(id, { li, detail });
+    const pill = document.createElement('div');
+    pill.className = 'loading-light';
+    pill.dataset.glass = 'navButton';
+    pill.dataset.state = 'waiting';
+    pill.innerHTML = `<span class="loading-dot" aria-hidden="true"></span><span>${label}</span>`;
+    lights.append(pill);
+    pills.set(id, pill);
   }
-  const bar = document.createElement('div');
-  bar.className = 'loading-bar';
+  const track = document.createElement('div');
+  track.className = 'loading-track';
+  track.dataset.glass = 'bar';
   const fill = document.createElement('span');
-  bar.append(fill);
-  card.append(list, bar);
-  veil.append(card);
+  fill.className = 'loading-fill';
+  track.append(fill);
+  const detail = document.createElement('div');
+  detail.className = 'loading-detail';
+  stack.append(logo, lights, track, detail);
+  veil.append(stack);
   document.body.append(veil);
   document.body.classList.add('loading');
 
   let finished = false;
   function progress(): void {
-    const settled = [...rows.values()].filter(({ li }) => li.dataset.state === 'done' || li.dataset.state === 'failed').length;
-    fill.style.width = `${Math.max(8, (settled / STEPS.length) * 100)}%`;
+    const states = [...pills.values()].map((p) => p.dataset.state);
+    const settled = states.filter((s) => s === 'done' || s === 'failed').length;
+    fill.style.width = `${Math.max(6, (settled / STEPS.length) * 100)}%`;
   }
   progress();
 
   const api: LoadingVeil = {
-    step(step, state, detail = '') {
-      const row = rows.get(step);
-      if (!row) return;
-      row.li.dataset.state = state;
-      row.detail.textContent = detail;
+    step(step, state, text = '') {
+      const pill = pills.get(step);
+      if (!pill) return;
+      pill.dataset.state = state;
+      pill.title = text;
+      if (state === 'working' || state === 'failed') detail.textContent = text;
+      else if (!document.querySelector('.loading-light[data-state="working"]')) detail.textContent = '';
       progress();
     },
     done() {
       if (finished) return;
       finished = true;
       fill.style.width = '100%';
+      detail.textContent = '';
       document.body.classList.remove('loading');
       veil.classList.add('gone');
       setTimeout(() => veil.remove(), 900);

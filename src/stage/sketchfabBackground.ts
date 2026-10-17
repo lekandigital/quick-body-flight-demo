@@ -11,7 +11,7 @@
 import type { BackgroundDef } from './backgrounds';
 import type { BackgroundQuality } from './backgroundQuality';
 import { BackgroundMotionClock, backgroundViewAt, type BackgroundView } from './backgroundMotion';
-import { NO_TURN, lookAround, turnBetween, turnView, type ViewTurn } from './viewTurn';
+import { NO_TURN, isSkyDef, rigFor, turnAround, type ViewTurn } from './viewTurn';
 
 const SDK_URL = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js';
 type Callback = (error?: unknown) => void;
@@ -273,19 +273,18 @@ export class SketchfabBackground {
 
   /** where the camera should be `ahead` seconds from now: the drift, then the shared turn */
   private cameraAt(viewer: Viewer, ahead: number, opening = false): BackgroundView {
-    const sky = viewer.def.parts.some((part) => part.sky);
+    const sky = isSkyDef(viewer.def);
     const drifted = viewer.def.drift
       ? backgroundViewAt(viewer.camera!, viewer.def.drift, viewer.clock.seconds(performance.now()) + ahead, [0, 0, 1], sky)
       : viewer.camera!;
-    return turnView(drifted, this.turnAt(ahead, opening, viewer.def), [0, 0, 1], lookAround(viewer.def));
+    return turnAround(drifted, this.turnAt(ahead, opening, viewer.def), [0, 0, 1], rigFor(viewer.def));
   }
 
-  /** how far the drift has carried the view now, for the avatar to follow */
-  driftTurn(now: number): ViewTurn {
+  /** the camera as authored and where it should be now (Z-up), for the avatar camera */
+  viewNow(): { authored: BackgroundView; now: BackgroundView } | null {
     const viewer = this.current;
-    if (!viewer?.camera || !viewer.def.drift) return NO_TURN;
-    const sky = viewer.def.parts.some((part) => part.sky);
-    return turnBetween(viewer.camera, backgroundViewAt(viewer.camera, viewer.def.drift, viewer.clock.seconds(now), [0, 0, 1], sky), [0, 0, 1], lookAround(viewer.def));
+    if (!viewer?.camera) return null;
+    return { authored: viewer.camera, now: this.cameraAt(viewer, 0) };
   }
 
   /** A drag or zoom in progress: update the viewer now, at most 20×/s with a

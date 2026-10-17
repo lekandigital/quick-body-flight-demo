@@ -19,7 +19,7 @@ interface CardDef {
 
 const CARDS: CardDef[] = [
   { id: 'ual2f', label: 'mannequin', glyph: '◇', chip: 'Full body', chipClass: 'ok',
-    note: 'CC0 · Quaternius — the demo-video model' },
+    note: 'the model from the demo video' },
   // honest labels (Gate-3 live findings): neither default avatar has
   // movable finger geometry; the robot's face-touch reads reach-to-collar
   { id: 'robot', label: 'robot', glyph: '◼', chip: 'Fingers not supported', chipClass: 'warn',

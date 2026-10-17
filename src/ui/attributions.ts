@@ -14,10 +14,11 @@ const OFL = 'https://openfontlicense.org';
 const GROUPS = (): Group[] => [
   {
     title: '3D backgrounds',
-    note: 'Sketchfab models, shown in Sketchfab’s viewer (sketchfab.com).',
+    note: 'Sketchfab models, shown in Sketchfab’s viewer (sketchfab.com), each under its own licence.',
     lines: LIBRARY.map((b) => {
       const c = b.credits[0];
-      return { what: c.title, link: c.source, who: c.author, whoUrl: c.authorUrl, terms: 'CC BY 4.0', termsUrl: CC_BY };
+      const terms = c.license ?? 'CC BY 4.0';
+      return { what: c.title, link: c.source, who: c.author, whoUrl: c.authorUrl, terms, termsUrl: c.licenseUrl ?? (terms === 'CC BY 4.0' ? CC_BY : undefined) };
     }),
   },
   {
@@ -66,7 +67,7 @@ export function renderCredits(el: HTMLElement, currentBg: string | null): void {
   const now = bg
     ? `<section class="rail-sec"><div class="rail-hdr"><span>On screen now</span></div><div class="cards credits-now"><div class="card on">` +
       `<div class="preview">${esc(bg.glyph)}</div><div class="nm">${a(bg.credits[0].title, bg.credits[0].source)}</div>` +
-      `<div class="card-note">by ${a(bg.credits[0].author, bg.credits[0].authorUrl)} · ${a('CC BY 4.0', CC_BY)} · shown in Sketchfab’s viewer</div></div></div></section>`
+      `<div class="card-note">by ${a(bg.credits[0].author, bg.credits[0].authorUrl)} · ${a(bg.credits[0].license ?? 'CC BY 4.0', bg.credits[0].licenseUrl ?? ((bg.credits[0].license ?? 'CC BY 4.0') === 'CC BY 4.0' ? CC_BY : undefined))} · shown in Sketchfab’s viewer</div></div></div></section>`
     : '';
   el.innerHTML =
     now +

@@ -78,3 +78,43 @@ test('the outside-in opening starts outside, flies in smoothly and lands on the 
   const start = turnView(room, { yaw: 0, pitch: 0, zoom: 1, dolly: OUTSIDE_DOLLY }, [0, 1, 0], true);
   assert.ok(near(start.target, room.target) && near(start.position, [0, 1, 50]));
 });
+
+test('one world: at the authored view the avatar camera is its usual camera, and the avatar stays at the anchor as the scene turns', async () => {
+  const { Vector3 } = await import('three');
+  const { turnAround, avatarCamera } = await import('../../src/stage/viewTurn.ts');
+  const view = { position: [0, -20, 5], target: [0, 80, 3], fov: 45 };
+  const rig = { pivotK: 0.15, cameraAxes: false };
+  const pivot = new Vector3(0, 0.98, 0);
+  const rest = avatarCamera(view, turnAround(view, NO_TURN, [0, 0, 1], rig), [0, 0, 1], rig, pivot, 6.2, 30);
+  const want = 6.2 * Math.tan(15 * Math.PI / 180) / Math.tan(22.5 * Math.PI / 180);
+  assert.ok(Math.abs(rest.position.distanceTo(pivot) - want) < 1e-6, 'usual size at the authored view');
+  assert.ok(rest.position.z > 0 && Math.abs(rest.position.x) < 1e-9, 'in front of the avatar, facing it');
+  // any turn: the anchor stays on the line of sight (the avatar stays framed)
+  for (const turn of [{ yaw: 0.4, pitch: 0.1, zoom: 1, dolly: 1 }, { yaw: -0.3, pitch: 0, zoom: 1, dolly: 5 }]) {
+    const now = turnAround(view, turn, [0, 0, 1], rig);
+    const cam = avatarCamera(view, now, [0, 0, 1], rig, pivot, 6.2, 30);
+    const toPivot = pivot.clone().sub(cam.position).normalize();
+    const look = cam.target.clone().sub(cam.position).normalize();
+    assert.ok(toPivot.dot(look) > 0.9999, 'the avatar stays in the middle of the frame');
+    assert.ok(Math.abs(cam.position.distanceTo(pivot) - want * turn.dolly) < 1e-6, 'and approaches with the camera');
+  }
+});
+
+test('every camera plan opens smoothly into its cruise, and the cruise moves stay gentle', async () => {
+  const { cinematicTurn, openingSeconds } = await import('../../src/stage/viewTurn.ts');
+  const openings = ['outside-in', 'fly-through', 'crane-down', 'orbit-reveal', 'push-in', 'wide'];
+  for (const opening of openings) {
+    const plan = { opening, moves: ['sweep', 'push', 'crane', 'orbit', 'drift'] };
+    let prev = cinematicTurn(0, plan);
+    for (let t = 0.05; t < 240; t += 0.05) {
+      const turn = cinematicTurn(t, plan);
+      for (const k of ['yaw', 'pitch', 'zoom']) assert.ok(Math.abs(turn[k] - prev[k]) < 0.03, `${opening} ${k} smooth at ${t.toFixed(2)}`);
+      // distance is a ratio: judge its relative change
+      assert.ok(Math.abs(Math.log(turn.dolly / prev.dolly)) < 0.03, `${opening} dolly smooth at ${t.toFixed(2)}`);
+      if (t > openingSeconds(plan)) {
+        assert.ok(Math.abs(turn.yaw) <= 0.61 && Math.abs(turn.pitch) <= 0.18 && turn.dolly <= 1.07 && turn.dolly >= 0.8, `${opening} cruise bounded at ${t.toFixed(1)}`);
+      }
+      prev = turn;
+    }
+  }
+});

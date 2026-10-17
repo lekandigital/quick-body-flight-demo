@@ -44,11 +44,8 @@ export function createBackgroundPicker(stage: Stage, initial: string, opts: { de
     const chip = document.createElement('span');
     chip.className = 'chip';
     chip.textContent = def.kind;
-    const note = document.createElement('div');
-    note.className = 'card-note';
-    const bg = backgroundById(def.id);
-    note.textContent = bg ? `by ${bg.credits[0].author} · CC BY 4.0` : '';
-    card.append(preview, nm, chip, note);
+    // credits live in Settings → Credits, not under each card
+    card.append(preview, nm, chip);
     card.onclick = () => api.pick(def.id);
     host.append(card);
     cards.set(def.id, card);

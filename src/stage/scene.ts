@@ -10,7 +10,8 @@ import { BACKGROUND_QUALITY, isBackgroundQuality, type BackgroundQuality } from 
 import { FIDELITY_CATALOG } from './backgrounds';
 import { SketchfabBackground } from './sketchfabBackground';
 import { backgroundViewAt } from './backgroundMotion';
-import { NO_TURN, cinematicTurn, combineTurns, lookAround, turnBetween, turnView, type ViewTurn } from './viewTurn';
+import { avatarCamera, cinematicTurn, combineTurns, isSkyDef, openingSeconds, opensFromOutside, planFor, rigFor, turnAround, type ViewTurn } from './viewTurn';
+import type { BackgroundView } from './backgroundMotion';
 
 export interface Stage {
   scene: THREE.Scene;
@@ -256,6 +257,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
         if (token !== bgToken) return;
         console.warn('Sketchfab background unavailable; using the local Three.js renderer.', error);
         externalBackground.clear(); externalActive = false;
+        if (!def.parts.length) throw new Error(`${def.id} has no native copy`);
         await bgRenderer.load(def);
       }
     } else await bgRenderer.load(def);
@@ -277,11 +279,14 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
 
   // ── the view: one turn for the avatar AND the 3D background ──────────
   // Drag orbits, wheel / pinch zooms, double-click eases back. The visitor's
-  // turn and a still scene's drift move the avatar camera and the background
-  // camera together, as if the avatar stood in the scene (./viewTurn.ts): the
-  // native renderer takes the turn below, Sketchfab's viewer through its
-  // camera API. The auto-director's small moves stay with the avatar. The
-  // in-game model view keeps its fixed framing.
+  // turn and the loading-screen camera turn the background camera about the
+  // avatar's spot in the scene, and the avatar camera is that same camera
+  // carried into the avatar's space (avatarCamera in ./viewTurn.ts): one world,
+  // so the opening flies in to meet the avatar where it stands and the scene
+  // moves behind it with real parallax. The native renderer takes the camera
+  // below, Sketchfab's viewer through its camera API. Without a 3D background
+  // the visitor's turn orbits the avatar alone. The in-game model view keeps
+  // its fixed framing.
   const UP = new THREE.Vector3(0, 1, 0);
   const PITCH_MIN = -0.15; // just above the floor
   const PITCH_MAX = 1.2;
@@ -289,20 +294,33 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   const ZOOM_MAX = 1.8;
   const view = { yaw: 0, pitch: 0, zoom: 1 }; // where the visitor put it
   const shown = { yaw: 0, pitch: 0, zoom: 1 }; // eased toward view
-  let frameTurn: ViewTurn = NO_TURN; // the avatar's turn this frame
   // seconds since the current scene appeared: drives the loading-screen camera
   // (cinematicTurn), which both cameras take like the visitor's own turn
   let cineClock = 0;
   /** the turn both cameras take: the visitor's, plus the loading-screen camera */
-  // scenes with walls or a model fly in from outside; skies open wide instead
-  const outsideIn = (def: BackgroundDef | null) => !!def && !def.parts.some((part) => part.sky);
-  const sceneTurn = (): ViewTurn => combineTurns(shown, cinematicTurn(cineClock, outsideIn(bgDef)));
+  // each scene's camera plan: its opening move, then cruise moves in turn
+  const sceneTurn = (): ViewTurn => combineTurns(shown, cinematicTurn(cineClock, bgDef ? planFor(bgDef) : false));
   /** someone is dragging or zooming, or the view is still easing after it */
   const interacting = () =>
     pointers.size > 0 || Math.abs(view.yaw - shown.yaw) > 1e-4 || Math.abs(view.pitch - shown.pitch) > 1e-4 || Math.abs(view.zoom - shown.zoom) > 1e-4;
   // Sketchfab's viewer glides between camera updates, so it asks ahead
   externalBackground?.setTurnSource((ahead, opening, def) =>
-    combineTurns(ahead > 0.5 ? view : shown, cinematicTurn((opening ? 0 : cineClock) + ahead, outsideIn(def))));
+    combineTurns(ahead > 0.5 ? view : shown, cinematicTurn((opening ? 0 : cineClock) + ahead, planFor(def))));
+
+  // indoors you meet the avatar inside: it fades in as the opening flight
+  // crosses into the room (Sketchfab's scene can't hide it behind its walls)
+  let avatarAlpha = 1;
+  function fadeAvatar(): void {
+    let a = 1;
+    const plan = bgDef ? planFor(bgDef) : null;
+    if (bgDef && plan && externalActive && !pip && bgDef.kind === 'indoor' && opensFromOutside(plan)) {
+      const k = (cineClock / openingSeconds(plan) - 0.55) / 0.3;
+      a = k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k);
+    }
+    if (a === avatarAlpha) return;
+    avatarAlpha = a;
+    canvas.style.opacity = a === 1 ? '' : String(a);
+  }
 
   function stepView(dt: number): void {
     const k = 1 - Math.exp(-dt * 12);
@@ -311,7 +329,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     shown.zoom += (view.zoom - shown.zoom) * k;
   }
 
-  const isSky = (def: BackgroundDef) => def.parts.some((part) => part.sky);
+  const isSky = (def: BackgroundDef) => isSkyDef(def);
   let bgBaseFov = NaN;
   /** the native background's view before any turn: its Sketchfab default, drifting */
   function nativeView(position: THREE.Vector3, target: THREE.Vector3) {
@@ -319,14 +337,21 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     const base = { position: position.toArray(), target: target.toArray(), fov: bgBaseFov };
     return bgDef?.drift ? backgroundViewAt(base, bgDef.drift, bgElapsed, [0, 1, 0], isSky(bgDef)) : base;
   }
-  /** how far the background's drift has carried its view, for the avatar to follow */
-  function driftTurn(): ViewTurn {
-    if (!bgDef?.drift || pip) return NO_TURN;
-    if (externalActive) return externalBackground?.driftTurn(performance.now()) ?? NO_TURN;
-    if (!bgRenderer.active) return NO_TURN;
+  /** the background camera as authored and as it is this frame, in its own
+   *  coordinates (Sketchfab's are Z-up, the native renderer's Y-up) */
+  let nativeNow: BackgroundView | null = null;
+  function backgroundViews(): { authored: BackgroundView; now: BackgroundView; up: number[] } | null {
+    if (!bgDef || pip) return null;
+    if (externalActive) {
+      const v = externalBackground?.viewNow();
+      return v ? { ...v, up: [0, 0, 1] } : null;
+    }
+    if (!bgRenderer.active) return null;
     const base = bgRenderer.baseView;
-    const rest = { position: base.pos.toArray(), target: base.target.toArray(), fov: Number.isNaN(bgBaseFov) ? bgRenderer.camera.fov : bgBaseFov };
-    return turnBetween(rest, nativeView(base.pos, base.target), [0, 1, 0], lookAround(bgDef));
+    if (Number.isNaN(bgBaseFov)) bgBaseFov = bgRenderer.camera.fov;
+    const authored = { position: base.pos.toArray(), target: base.target.toArray(), fov: bgBaseFov };
+    nativeNow = turnAround(nativeView(base.pos, base.target), sceneTurn(), [0, 1, 0], rigFor(bgDef));
+    return { authored, now: nativeNow, up: [0, 1, 0] };
   }
 
   const pivot = new THREE.Vector3();
@@ -336,21 +361,44 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   const qPitch = new THREE.Quaternion();
   const savedPos = new THREE.Vector3();
   const savedQuat = new THREE.Quaternion();
-  /** turn the avatar camera about the resting look point; restoreView() puts
-   *  it back after rendering so other camera code never sees the turn */
+  const savedUp = new THREE.Vector3();
+  let savedFov = 0;
+  /** place the avatar camera for this frame — the background camera carried
+   *  into the avatar's space, or (no 3D background) the visitor's turn about
+   *  the resting look point; restoreView() puts it back after rendering so
+   *  other camera code never sees it */
   function applyView(): void {
     savedPos.copy(camera.position);
     savedQuat.copy(camera.quaternion);
-    frameTurn = pip || !bgDef ? (pip ? NO_TURN : shown) : combineTurns(sceneTurn(), driftTurn());
+    savedUp.copy(camera.up);
+    savedFov = camera.fov;
+    nativeNow = null;
     if (pip) return;
-    pivot.copy(api.framing().look);
+    const rest = api.framing();
+    const views = backgroundViews();
+    const rig = bgDef ? rigFor(bgDef) : null;
+    if (views && bgDef && rig && !rig.cameraAxes) {
+      const cam = avatarCamera(views.authored, views.now, views.up, rig, rest.look, rest.pos.distanceTo(rest.look), savedFov);
+      camera.position.copy(cam.position);
+      camera.up.copy(cam.up);
+      camera.lookAt(cam.target);
+      if (camera.fov !== cam.fov) {
+        camera.fov = cam.fov;
+        camera.updateProjectionMatrix();
+      }
+      camera.updateMatrixWorld();
+      return;
+    }
+    // no 3D background, or a sky: the turn orbits the avatar, upright
+    const turn: ViewTurn = bgDef ? sceneTurn() : shown;
+    pivot.copy(rest.look);
     off.copy(camera.position).sub(pivot);
     right.crossVectors(off, UP);
     if (right.lengthSq() < 1e-8) right.set(-1, 0, 0);
-    qPitch.setFromAxisAngle(right.normalize(), frameTurn.pitch);
-    qYaw.setFromAxisAngle(UP, frameTurn.yaw);
+    qPitch.setFromAxisAngle(right.normalize(), turn.pitch);
+    qYaw.setFromAxisAngle(UP, turn.yaw);
     qYaw.multiply(qPitch);
-    off.applyQuaternion(qYaw).multiplyScalar(frameTurn.zoom * (frameTurn.dolly ?? 1));
+    off.applyQuaternion(qYaw).multiplyScalar(turn.zoom * (turn.dolly ?? 1));
     camera.position.copy(pivot).add(off);
     camera.quaternion.premultiply(qYaw);
     camera.updateMatrixWorld();
@@ -358,21 +406,23 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   function restoreView(): void {
     camera.position.copy(savedPos);
     camera.quaternion.copy(savedQuat);
+    camera.up.copy(savedUp);
+    if (camera.fov !== savedFov) {
+      camera.fov = savedFov;
+      camera.updateProjectionMatrix();
+    }
     camera.updateMatrixWorld();
   }
 
   const bgLast = { pos: new THREE.Vector3(NaN, 0, 0), target: new THREE.Vector3(), fov: NaN };
-  /** the native background camera: drift, then the visitor's turn; true when
-   *  it moved since the last background frame */
+  /** the native background camera for this frame (worked out with the
+   *  avatar's in applyView); true when it moved since the last frame */
   function bgView(pos: THREE.Vector3, target: THREE.Vector3): boolean {
-    const turned = turnView(nativeView(pos, target), sceneTurn(), [0, 1, 0], !!bgDef && lookAround(bgDef));
+    const turned = nativeNow ?? (bgDef ? turnAround(nativeView(pos, target), sceneTurn(), [0, 1, 0], rigFor(bgDef)) : null);
+    if (!turned) return false;
     pos.fromArray(turned.position);
     target.fromArray(turned.target);
-    const fov = turned.fov ?? bgBaseFov;
-    if (fov !== bgRenderer.camera.fov) {
-      bgRenderer.camera.fov = fov;
-      bgRenderer.camera.updateProjectionMatrix();
-    }
+    const fov = bgBaseFov;
     const moved =
       Number.isNaN(bgLast.pos.x) || fov !== bgLast.fov || pos.distanceToSquared(bgLast.pos) > 1e-12 || target.distanceToSquared(bgLast.target) > 1e-12;
     bgLast.pos.copy(pos);
@@ -487,6 +537,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     }
     for (const cb of tickCbs) cb(dt, now);
     stepView(dt);
+    fadeAvatar();
     if (externalActive && !pip && interacting()) externalBackground?.nudge();
     renderFrame(dt, document.hidden ? 0 : elapsed);
     requestAnimationFrame(loop);
