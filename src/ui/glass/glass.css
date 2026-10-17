@@ -310,7 +310,7 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
 .link-chip[data-retry] { cursor: pointer; }
 /* camera peek (src/ui/cameraPeek.ts): the person's webcam by the link chip,
    on hover and while Disconnected; panel glass around a 2005-webcam picture
-   (128×96, scaled up soft) under one olive-green colour layer */
+   (240×180, scaled up soft) under one olive-green colour layer */
 .camera-peek {
   position: fixed; z-index: 60; width: 232px; padding: 6px; border-radius: 18px;
   pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(4px) scale(0.98);

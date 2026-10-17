@@ -1,7 +1,7 @@
 // Camera peek: the person's own webcam view, shown by the link chip so they
 // can see where they stand — while the pointer is on a chip, and on its own
 // whenever tracking says Disconnected (no one to follow), to help them step
-// back into view. It looks like a 2005 webcam: 128×96, scaled up soft, under
+// back into view. It looks like a 2005 webcam: 240×180, scaled up soft, under
 // an olive-green colour layer — a glance, not a mirror. Full frame rate, so
 // it stays easy to line yourself up with. Local only: the same stream the tracker already has.
 
@@ -20,12 +20,14 @@ export function createCameraPeek(link: Link, source: HTMLVideoElement): void {
   video.muted = true;
   video.playsInline = true;
   video.autoplay = true;
-  const LOW_W = 128;
-  const LOW_H = 96;
+  // picked by Lekan from rendered comparisons (160×120 to 480×360, 10–25 fps)
+  const LOW_W = 240;
+  const LOW_H = 180;
   const screen = document.createElement('canvas');
   screen.width = LOW_W;
   screen.height = LOW_H;
   const g = screen.getContext('2d')!;
+  g.imageSmoothingQuality = 'high'; // an averaged downscale, as in the comparisons
   let drawing = false;
   /** every new camera frame while the peek is open */
   function loop(): void {
