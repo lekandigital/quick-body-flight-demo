@@ -674,23 +674,37 @@ body.glass-simple .glass > .glass-plate {
   border: 1px solid var(--glass-hair, rgba(255, 255, 255, 0.55));
 }
 
-/* the loading screen (src/ui/loadingVeil.ts): the settings panel's style —
-   the wordmark, a panel-glass card listing each part with its status light
-   on the left and the sliding selector on the part loading now, and the
-   progress in its own bottom-bar glass. Its own dark tokens: the page's tone
+/* the loading screen (src/ui/loadingVeil.ts): the settings panel's style over
+   the stage's blue sky and moving grid — the wordmark, a panel-glass card
+   listing each part with its status light on the left and the sliding
+   selector stepping down to the part loading now, and a second glass card
+   holding the progress bar. The light tokens throughout: the page's own tone
    isn't known yet. */
 .loading-veil {
-  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
-  background: radial-gradient(120% 90% at 50% 40%, #1b2a44 0%, #0b0f18 60%, #07090f 100%);
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(ellipse 60% 50% at 50% 42%, rgba(255, 255, 255, 0.85), rgba(236, 246, 255, 0) 70%),
+    linear-gradient(180deg, #7fb9f5 0%, #c9e3ff 45%, #eaf3ff 78%, #f5f8ff 100%);
   transition: opacity 0.8s ease, visibility 0s 0.8s;
-  --ink: #eef2f6; --ink-2: rgba(238, 242, 246, 0.72); --ink-3: rgba(238, 242, 246, 0.46);
-  --glass-ink-2: rgba(238, 242, 246, 0.6); --glass-hair: rgba(255, 255, 255, 0.16);
-  --panel-fill: rgba(12, 14, 20, 0.5); --glass-fill-hover: rgba(255, 255, 255, 0.13);
+  --ink: #16181d; --ink-2: #52565f; --ink-3: #8b909a; --glass-ink-2: rgba(0, 0, 0, 0.6);
+  --glass-hair: rgba(0, 0, 0, 0.1); --panel-fill: rgba(255, 255, 255, 0.32); --glass-fill-hover: rgba(255, 255, 255, 0.35);
   --rule: transparent; --rule-2: transparent;
 }
+/* the stage backdrop's moving grid (the form demo's), verbatim */
+.loading-veil::before {
+  content: ""; position: absolute; inset: 0; opacity: 0.45; pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.24) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.24) 1px, transparent 1px),
+    radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.12), transparent 45%);
+  background-size: 24px 24px, 24px 24px, 100% 100%;
+  background-position: 12px 12px, 12px 12px, 0 0;
+  animation: moveBackground 8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .loading-veil::before { animation: none; } }
 .loading-veil.gone { opacity: 0; visibility: hidden; pointer-events: none; }
 .loading-stack { display: flex; flex-direction: column; align-items: stretch; gap: 14px; width: min(340px, calc(100vw - 32px)); }
-.loading-logo { align-self: center; margin-bottom: 6px; font-family: var(--font-sans); font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: #f4f6fa; text-shadow: 0 2px 24px rgba(127, 211, 255, 0.18); }
+.loading-stack { position: relative; }
+.loading-logo { align-self: center; margin-bottom: 6px; font-family: var(--font-sans); font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: #16181d; }
 .loading-card { padding: 18px 14px 12px; border-radius: 28px; --glass-fill: var(--panel-fill); }
 .loading-card .rail-hdr { padding: 0 6px 10px; }
 .glass-ui .loading-rows .card { cursor: default; }
@@ -701,8 +715,10 @@ body.glass-simple .glass > .glass-plate {
 .loading-row[data-state="done"] .loading-dot { background: #3bbf4e; box-shadow: 0 0 8px 1px #3bbf4eaa, inset 0 1px 1px rgba(255, 255, 255, 0.45); }
 .loading-row[data-state="failed"] .loading-dot { background: #e5484d; box-shadow: 0 0 8px 1px #e5484d99, inset 0 1px 1px rgba(255, 255, 255, 0.4); }
 @keyframes loading-pulse { 50% { opacity: 0.45; } }
-.loading-track { position: relative; height: 18px; border-radius: 9px; padding: 7px 9px; --glass-fill: rgba(255, 255, 255, 0.05); }
-.loading-fill { display: block; height: 4px; width: 6%; border-radius: 2px; background: linear-gradient(90deg, #7fd3ff, #3bbf4e); box-shadow: 0 0 10px #3bbf4e66; transition: width 0.5s ease; }
+.loading-progress { padding: 16px 20px 18px; }
+.loading-progress .rail-hdr { padding: 0 0 10px; }
+.loading-track { height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.08); overflow: hidden; }
+.loading-fill { display: block; height: 100%; width: 4%; border-radius: 3px; background: linear-gradient(90deg, #0377f7, #3bbf4e); box-shadow: 0 0 8px rgba(59, 191, 78, 0.45); transition: width 0.5s ease; }
 @media (prefers-reduced-motion: reduce) { .loading-row[data-state="working"] .loading-dot { animation: none; } }
 .glass-ui #ppc-states { gap: 4px; max-width: 190px; }
 /* [D] form demo field, light context: rounded-[20px] border bg-transparent text-sm */

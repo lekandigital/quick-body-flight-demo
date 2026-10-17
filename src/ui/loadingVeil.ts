@@ -3,11 +3,12 @@
 // flight. main.ts staggers the work behind it (the scene starts once the
 // tracker is in), so the first seconds aren't a fight for bandwidth and GPU.
 //
-// In the settings panel's style: the wordmark above; a glass card with a
-// vertical list — one row per part, its status light on the left (grey
-// waiting, amber working, green ready, red failed), flat text — where the
-// sliding glass selector (ui/selector.ts) rests on the part loading now and
-// moves down as each comes in; the progress in its own glass bar below.
+// In the settings panel's style, over the stage's blue sky and moving grid:
+// the wordmark above; a glass card with a vertical list — one row per part,
+// its status light on the left (grey waiting, amber working, green ready, red
+// failed), flat text — where the sliding glass selector (ui/selector.ts)
+// steps down a row at a time as each part comes in; below, a second glass
+// card holding the progress bar.
 
 import { createSelector } from './selector';
 
@@ -64,29 +65,53 @@ export function createLoadingVeil(): LoadingVeil {
   }
   card.append(hdr, list);
 
+  // the progress: its own glass card, the bar inside
+  const progressCard = document.createElement('div');
+  progressCard.className = 'loading-card loading-progress';
+  progressCard.dataset.glass = 'panel';
+  const pHdr = document.createElement('div');
+  pHdr.className = 'rail-hdr';
+  const pct = document.createElement('span');
+  pct.className = 'rail-val';
+  pHdr.innerHTML = '<span>Loading</span>';
+  pHdr.append(pct);
   const track = document.createElement('div');
   track.className = 'loading-track';
-  track.dataset.glass = 'bar';
   const fill = document.createElement('span');
   fill.className = 'loading-fill';
   track.append(fill);
+  progressCard.append(pHdr, track);
 
-  stack.append(logo, card, track);
+  stack.append(logo, card, progressCard);
   veil.append(stack);
   document.body.append(veil);
   document.body.classList.add('loading');
   createSelector(list, '.card');
 
   let finished = false;
-  /** the selector rests on the part loading now (else the next to come) */
+  const all = [...rows.values()];
+  const settled = (r: { row: HTMLElement }) => r.row.dataset.state === 'done' || r.row.dataset.state === 'failed';
+  // the selector steps one row at a time towards the first part still to
+  // come, pausing on each — however quickly the parts come in
+  let shown = 0;
+  const target = () => {
+    const i = all.findIndex((r) => !settled(r));
+    return i < 0 ? all.length - 1 : i;
+  };
+  const place = () => all.forEach((r, i) => r.row.classList.toggle('on', i === shown));
+  place();
+  const stepper = window.setInterval(() => {
+    const t = target();
+    if (shown === t) return;
+    shown += shown < t ? 1 : -1;
+    place();
+  }, 650);
   function sync(): void {
-    const all = [...rows.values()];
-    const settled = all.filter(({ row }) => row.dataset.state === 'done' || row.dataset.state === 'failed').length;
-    count.textContent = `${settled}/${all.length}`;
-    fill.style.width = `${Math.max(6, (settled / all.length) * 100)}%`;
-    const current =
-      all.find(({ row }) => row.dataset.state === 'working') ?? all.find(({ row }) => row.dataset.state === 'waiting') ?? all[all.length - 1];
-    for (const { row } of all) row.classList.toggle('on', row === current.row);
+    const n = all.filter(settled).length;
+    count.textContent = `${n}/${all.length}`;
+    const p = Math.round((n / all.length) * 100);
+    pct.textContent = `${p}%`;
+    fill.style.width = `${Math.max(4, p)}%`;
   }
   sync();
 
@@ -101,7 +126,9 @@ export function createLoadingVeil(): LoadingVeil {
     done() {
       if (finished) return;
       finished = true;
+      clearInterval(stepper);
       fill.style.width = '100%';
+      pct.textContent = '100%';
       document.body.classList.remove('loading');
       veil.classList.add('gone');
       setTimeout(() => veil.remove(), 900);
