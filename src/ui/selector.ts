@@ -23,7 +23,8 @@ export function createSelector(list: HTMLElement, itemSelector: string): void {
   let current: HTMLElement | null = null;
 
   function place(animate: boolean): void {
-    if (!card.isConnected || card.parentElement !== list) list.prepend(card);
+    if (!list.isConnected) return; // the list itself is gone (see stop)
+    if (card.parentElement !== list) list.prepend(card);
     const item = items().find((el) => el.matches(SELECTED)) ?? null;
     if (!item || !item.offsetWidth) {
       // nothing selected, or the list is hidden (the resize observer places
@@ -47,14 +48,23 @@ export function createSelector(list: HTMLElement, itemSelector: string): void {
     current = item;
   }
 
-  // follow selection changes and rebuilt lists
-  new MutationObserver((records) => {
+  // follow selection changes and rebuilt lists; stop for good once the list is
+  // taken out of the page (a re-rendered page, the loading screen) — putting
+  // the card back into a detached list would only fire this observer again
+  const ro = new ResizeObserver(() => place(false));
+  const mo = new MutationObserver((records) => {
+    if (!list.isConnected) {
+      mo.disconnect();
+      ro.disconnect();
+      return;
+    }
     // the card's own class changes (and its glass plate) aren't selection changes
     if (records.every((r) => r.target === card || card.contains(r.target))) return;
     const next = items().find((el) => el.matches(SELECTED)) ?? null;
-    if (next !== current || !card.isConnected) place(true);
-  }).observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'aria-pressed'] });
-  new ResizeObserver(() => place(false)).observe(list);
+    if (next !== current || card.parentElement !== list) place(true);
+  });
+  mo.observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'aria-pressed'] });
+  ro.observe(list);
 
   // tactile: the selected card dips under the finger
   const release = () => card.classList.remove('pressed');

@@ -299,13 +299,15 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   let cineClock = 0;
   /** the turn both cameras take: the visitor's, plus the loading-screen camera */
   // each scene's camera plan: its opening move, then cruise moves in turn
-  const sceneTurn = (): ViewTurn => combineTurns(shown, cinematicTurn(cineClock, bgDef ? planFor(bgDef) : false));
+  // a Sketchfab scene runs on its own clock (0 at its reveal), the native one on cineClock
+  const sceneSeconds = () => (externalActive && externalBackground ? externalBackground.sceneSeconds() : cineClock);
+  const sceneTurn = (): ViewTurn => combineTurns(shown, cinematicTurn(sceneSeconds(), bgDef ? planFor(bgDef) : false));
   /** someone is dragging or zooming, or the view is still easing after it */
   const interacting = () =>
     pointers.size > 0 || Math.abs(view.yaw - shown.yaw) > 1e-4 || Math.abs(view.pitch - shown.pitch) > 1e-4 || Math.abs(view.zoom - shown.zoom) > 1e-4;
   // Sketchfab's viewer glides between camera updates, so it asks ahead
-  externalBackground?.setTurnSource((ahead, opening, def) =>
-    combineTurns(ahead > 0.5 ? view : shown, cinematicTurn((opening ? 0 : cineClock) + ahead, planFor(def))));
+  externalBackground?.setTurnSource((ahead, seconds, def) =>
+    combineTurns(ahead > 0.5 ? view : shown, cinematicTurn(seconds, planFor(def))));
 
   // indoors you meet the avatar inside: it fades in as the opening flight
   // crosses into the room (Sketchfab's scene can't hide it behind its walls)
@@ -314,7 +316,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     let a = 1;
     const plan = bgDef ? planFor(bgDef) : null;
     if (bgDef && plan && externalActive && !pip && bgDef.kind === 'indoor' && opensFromOutside(plan)) {
-      const k = (cineClock / openingSeconds(plan) - 0.55) / 0.3;
+      const k = (sceneSeconds() / openingSeconds(plan) - 0.55) / 0.3;
       a = k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k);
     }
     if (a === avatarAlpha) return;

@@ -105,7 +105,8 @@ export class SketchfabBackground {
   /** the turn both cameras take — the visitor's plus the loading-screen camera
    * (./viewTurn.ts) — `ahead` seconds from now; `opening`: for a scene about
    * to appear */
-  private turnAt: (ahead: number, opening: boolean, def: BackgroundDef) => ViewTurn = () => NO_TURN;
+  /** `seconds`: the scene's own clock (0 at its reveal) plus `ahead` */
+  private turnAt: (ahead: number, seconds: number, def: BackgroundDef) => ViewTurn = () => NO_TURN;
   private sentAt = 0;
   /** the field of view the scene should show (before the crop's widening) */
   private sentFov = NaN;
@@ -260,10 +261,25 @@ export class SketchfabBackground {
         check();
       });
       if (token !== this.token) { this.release(viewer); return false; }
-      // open on the loading-screen camera's first pose, not the authored view
+      // open on the opening's first pose, not the authored view — and wait until
+      // the viewer is actually there (its reply can come a frame early)
+      const want = this.cameraAt(viewer, 0, true);
       await new Promise<void>((resolve) => {
         const timer = setTimeout(resolve, 1500);
         this.sendCamera(viewer, 0, true, () => { clearTimeout(timer); resolve(); });
+      });
+      await new Promise<void>((resolve) => {
+        const until = performance.now() + 1500;
+        const span = Math.hypot(...want.position.map((v, i) => v - want.target[i])) || 1;
+        const poll = () => {
+          if (token !== this.token || performance.now() > until || !viewer.api) return resolve();
+          viewer.api.getCameraLookAt((error, cam) => {
+            const off = error || !cam ? Infinity : Math.hypot(...cam.position.map((v, i) => v - want.position[i]));
+            if (off < span * 0.01) setTimeout(resolve, 60); // one more frame to draw it
+            else setTimeout(poll, 50);
+          });
+        };
+        poll();
       });
       if (token !== this.token) { this.release(viewer); return false; }
       // cross-fade from the previous scene
@@ -292,7 +308,7 @@ export class SketchfabBackground {
     return this.quality === 'maximum' ? 'hd' : this.quality === 'balanced' ? 'sd' : 'ld';
   }
 
-  setTurnSource(source: (ahead: number, opening: boolean, def: BackgroundDef) => ViewTurn): void {
+  setTurnSource(source: (ahead: number, seconds: number, def: BackgroundDef) => ViewTurn): void {
     this.turnAt = source;
   }
 
@@ -302,7 +318,13 @@ export class SketchfabBackground {
     const drifted = viewer.def.drift
       ? backgroundViewAt(viewer.camera!, viewer.def.drift, viewer.clock.seconds(performance.now()) + ahead, [0, 0, 1], sky)
       : viewer.camera!;
-    return turnAround(drifted, this.turnAt(ahead, opening, viewer.def), [0, 0, 1], rigFor(viewer.def));
+    const seconds = (opening ? 0 : viewer.clock.seconds(performance.now())) + ahead;
+    return turnAround(drifted, this.turnAt(ahead, seconds, viewer.def), [0, 0, 1], rigFor(viewer.def));
+  }
+
+  /** seconds the current scene has shown (its opening and cruise run on this) */
+  sceneSeconds(): number {
+    return this.current ? this.current.clock.seconds(performance.now()) : 0;
   }
 
   /** the camera as authored and where it should be now (Z-up), for the avatar camera */
