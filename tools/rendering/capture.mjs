@@ -18,7 +18,11 @@ try {
   page.setDefaultTimeout(timeout);
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
+  let previous=false;
   for (const viewport of viewports) for (const id of ids) {
+    if(previous) await page.evaluate(()=>{const lab=window.__renderingLab;lab.background.dispose();lab.renderer.dispose();lab.renderer.forceContextLoss();});
+    previous=true;
+    console.log(`Rendering ${id} ${viewport}`);
     await page.goto(`http://127.0.0.1:5175/dev/rendering.html?scene=${id}&label=${label}&viewport=${viewport}&quality=${args.quality ?? 'balanced'}&scale=${args.scale??1}&frames=${args.frames??6}&patch=${encodeURIComponent(args.patch ?? '{}')}`);
     await page.waitForFunction(() => /"state": "ready"|ERROR:/.test(document.querySelector('#status').textContent), { timeout });
     if ((await page.locator('#status').innerText()).startsWith('ERROR:')) throw new Error(await page.locator('#status').innerText());

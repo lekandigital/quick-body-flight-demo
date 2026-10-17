@@ -1,0 +1,83 @@
+{
+  "id": "galaxy",
+  "configuration": [
+    {
+      "file": "galaxy.glb",
+      "sky": true,
+      "emissiveTextureUrl": "/__original-assets/galaxy-emissive.png"
+    }
+  ],
+  "quality": "maximum",
+  "viewport": [
+    960,
+    600
+  ],
+  "renderResolution": [
+    1920,
+    1200
+  ],
+  "captureScale": 2,
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "hdrSupported": true,
+  "camera": {
+    "position": [
+      -0.3090983692835508,
+      0.7119659192949861,
+      -0.0025087785878725923
+    ],
+    "target": [
+      4.172325134277344e-7,
+      4.172325134277345e-7,
+      -5.960464477539061e-7
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 45
+  },
+  "environment": {
+    "intensity": 0.30000000000000004,
+    "rotation": [
+      0,
+      0,
+      0,
+      "XYZ"
+    ]
+  },
+  "memory": {
+    "geometries": 12,
+    "textures": 7
+  },
+  "materials": [
+    {
+      "name": "material",
+      "type": "MeshStandardMaterial",
+      "opacity": 1,
+      "depthWrite": false,
+      "side": 2,
+      "roughness": 1,
+      "metalness": 1,
+      "emissiveIntensity": 1,
+      "normalScale": [
+        1,
+        -1
+      ],
+      "emissiveTexture": {
+        "width": 3840,
+        "height": 2160,
+        "type": 1016,
+        "colorSpace": "srgb-linear",
+        "sourceDepth": 16
+      }
+    }
+  ],
+  "shaderErrors": [],
+  "loadAndFirstFrameMs": 2101.2999999998137,
+  "state": "captured",
+  "animationTime": 0,
+  "frameMs": [],
+  "backgroundRedrawn": [],
+  "renderer": "WebKit WebGL"
+}

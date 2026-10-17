@@ -1,0 +1,62 @@
+{
+  "url": "https://bodyarcade-sketchfab-fidelity.vercel.app/bodyarcade",
+  "catalog": {
+    "catalog": "all",
+    "files": [
+      "corridor.glb",
+      "earth-agullo.glb",
+      "earth-airstudios.glb",
+      "galaxy.glb",
+      "gallery.glb",
+      "hangar.glb",
+      "nebula.glb",
+      "space.glb"
+    ]
+  },
+  "available": [
+    "nebula",
+    "galaxy",
+    "space",
+    "earth",
+    "orbit",
+    "hangar",
+    "corridor",
+    "gallery"
+  ],
+  "assets": [
+    {
+      "file": "corridor.glb",
+      "status": 200
+    },
+    {
+      "file": "earth-agullo.glb",
+      "status": 200
+    },
+    {
+      "file": "earth-airstudios.glb",
+      "status": 200
+    },
+    {
+      "file": "galaxy.glb",
+      "status": 200
+    },
+    {
+      "file": "gallery.glb",
+      "status": 200
+    },
+    {
+      "file": "hangar.glb",
+      "status": 200
+    },
+    {
+      "file": "nebula.glb",
+      "status": 200
+    },
+    {
+      "file": "space.glb",
+      "status": 200
+    }
+  ],
+  "selected": "corridor",
+  "errors": []
+}

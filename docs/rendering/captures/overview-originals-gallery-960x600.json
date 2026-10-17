@@ -1,0 +1,144 @@
+{
+  "id": "gallery",
+  "configuration": [
+    {
+      "file": "gallery.glb",
+      "unlit": true,
+      "bloomScale": 0.4,
+      "sourceUrl": "/__original-assets/gallery.glb",
+      "textureOverrides": [
+        {
+          "material": "Material.006",
+          "slot": "map",
+          "url": "/__original-assets/gallery-back.png",
+          "flipY": true
+        },
+        {
+          "material": "Material.004",
+          "slot": "map",
+          "url": "/__original-assets/gallery-left.png",
+          "flipY": true
+        },
+        {
+          "material": "Material.003",
+          "slot": "map",
+          "url": "/__original-assets/gallery-right.png",
+          "flipY": true
+        }
+      ]
+    }
+  ],
+  "quality": "maximum",
+  "viewport": [
+    960,
+    600
+  ],
+  "renderResolution": [
+    1920,
+    1200
+  ],
+  "captureScale": 2,
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "hdrSupported": true,
+  "camera": {
+    "position": [
+      45.1535988062107,
+      6.7871396155734764,
+      1.1987932024578594
+    ],
+    "target": [
+      26.85451866880905,
+      7.178893718313245,
+      0.5459822367985029
+    ],
+    "up": [
+      0,
+      1,
+      2.220446049250313e-16
+    ],
+    "fov": 45
+  },
+  "environment": {
+    "intensity": 0.46711195560748986,
+    "rotation": [
+      0,
+      0.403364982683134,
+      0,
+      "XYZ"
+    ]
+  },
+  "memory": {
+    "geometries": 18,
+    "textures": 25
+  },
+  "materials": [
+    {
+      "name": "Material.001",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "Material.006",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "baseTexture": {
+        "width": 3072,
+        "height": 3072
+      }
+    },
+    {
+      "name": "Material.004",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "baseTexture": {
+        "width": 3072,
+        "height": 3072
+      }
+    },
+    {
+      "name": "Material.003",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2,
+      "baseTexture": {
+        "width": 3072,
+        "height": 3072
+      }
+    },
+    {
+      "name": "Material.002",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "Material",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    },
+    {
+      "name": "light.001",
+      "type": "MeshBasicMaterial",
+      "opacity": 1,
+      "depthWrite": true,
+      "side": 2
+    }
+  ],
+  "shaderErrors": [],
+  "loadAndFirstFrameMs": 890.2999999998137,
+  "state": "captured",
+  "animationTime": 0,
+  "frameMs": [],
+  "backgroundRedrawn": [],
+  "renderer": "WebKit WebGL"
+}
