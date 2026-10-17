@@ -29,6 +29,7 @@ import { openFlight, defaultFlightUrl, activeExperience } from './bodyinput/flig
 import { glassifyAll, watchGlass, upgradeControls } from '@bodyarcade/glass';
 import { createLink } from './ui/link';
 import { createCameraPeek } from './ui/cameraPeek';
+import { createSelector } from './ui/selector';
 import { asset } from './base';
 import { BACKGROUNDS, backgroundById, initialBackgroundId } from './stage/backgrounds';
 import { createBackgroundPicker } from './ui/backgroundPicker';
@@ -149,7 +150,7 @@ async function boot() {
 
   // link state replaces the camera view: is the model following someone?
   const link = createLink(document.getElementById('link-state')!);
-  createCameraPeek(link, video);
+  const peek = createCameraPeek(link, video);
 
   // theme before anything paints; persisted via the config store
   document.documentElement.dataset.theme = config.theme;
@@ -822,8 +823,29 @@ async function boot() {
 
   // Flight: the game swaps PosePuppet to the lite model while it runs
   // (approved feel; Fly's torso-scale axes are robust to lite).
-  const startFlight = () =>
-    openFlight(
+  // Experiences: the last one played is the selected card (ui/selector.ts
+  // slides the glass to it as it launches)
+  const markExperience = (id: 'flight' | 'rowing') => {
+    for (const b of document.querySelectorAll<HTMLElement>('.fly-card[data-experience]')) b.classList.toggle('on', b.dataset.experience === id);
+    try {
+      localStorage.setItem('bodyarcade-experience', id);
+    } catch {
+      /* optional */
+    }
+  };
+  let lastExperience: 'flight' | 'rowing' = 'flight';
+  try {
+    if (localStorage.getItem('bodyarcade-experience') === 'rowing') lastExperience = 'rowing';
+  } catch {
+    /* optional */
+  }
+  markExperience(lastExperience);
+  const expList = document.getElementById('experiences');
+  if (expList) createSelector(expList, '.fly-card');
+
+  const startFlight = () => {
+    markExperience('flight');
+    return openFlight(
       bodyInput,
       {
         ...pipDeps,
@@ -838,6 +860,7 @@ async function boot() {
       defaultFlightUrl(),
       'flight',
     );
+  };
 
   // Rowing: same game, boat vehicle, stroke input — ?row starts straight on
   // the water. Rowing keeps the FULL pose model: stroke detection reads wrist
@@ -849,7 +872,10 @@ async function boot() {
     const base = defaultFlightUrl();
     return `${base}${base.includes('?') ? '&' : '?'}row`;
   };
-  const startRow = () => openFlight(bodyInput, pipDeps, rowUrl(), 'rowing');
+  const startRow = () => {
+    markExperience('rowing');
+    return openFlight(bodyInput, pipDeps, rowUrl(), 'rowing');
+  };
 
   // delegated: survives any re-render of the buttons (live-demo fix 6a3e9d8)
   document.addEventListener('click', (ev) => {
@@ -1391,6 +1417,7 @@ async function boot() {
     // the camera overlay always draws the RAW detection — predicted
     // landmarks never appear over the real video (honesty line)
     drawSkeleton(overlayCtx, frame ? frame.norm : null, overlay.width, overlay.height);
+    peek.setPose(frame ? frame.norm : null);
 
     const tMs = frame ? frame.wallTimeMs : performance.now();
     let world: LandmarkPoint[] | null = null;
@@ -1549,7 +1576,7 @@ async function boot() {
         const card = document.createElement('button');
         card.className = 'card' + (def.id === config.handPuppet ? ' on' : '');
         card.dataset.puppet = def.id;
-        card.dataset.glass = 'navButton';
+        card.dataset.glass = 'none';
         const preview = document.createElement('div');
         preview.className = 'preview';
         preview.textContent = def.glyph;
@@ -1620,8 +1647,11 @@ async function boot() {
       const fresh = hand
         ? tNow - handMode.lastDetectionAt() < 1000
         : tNow - window.__PP.lastDetectionAt < 1000;
+      // the camera is on but nobody is followed yet: still connecting (the peek
+      // opens with the camera and the tracking lines); with no camera, the
+      // camera code owns the chip (its Disconnected + retry stays put)
       if (fresh) link.set('connected', 'Connected', hand ? 'following your hand' : 'following your body');
-      else link.set('disconnected', 'Disconnected', hand ? 'show a hand to the camera' : 'step into view of the camera');
+      else if (window.__PP.videoReady) link.set('searching', 'Connecting', hand ? 'show a hand to the camera' : 'step into view of the camera');
 
       const fps = detector.poseFps();
       const live = window.__PP.videoReady && performance.now() - window.__PP.lastDetectionAt < 1500;

@@ -5,7 +5,9 @@
 //
 // One state, any number of chips (the stage chip, the in-game model view).
 
-export type LinkState = 'starting' | 'connected' | 'disconnected';
+/** starting: the camera is opening · searching: it's on, nobody found yet ·
+ *  connected: following someone · disconnected: no camera */
+export type LinkState = 'starting' | 'searching' | 'connected' | 'disconnected';
 
 export interface Link {
   readonly state: LinkState;

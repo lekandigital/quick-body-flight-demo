@@ -6,6 +6,7 @@
 import type { Stage } from '../stage/scene';
 import { BACKGROUNDS, SKY_ID, backgroundById, type Credit } from '../stage/backgrounds';
 import { isBackgroundQuality, type BackgroundQuality } from '../stage/backgroundQuality';
+import { createSelector } from './selector';
 
 export interface BackgroundPicker {
   current(): string;
@@ -47,7 +48,7 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
     const card = document.createElement('button');
     card.className = 'card';
     card.dataset.bg = def.id;
-    card.dataset.glass = 'navButton';
+    card.dataset.glass = 'none'; // the list's sliding selector is the glass (ui/selector.ts)
     const preview = document.createElement('div');
     preview.className = 'preview';
     preview.textContent = def.glyph;
@@ -66,6 +67,8 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
     host.append(card);
     cards.set(def.id, card);
   }
+
+  if (host) createSelector(host, '.card');
 
   function paint(): void {
     for (const [id, el] of cards) {

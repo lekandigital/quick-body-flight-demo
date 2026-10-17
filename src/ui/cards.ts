@@ -4,6 +4,7 @@
 // a label per avatar, no audit machinery (P6 fills these out).
 
 import { config, setConfig, onConfigChange } from '../config';
+import { createSelector } from './selector';
 import { type AvatarId, isAvatarAvailable } from '../rig/avatarRegistry';
 
 interface CardDef {
@@ -47,7 +48,7 @@ export function createAvatarCards(): void {
     const card = document.createElement('button');
     card.className = 'card';
     card.dataset.avatar = def.id;
-    card.dataset.glass = 'navButton';
+    card.dataset.glass = 'none'; // the list's sliding selector is the glass (ui/selector.ts)
 
     const preview = document.createElement('div');
     preview.className = 'preview';
@@ -70,6 +71,7 @@ export function createAvatarCards(): void {
     host.append(card);
     els.set(def.id, card);
   }
+  createSelector(host, '.card');
 
   function sync(): void {
     for (const [id, el] of els) el.classList.toggle('on', id === config.avatar);

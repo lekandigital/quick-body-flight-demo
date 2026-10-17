@@ -318,7 +318,9 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
 }
 .camera-peek.on { opacity: 1; visibility: visible; transform: none; transition: opacity 0.18s, transform 0.18s; }
 .camera-peek-frame { position: relative; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; isolation: isolate; background: #071a01; }
-.camera-peek canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); filter: grayscale(1) contrast(1.35) brightness(1.05); image-rendering: auto; }
+.camera-peek .camera-peek-picture { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); filter: grayscale(1) contrast(1.35) brightness(1.05); image-rendering: auto; }
+/* the tracking lines: above the colour layer, mirrored with the picture */
+.camera-peek .camera-peek-lines { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
 .camera-peek-tint { position: absolute; inset: 0; background: #80926a; mix-blend-mode: color; }
 .camera-peek-tag { display: block; padding: 6px 4px 1px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-2); }
 @media (max-width: 900px) { .camera-peek { width: 168px; } }
@@ -327,6 +329,10 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
 .link-chip[data-state="connected"] .link-dot { background: #3bbf4e; box-shadow: 0 0 0 4px #3bbf4e33; }
 .link-chip[data-state="disconnected"] .link-dot { background: var(--danger); box-shadow: 0 0 0 4px var(--danger-quiet); }
 .link-chip[data-state="starting"] .link-dot { background: #94949f; box-shadow: 0 0 0 4px #94949f33; }
+/* camera on, nobody followed yet: still connecting */
+.link-chip[data-state="searching"] .link-dot { background: #e0b341; box-shadow: 0 0 0 4px #e0b34133; animation: link-search 1.4s ease-in-out infinite; }
+@keyframes link-search { 50% { box-shadow: 0 0 0 7px #e0b34100; } }
+@media (prefers-reduced-motion: reduce) { .link-chip[data-state="searching"] .link-dot { animation: none; } }
 .link-text { display: flex; flex-direction: column; gap: 0; line-height: 1.3; }
 /* [D] text-sm font-medium / text-xs */
 .link-text b { font-size: 14px; font-weight: 600; color: var(--ink); }
@@ -479,6 +485,30 @@ body.glass-ui[data-tone="dark"] .stage-label { background: color-mix(in srgb, #1
 .glass-ui .card .nm { font-size: var(--step--1); font-weight: 620; color: var(--ink); }
 .glass-ui .card-note { font-size: 11.5px; line-height: 1.45; color: var(--ink-3); }
 .glass-ui .card.on .preview { text-shadow: none; }
+
+/* ── selection (src/ui/selector.ts): per list, one card of the demo's nav
+   button glass (held in its hovered material) slides to the selected item,
+   overshooting a touch, and dips when pressed; unselected items have no glass
+   and sit flat on their panel ── */
+.has-selector { position: relative; }
+.has-selector > :not(.selector):not(.glass-plate) { position: relative; z-index: 1; }
+.selector {
+  position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
+  box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.55s cubic-bezier(0.3, 1.3, 0.45, 1), width 0.55s cubic-bezier(0.3, 1.3, 0.45, 1),
+    height 0.55s cubic-bezier(0.3, 1.3, 0.45, 1), opacity 0.2s, scale 0.14s ease;
+}
+/* the material's own hovered fill; on dark scenes that fill is dark too, so
+   the card takes a light lift instead (a fill setting, same glass) */
+body.glass-ui[data-tone="dark"] .selector { --glass-fill-hover: rgba(255, 255, 255, 0.13); }
+.selector.instant { transition: none; }
+.selector.empty { opacity: 0; }
+.selector.pressed { scale: 0.97; }
+.has-selector > .card, .has-selector > .fly-card { background: none; transition: background-color 0.2s, scale 0.14s ease; }
+.has-selector > .card:not(.on) .nm, .has-selector > .fly-card:not(.on) .fly-card-text b { color: var(--ink-2); }
+.has-selector > .card.on .card-note { color: var(--ink-2); }
+.has-selector > .card:not(.on):hover, .has-selector > .fly-card:not(.on):hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.has-selector > .card:not(.on):active, .has-selector > .fly-card:not(.on):active { scale: 0.98; }
 
 /* sliders: [S] .ctl rows; the slider itself is LiquidSlider (packages/glass) */
 .glass-ui .rail-slider { padding: 0; }
@@ -788,6 +818,7 @@ body.glass-ui.playing .stage-label { visibility: hidden; }
 }
 .ba-pip canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity 0.3s, filter 0.3s; }
 .ba-pip[data-state="disconnected"] canvas,
+.ba-pip[data-state="searching"] canvas,
 .ba-pip[data-state="starting"] canvas { opacity: 0.35; filter: grayscale(1); }
 .ba-pip .link-chip {
   left: 50%;
