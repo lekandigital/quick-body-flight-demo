@@ -3,7 +3,9 @@
 // flight. main.ts staggers the work behind it (the scene starts once the
 // tracker is in), so the first seconds aren't a fight for bandwidth and GPU.
 //
-// In the settings panel's style, over the stage's blue sky and moving grid:
+// In the settings panel's style, over deep blue-teals (analogous to the Ink
+// Water study's green) with the stage's moving grid in mint and a light
+// sweeping across its lines (drawGrid):
 // the wordmark above; a glass card with a vertical list — one row per part,
 // its status light on the left (grey waiting, amber working, green ready, red
 // failed), flat text — where the sliding glass selector (ui/selector.ts)
@@ -14,6 +16,55 @@ import { createSelector } from './selector';
 
 export type LoadStep = 'camera' | 'tracking' | 'avatar' | 'scene';
 type StepState = 'waiting' | 'working' | 'done' | 'failed';
+
+/** The stage backdrop's grid (24 px cells, drifting 15 px/s diagonally) with a
+ * soft light sweeping across its lines — one path stroked with a moving
+ * gradient, at most 30 fps. Returns a stop function. */
+function drawGrid(canvas: HTMLCanvasElement): () => void {
+  const g = canvas.getContext('2d');
+  if (!g) return () => {};
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let raf = 0;
+  let last = 0;
+  const frame = (now: number) => {
+    raf = requestAnimationFrame(frame);
+    if (now - last < 33) return;
+    last = now;
+    const dpr = Math.min(devicePixelRatio || 1, 1.5);
+    const w = Math.round(canvas.clientWidth * dpr);
+    const h = Math.round(canvas.clientHeight * dpr);
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+    }
+    g.clearRect(0, 0, w, h);
+    const t = reduced ? 0 : now / 1000;
+    const cell = 24 * dpr;
+    const shift = ((t * 15 * dpr) % cell) + 0.5;
+    g.beginPath();
+    for (let x = shift; x < w; x += cell) {
+      g.moveTo(x, 0);
+      g.lineTo(x, h);
+    }
+    for (let y = shift; y < h; y += cell) {
+      g.moveTo(0, y);
+      g.lineTo(w, y);
+    }
+    // the sweep: a band across the diagonal, every 3.4 s
+    const k = reduced ? -1 : ((t % 3.4) / 3.4) * 1.8 - 0.4;
+    const x0 = k * (w + h);
+    const grad = g.createLinearGradient(x0 - 0.18 * w, 0, x0 + 0.18 * w, h * 0.45);
+    // mint, from the Ink Water study's paper
+    grad.addColorStop(0, 'rgba(170, 205, 178, 0.13)');
+    grad.addColorStop(0.5, 'rgba(205, 240, 218, 0.85)');
+    grad.addColorStop(1, 'rgba(170, 205, 178, 0.13)');
+    g.strokeStyle = reduced ? 'rgba(170, 205, 178, 0.13)' : grad;
+    g.lineWidth = dpr;
+    g.stroke();
+  };
+  raf = requestAnimationFrame(frame);
+  return () => cancelAnimationFrame(raf);
+}
 
 const STEPS: Array<[LoadStep, string, string]> = [
   ['camera', 'Camera', 'waiting for the camera'],
@@ -83,7 +134,11 @@ export function createLoadingVeil(): LoadingVeil {
   progressCard.append(pHdr, track);
 
   stack.append(logo, card, progressCard);
-  veil.append(stack);
+  const grid = document.createElement('canvas');
+  grid.className = 'loading-grid';
+  grid.setAttribute('aria-hidden', 'true');
+  veil.append(grid, stack);
+  const stopGrid = drawGrid(grid);
   document.body.append(veil);
   document.body.classList.add('loading');
   createSelector(list, '.card');
@@ -127,6 +182,7 @@ export function createLoadingVeil(): LoadingVeil {
       if (finished) return;
       finished = true;
       clearInterval(stepper);
+      setTimeout(stopGrid, 900);
       fill.style.width = '100%';
       pct.textContent = '100%';
       document.body.classList.remove('loading');
