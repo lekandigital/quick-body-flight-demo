@@ -88,6 +88,10 @@ interface Viewer {
   requestedCamera?: BackgroundView;
   observedCamera?: BackgroundView;
   cameraError: string | null;
+  /** started since its viewer became ready (start() resets its camera) */
+  started?: boolean;
+  /** stopped while hidden */
+  stopped?: boolean;
   screenshotPending?: Promise<HTMLImageElement | null>;
   screenshot?: HTMLImageElement;
   cancel(): void;
@@ -261,8 +265,12 @@ export class SketchfabBackground {
         check();
       });
       if (token !== this.token) { this.release(viewer); return false; }
-      // open on the opening's first pose, not the authored view — and wait until
-      // the viewer is actually there (its reply can come a frame early)
+      // start it now, while hidden: start() resets the viewer to its default
+      // camera, and only after it do camera moves take. Then open on the
+      // opening's first pose — and wait until the viewer is actually there
+      // (its reply can come a frame early)
+      viewer.api!.start();
+      viewer.started = true;
       const want = this.cameraAt(viewer, 0, true);
       await new Promise<void>((resolve) => {
         const timer = setTimeout(resolve, 1500);
@@ -411,13 +419,23 @@ export class SketchfabBackground {
     const show = this.visible && !document.hidden;
     this.host.hidden = !show;
     if (show && this.current?.api && !this.playing) {
-      this.current.api.start();
+      // start() resets the viewer to its default camera: only when needed
+      // (after a stop), and then straight back to where the scene was
+      if (this.current.stopped || !this.current.started) {
+        this.current.api.start();
+        this.current.started = true;
+        this.current.stopped = false;
+        this.sendCamera(this.current, 0);
+      }
       this.playing = true;
       this.current.clock.resume(performance.now());
       this.driveCamera();
     } else if (!show) {
       this.pauseCamera();
-      this.current?.api?.stop();
+      if (this.current?.api) {
+        this.current.api.stop();
+        this.current.stopped = true;
+      }
     }
   }
 
