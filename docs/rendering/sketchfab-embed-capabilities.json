@@ -1,0 +1,170 @@
+{
+  "checkedAt": "2026-10-17T06:50:09.916415+00:00",
+  "method": "Server embedOptions HTML; no JavaScript executed",
+  "requested": {
+    "api_version": "1.12.1",
+    "api_id": 1,
+    "autostart": 1,
+    "preload": 1,
+    "camera": 0,
+    "autospin": 0,
+    "animation_autoplay": 1,
+    "dnt": 1,
+    "double_click": 0,
+    "prevent_user_light_rotation": 1,
+    "ui_hint": 0,
+    "ui_controls": 0,
+    "ui_infos": 0,
+    "ui_stop": 0,
+    "ui_watermark": 0,
+    "ui_annotations": 0,
+    "ui_animations": 0,
+    "ui_general_controls": 0,
+    "ui_help": 0,
+    "ui_settings": 0,
+    "ui_inspector": 0,
+    "ui_vr": 0,
+    "ui_ar": 0,
+    "ui_fullscreen": 0,
+    "ui_loading": 0,
+    "ui_start": 0
+  },
+  "models": {
+    "galaxy": {
+      "uid": "96183eed1ae2425baddb75ca92103f87",
+      "url": "https://sketchfab.com/models/96183eed1ae2425baddb75ca92103f87/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": true,
+        "uiHint": 1,
+        "uiControls": true,
+        "uiGeneralControls": true,
+        "uiHelp": true,
+        "uiSettings": true,
+        "uiInspector": true,
+        "uiVr": true,
+        "uiFullscreen": true,
+        "dnt": true
+      },
+      "permitsCleanUI": false
+    },
+    "nebula": {
+      "uid": "a1c688c6e8164fd4ad5a7e56047e8b50",
+      "url": "https://sketchfab.com/models/a1c688c6e8164fd4ad5a7e56047e8b50/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": true,
+        "uiHint": 1,
+        "uiControls": true,
+        "uiGeneralControls": true,
+        "uiHelp": true,
+        "uiSettings": true,
+        "uiInspector": true,
+        "uiVr": true,
+        "uiFullscreen": true,
+        "dnt": true
+      },
+      "permitsCleanUI": false
+    },
+    "space": {
+      "uid": "d6521362b37b48e3a82bce4911409303",
+      "url": "https://sketchfab.com/models/d6521362b37b48e3a82bce4911409303/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": false,
+        "uiHint": 0.0,
+        "uiControls": false,
+        "uiGeneralControls": false,
+        "uiHelp": false,
+        "uiSettings": false,
+        "uiInspector": false,
+        "uiVr": false,
+        "uiFullscreen": false,
+        "dnt": true
+      },
+      "permitsCleanUI": true
+    },
+    "earth": {
+      "uid": "5ce4b1465c83432d9bb7e3c30232c02b",
+      "url": "https://sketchfab.com/models/5ce4b1465c83432d9bb7e3c30232c02b/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": true,
+        "uiHint": 1,
+        "uiControls": true,
+        "uiGeneralControls": true,
+        "uiHelp": true,
+        "uiSettings": true,
+        "uiInspector": true,
+        "uiVr": true,
+        "uiFullscreen": true,
+        "dnt": true
+      },
+      "permitsCleanUI": false
+    },
+    "orbit": {
+      "uid": "5f9c35be31a047928eace8b415a8ee3a",
+      "url": "https://sketchfab.com/models/5f9c35be31a047928eace8b415a8ee3a/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": true,
+        "uiHint": 1,
+        "uiControls": true,
+        "uiGeneralControls": true,
+        "uiHelp": true,
+        "uiSettings": true,
+        "uiInspector": true,
+        "uiVr": true,
+        "uiFullscreen": true,
+        "dnt": true
+      },
+      "permitsCleanUI": false
+    },
+    "hangar": {
+      "uid": "8f10be0e8b5644e1845a2a5f12af5d6c",
+      "url": "https://sketchfab.com/models/8f10be0e8b5644e1845a2a5f12af5d6c/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": true,
+        "uiHint": 1,
+        "uiControls": true,
+        "uiGeneralControls": true,
+        "uiHelp": true,
+        "uiSettings": true,
+        "uiInspector": true,
+        "uiVr": true,
+        "uiFullscreen": true,
+        "dnt": true
+      },
+      "permitsCleanUI": false
+    },
+    "corridor": {
+      "uid": "1cdd1db557b8428892af4773bdada913",
+      "url": "https://sketchfab.com/models/1cdd1db557b8428892af4773bdada913/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": true,
+        "uiHint": 1,
+        "uiControls": true,
+        "uiGeneralControls": true,
+        "uiHelp": true,
+        "uiSettings": true,
+        "uiInspector": true,
+        "uiVr": true,
+        "uiFullscreen": true,
+        "dnt": true
+      },
+      "permitsCleanUI": false
+    },
+    "gallery": {
+      "uid": "ee6f3b0d9db14b62a1b3aeef04315313",
+      "url": "https://sketchfab.com/models/ee6f3b0d9db14b62a1b3aeef04315313/embed?api_version=1.12.1&api_id=1&autostart=1&preload=1&camera=0&autospin=0&animation_autoplay=1&dnt=1&double_click=0&prevent_user_light_rotation=1&ui_hint=0&ui_controls=0&ui_infos=0&ui_stop=0&ui_watermark=0&ui_annotations=0&ui_animations=0&ui_general_controls=0&ui_help=0&ui_settings=0&ui_inspector=0&ui_vr=0&ui_ar=0&ui_fullscreen=0&ui_loading=0&ui_start=0",
+      "accepted": {
+        "uiWatermark": true,
+        "uiHint": 1,
+        "uiControls": true,
+        "uiGeneralControls": true,
+        "uiHelp": true,
+        "uiSettings": true,
+        "uiInspector": true,
+        "uiVr": true,
+        "uiFullscreen": true,
+        "dnt": true
+      },
+      "permitsCleanUI": false
+    }
+  }
+}

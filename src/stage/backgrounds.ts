@@ -157,3 +157,11 @@ export function randomBackgroundId(): string {
   const initial=LIBRARY.filter((b)=>LIVE_IDS.includes(b.id));
   return initial[Math.floor(Math.random() * initial.length)].id;
 }
+
+/** This author's embed currently permits a clean Sketchfab landing view.
+ * Keep the native/live opening restricted to the two approved skyboxes. */
+export function initialBackgroundId(): string {
+  const native = new URLSearchParams(location.search).get('backgroundRenderer') === 'three';
+  if (FIDELITY_CATALOG && !native && BACKGROUNDS.some((b) => b.id === 'space')) return 'space';
+  return randomBackgroundId();
+}

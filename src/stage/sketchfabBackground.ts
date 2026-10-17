@@ -2,7 +2,7 @@
 // never enter this frame or its API. Use documented embed options, not DOM hacks.
 import type { BackgroundDef } from './backgrounds';
 import type { BackgroundQuality } from './backgroundQuality';
-import { backgroundViewAt, type BackgroundView } from './backgroundMotion';
+import { BackgroundMotionClock, backgroundViewAt, type BackgroundView } from './backgroundMotion';
 
 const SDK_URL = 'https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js';
 type Callback = (error?: unknown) => void;
@@ -12,6 +12,8 @@ interface ViewerApi {
   addEventListener(event: string, callback: () => void): void;
   setUserInteraction(enabled: boolean, callback?: Callback): void;
   setTextureQuality(quality: 'hd' | 'sd' | 'ld', callback?: Callback): void;
+  setCameraEasing(easing: string): void;
+  setEnableCameraConstraints(enabled: boolean, options: { preventCameraConstraintsFocus: boolean }): void;
   getCameraLookAt(callback: (error: unknown, camera: BackgroundView) => void): void;
   getFov(callback: (error: unknown, fov: number) => void): void;
   setCameraLookAt(position: number[], target: number[], seconds: number, callback?: Callback): void;
@@ -67,8 +69,12 @@ interface Viewer {
   api?: ViewerApi;
   def: BackgroundDef;
   camera?: BackgroundView;
-  elapsed: number;
-  cameraPending: boolean;
+  clock: BackgroundMotionClock;
+  commands: number;
+  acknowledgements: number;
+  requestedCamera?: BackgroundView;
+  observedCamera?: BackgroundView;
+  cameraError: string | null;
   screenshotPending?: Promise<HTMLImageElement | null>;
   screenshot?: HTMLImageElement;
   cancel(): void;
@@ -80,6 +86,8 @@ export class SketchfabBackground {
   private pending?: Viewer;
   private token = 0;
   private visible = true;
+  private playing = false;
+  private cameraTimer?: number;
   private quality: BackgroundQuality = 'maximum';
   private visibility = () => this.updateVisibility();
 
@@ -93,6 +101,16 @@ export class SketchfabBackground {
   }
 
   get active(): boolean { return !!this.current; }
+
+  get motionStatus(): unknown {
+    const viewer = this.current;
+    return viewer ? {
+      id: viewer.def.id, running: this.playing,
+      seconds: viewer.clock.seconds(performance.now()),
+      commands: viewer.commands, acknowledgements: viewer.acknowledgements,
+      lastError: viewer.cameraError, requested: viewer.requestedCamera, observed: viewer.observedCamera,
+    } : null;
+  }
 
   async load(def: BackgroundDef): Promise<boolean> {
     const token = ++this.token;
@@ -118,7 +136,10 @@ export class SketchfabBackground {
     embed.referrerPolicy = frame.referrerPolicy;
     controller.body.append(embed);
     const abort = new AbortController();
-    const viewer: Viewer = { frame, def, elapsed: 0, cameraPending: false, cancel: () => abort.abort() };
+    const viewer: Viewer = {
+      frame, def, clock: new BackgroundMotionClock(), commands: 0, acknowledgements: 0,
+      cameraError: null, cancel: () => abort.abort(),
+    };
     this.pending = viewer;
     try {
       const Constructor = await loadSdk(frame, abort.signal);
@@ -138,10 +159,13 @@ export class SketchfabBackground {
             if (token !== this.token) { api.stop(); finish(undefined, true); return; }
             viewer.api = api;
             api.addEventListener('viewerready', () => {
+              if (finished) return;
               if (token !== this.token) { finish(undefined, true); return; }
               try {
                 api.setUserInteraction(false);
                 api.setTextureQuality(this.textureQuality());
+                api.setCameraEasing('easeLinear');
+                api.setEnableCameraConstraints(false, { preventCameraConstraintsFocus: true });
                 api.getCameraLookAt((error, camera) => {
                   if (error) { finish(error); return; }
                   if (!camera || ![camera.position, camera.target].every((v) => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite))) {
@@ -161,6 +185,7 @@ export class SketchfabBackground {
         });
       });
       if (!ready || token !== this.token) { this.release(viewer); return false; }
+      this.pauseCamera();
       this.release(this.current);
       this.current = viewer; this.pending = undefined;
       frame.style.opacity = '1';
@@ -182,14 +207,39 @@ export class SketchfabBackground {
     return this.quality === 'maximum' ? 'hd' : this.quality === 'balanced' ? 'sd' : 'ld';
   }
 
-  tick(dt: number): void {
+  private driveCamera = (): void => {
     const viewer = this.current;
-    if (!viewer?.api || !viewer.camera || !this.visible || document.hidden) return;
-    viewer.elapsed += dt;
-    if (!viewer.def.drift || viewer.cameraPending) return;
-    const camera = backgroundViewAt(viewer.camera, viewer.def.drift, viewer.elapsed);
-    viewer.cameraPending = true;
-    viewer.api.setCameraLookAt(camera.position, camera.target, 0, () => { viewer.cameraPending = false; });
+    if (!viewer?.api || !viewer.camera || !viewer.def.drift || !this.playing) return;
+    // Let the viewer interpolate on its own animation loop. Sending an update
+    // once per second avoids tying camera motion to expensive avatar frames.
+    // Schedule before calling the API: a missing reply must never stop motion.
+    const duration = 1.4;
+    const camera = backgroundViewAt(viewer.camera, viewer.def.drift,
+      viewer.clock.seconds(performance.now()) + duration, [0, 0, 1], viewer.def.parts.some((part) => part.sky));
+    viewer.requestedCamera = camera;
+    viewer.commands++;
+    this.cameraTimer = window.setTimeout(this.driveCamera, 1000);
+    try {
+      viewer.api.setCameraLookAt(camera.position, camera.target, duration, (error) => {
+        if (this.current !== viewer) return;
+        viewer.acknowledgements++;
+        viewer.cameraError = error ? String(error) : null;
+        if (error) console.warn('Background camera update failed', error);
+      });
+      if (viewer.commands % 2 === 0) viewer.api.getCameraLookAt((error, observed) => {
+        if (!error && this.current === viewer) viewer.observedCamera = observed;
+      });
+    } catch (error) {
+      viewer.cameraError = String(error);
+      console.warn('Background camera update failed', error);
+    }
+  };
+
+  private pauseCamera(): void {
+    window.clearTimeout(this.cameraTimer);
+    this.cameraTimer = undefined;
+    this.current?.clock.pause(performance.now());
+    this.playing = false;
   }
 
   setVisible(visible: boolean): void { this.visible = visible; this.updateVisibility(); }
@@ -197,7 +247,15 @@ export class SketchfabBackground {
   private updateVisibility(): void {
     const show = this.visible && !document.hidden;
     this.host.hidden = !show;
-    if (show) this.current?.api?.start(); else this.current?.api?.stop();
+    if (show && this.current?.api && !this.playing) {
+      this.current.api.start();
+      this.playing = true;
+      this.current.clock.resume(performance.now());
+      this.driveCamera();
+    } else if (!show) {
+      this.pauseCamera();
+      this.current?.api?.stop();
+    }
   }
 
   /** Official screenshot API keeps cross-origin frames out of canvas drawing.
@@ -236,6 +294,7 @@ export class SketchfabBackground {
 
   clear(): void {
     ++this.token;
+    this.pauseCamera();
     this.release(this.pending); this.release(this.current);
     this.pending = this.current = undefined;
     window.dispatchEvent(new CustomEvent('bodyarcade-external-background', { detail: { active: false } }));

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BackgroundRenderer } from '../stage/backgroundRenderer';
 import { LIBRARY, type BackgroundDef } from '../stage/backgrounds';
 import { isBackgroundQuality } from '../stage/backgroundQuality';
+import { backgroundViewAt, type BackgroundView } from '../stage/backgroundMotion';
 
 if (!import.meta.env.DEV) throw new Error('The renderer lab is development-only');
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -35,9 +36,16 @@ const captureScale=Math.min(4,Math.max(1,Number(params.get('scale'))||1));
 if (params.has('scene')) select.value = params.get('scene')!;
 if (params.has('label')) $<HTMLInputElement>('label').value = params.get('label')!;
 if (params.has('viewport')) $<HTMLSelectElement>('viewport').value = params.get('viewport')!;
-function draw(dt = 0) {
+let motionView: BackgroundView | null = null;
+function draw(dt = 0, cameraSeconds?: number) {
   const frame=renderer.info.render.frame;
-  background.render(dt, () => false);
+  background.render(dt, (position, target) => {
+    if (cameraSeconds === undefined || !active?.drift) return false;
+    motionView = backgroundViewAt({position:position.toArray(),target:target.toArray(),fov:background.camera.fov},
+      active.drift, cameraSeconds, [0,1,0], active.parts.some((part) => part.sky));
+    position.fromArray(motionView.position); target.fromArray(motionView.target);
+    return true;
+  });
   const backgroundRedrawn=renderer.info.render.frame!==frame;
   renderer.setRenderTarget(null);
   quadMaterial.uniforms.map.value = background.texture;
@@ -70,7 +78,7 @@ function report(extra: Record<string, unknown> = {}) {
   });
   const gl = renderer.getContext(); const debug = gl.getExtension('WEBGL_debug_renderer_info');
   const data = { id: active.id, configuration:background.configuration,quality:requestedQuality??'maximum',viewport: [w, h],renderResolution:[canvas.width,canvas.height],captureScale, gpu: debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER), hdrSupported: background.hdrSupported, camera: { position: pos.toArray(),
-    target: background.baseView.target.toArray(), up: background.camera.up.toArray(), fov: background.camera.fov },
+    target: motionView?.target ?? background.baseView.target.toArray(), up: background.camera.up.toArray(), fov: background.camera.fov },
     environment:background.scene.environment?{...background.scene.environment.userData,intensity:background.scene.environmentIntensity,rotation:background.scene.environmentRotation.toArray()}:null,
     memory: { ...renderer.info.memory }, materials, shaderErrors: [...shaderErrors], loadAndFirstFrameMs,...extra };
   $('status').textContent = JSON.stringify(data, null, 2);
@@ -85,6 +93,7 @@ async function render() {
   const def = LIBRARY.find((d) => d.id === select.value)!;
   const patch = JSON.parse(params.get('patch') ?? '{}');
   active = { ...def, parts: def.parts.map((part) => ({ ...part, ...patch })) };
+  motionView = null;
   const start = performance.now();
   await background.load(active);
   draw();

@@ -1,7 +1,42 @@
 {
   "fixture": true,
-  "softwareGpu": true,
+  "built": false,
+  "requestedSoftwareRenderer": true,
   "errors": [],
+  "motion": {
+    "id": "galaxy",
+    "running": true,
+    "seconds": 3.878100000000093,
+    "commands": 4,
+    "acknowledgements": 0,
+    "lastError": null,
+    "requested": {
+      "position": [
+        3,
+        -5,
+        2
+      ],
+      "target": [
+        -0.3185077726259453,
+        -0.17525813271850854,
+        0.07402697912917633
+      ],
+      "fov": 45
+    },
+    "observed": {
+      "position": [
+        3,
+        -5,
+        2
+      ],
+      "target": [
+        -0.3185077726259453,
+        -0.17525813271850854,
+        0.07402697912917633
+      ],
+      "duration": 1.4
+    }
+  },
   "export": {
     "pixel": [
       16,
@@ -18,7 +53,7 @@
     "readyState": 4
   },
   "recording": {
-    "size": 26884,
+    "size": 24743,
     "type": "video/webm;codecs=vp9"
   },
   "selected": [
@@ -31,10 +66,11 @@
     "gallery",
     "galaxy"
   ],
-  "controlsHidden": true,
+  "controlsRequestedHidden": true,
   "inputDisabled": true,
   "cameraMovesAutonomously": true,
   "race": "latest selection wins",
   "games": "Flight and Rowing suspend the viewer",
-  "fallback": "three"
+  "fallback": "three",
+  "initialScene": "space"
 }

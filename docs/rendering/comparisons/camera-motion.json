@@ -1,0 +1,36 @@
+{
+  "image": "docs/rendering/comparisons/camera-motion.jpg",
+  "interpretation": "Difference measures camera movement, not fidelity",
+  "metrics": [
+    {
+      "scene": "galaxy",
+      "seconds": 5,
+      "meanPixelDifference": 11.840458333333332
+    },
+    {
+      "scene": "galaxy",
+      "seconds": 15,
+      "meanPixelDifference": 15.961449652777778
+    },
+    {
+      "scene": "nebula",
+      "seconds": 5,
+      "meanPixelDifference": 22.23707233796296
+    },
+    {
+      "scene": "nebula",
+      "seconds": 15,
+      "meanPixelDifference": 28.306117476851853
+    },
+    {
+      "scene": "space",
+      "seconds": 5,
+      "meanPixelDifference": 9.348392361111111
+    },
+    {
+      "scene": "space",
+      "seconds": 15,
+      "meanPixelDifference": 10.743859953703705
+    }
+  ]
+}

@@ -29,7 +29,7 @@ import { openFlight, defaultFlightUrl, activeExperience } from './bodyinput/flig
 import { glassifyAll, watchGlass, upgradeControls } from '@bodyarcade/glass';
 import { createLink } from './ui/link';
 import { asset } from './base';
-import { BACKGROUNDS, backgroundById, randomBackgroundId } from './stage/backgrounds';
+import { BACKGROUNDS, backgroundById, initialBackgroundId } from './stage/backgrounds';
 import { createBackgroundPicker } from './ui/backgroundPicker';
 import { createDirector } from './director/director';
 import { TAKE_SCRIPTS } from './director/scripts';
@@ -232,7 +232,7 @@ async function boot() {
   const bgParam = params.get('bg');
   const backgrounds = createBackgroundPicker(
     stage,
-    bgParam && backgroundById(bgParam) ? bgParam : randomBackgroundId(),
+    bgParam && backgroundById(bgParam) ? bgParam : initialBackgroundId(),
   );
   onConfigChange((key) => {
     if (key === 'theme') stage.setTheme(config.theme);

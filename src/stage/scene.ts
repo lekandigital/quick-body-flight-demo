@@ -40,6 +40,7 @@ export interface Stage {
   setBackgroundQuality(quality: BackgroundQuality): void;
   backgroundQuality(): BackgroundQuality;
   backgroundEngine(): 'three' | 'sketchfab';
+  backgroundMotion(): unknown;
   /** Local export compositing; cross-origin backgrounds use their screenshot API. */
   drawTo(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number): void;
   capture(): Promise<HTMLCanvasElement>;
@@ -272,7 +273,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
    *  still space scenes; returns false when there's nothing to move */
   function drift(pos: THREE.Vector3, target: THREE.Vector3): boolean {
     if (!bgDef?.drift || pip) return false;
-    const view = backgroundViewAt({position:pos.toArray(),target:target.toArray(),fov:bgRenderer.camera.fov}, bgDef.drift, bgElapsed, [0,1,0]);
+    const view = backgroundViewAt({position:pos.toArray(),target:target.toArray(),fov:bgRenderer.camera.fov}, bgDef.drift, bgElapsed, [0,1,0], bgDef.parts.some((part) => part.sky));
     pos.fromArray(view.position); target.fromArray(view.target);
     return true;
   }
@@ -316,7 +317,8 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       requestAnimationFrame(loop);
       return;
     }
-    const dt = Math.min((now - last) / 1000, 0.1);
+    const elapsed = (now - last) / 1000;
+    const dt = Math.min(elapsed, 0.1);
     last = now;
     if (suspended) {
       requestAnimationFrame(loop);
@@ -330,13 +332,12 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
       fpsCount = 0;
     }
     for (const cb of tickCbs) cb(dt, now);
-    renderFrame(dt);
+    renderFrame(dt, document.hidden ? 0 : elapsed);
     requestAnimationFrame(loop);
   }
 
-  function renderFrame(dt: number): void {
-    if (bgDef && !pip) bgElapsed += dt;
-    if (externalActive && !pip) externalBackground?.tick(dt);
+  function renderFrame(dt: number, cameraElapsed = dt): void {
+    if (bgDef && !pip) bgElapsed += cameraElapsed;
     if (bgDef && !pip && !externalActive && bgRenderer.active) {
       bgRenderer.render(dt, drift);
       quadMat.uniforms.map.value = bgRenderer.texture;
@@ -415,6 +416,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     backgroundId: () => bgDef?.id ?? null,
     backgroundQuality: () => quality,
     backgroundEngine: () => externalActive ? 'sketchfab' : 'three',
+    backgroundMotion: () => externalBackground?.motionStatus ?? null,
     drawTo(context, x, y, width, height) {
       if (externalActive && !pip) externalBackground?.drawCaptured(context, x, y, width, height);
       context.drawImage(canvas, x, y, width, height);

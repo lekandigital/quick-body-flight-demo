@@ -1,0 +1,698 @@
+{
+  "engine": "Three.js native fallback",
+  "hostedSketchfabVerified": false,
+  "requestedSoftwareRenderer": true,
+  "captures": [
+    {
+      "file": "camera-motion-galaxy-0s.png",
+      "id": "galaxy",
+      "configuration": [
+        {
+          "file": "galaxy.glb",
+          "sky": true
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          -0.3090983692835508,
+          0.7119659192949861,
+          -0.0025087785878725923
+        ],
+        "target": [
+          4.172325134277344e-7,
+          4.172325134277344e-7,
+          -5.960464477539062e-7
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "environment": {
+        "intensity": 0.30000000000000004,
+        "rotation": [
+          0,
+          0,
+          0,
+          "XYZ"
+        ]
+      },
+      "memory": {
+        "geometries": 12,
+        "textures": 7
+      },
+      "materials": [
+        {
+          "name": "material",
+          "type": "MeshStandardMaterial",
+          "opacity": 1,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 1,
+          "metalness": 1,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 2048,
+            "height": 2048,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 260.4000000000233,
+      "cameraSeconds": 0
+    },
+    {
+      "file": "camera-motion-galaxy-5s.png",
+      "id": "galaxy",
+      "configuration": [
+        {
+          "file": "galaxy.glb",
+          "sky": true
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          -0.3090983692835508,
+          0.7119659192949861,
+          -0.0025087785878725923
+        ],
+        "target": [
+          0.008207371394699958,
+          0.0048591738326730916,
+          -0.04446523681250881
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "environment": {
+        "intensity": 0.30000000000000004,
+        "rotation": [
+          0,
+          0,
+          0,
+          "XYZ"
+        ]
+      },
+      "memory": {
+        "geometries": 12,
+        "textures": 7
+      },
+      "materials": [
+        {
+          "name": "material",
+          "type": "MeshStandardMaterial",
+          "opacity": 1,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 1,
+          "metalness": 1,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 2048,
+            "height": 2048,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 260.4000000000233,
+      "cameraSeconds": 5
+    },
+    {
+      "file": "camera-motion-galaxy-15s.png",
+      "id": "galaxy",
+      "configuration": [
+        {
+          "file": "galaxy.glb",
+          "sky": true
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          -0.3090983692835508,
+          0.7119659192949861,
+          -0.0025087785878725923
+        ],
+        "target": [
+          0.015353533214552517,
+          0.01466033943057865,
+          -0.1070990180357153
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "environment": {
+        "intensity": 0.30000000000000004,
+        "rotation": [
+          0,
+          0,
+          0,
+          "XYZ"
+        ]
+      },
+      "memory": {
+        "geometries": 12,
+        "textures": 7
+      },
+      "materials": [
+        {
+          "name": "material",
+          "type": "MeshStandardMaterial",
+          "opacity": 1,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 1,
+          "metalness": 1,
+          "emissiveIntensity": 1,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 2048,
+            "height": 2048,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 260.4000000000233,
+      "cameraSeconds": 15
+    },
+    {
+      "file": "camera-motion-nebula-0s.png",
+      "id": "nebula",
+      "configuration": [
+        {
+          "file": "nebula.glb",
+          "sky": true
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          -21.918694623886978,
+          0.5436967240485917,
+          -2.892704352003957
+        ],
+        "target": [
+          0.00003417968749985789,
+          -0.00003662109375213163,
+          0.00006591796874744205
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "environment": null,
+      "memory": {
+        "geometries": 4,
+        "textures": 4
+      },
+      "materials": [
+        {
+          "name": "Material",
+          "type": "MeshStandardMaterial",
+          "opacity": 0.8335263497945898,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "emissiveIntensity": 2.118101693262303,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 1024,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        },
+        {
+          "name": "Material",
+          "type": "MeshStandardMaterial",
+          "opacity": 0.8335263497945898,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "emissiveIntensity": 2.118101693262303,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 1024,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 122.70000000006985,
+      "cameraSeconds": 0
+    },
+    {
+      "file": "camera-motion-nebula-5s.png",
+      "id": "nebula",
+      "configuration": [
+        {
+          "file": "nebula.glb",
+          "sky": true
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          -21.918694623886978,
+          0.5436967240485917,
+          -2.892704352003957
+        ],
+        "target": [
+          0.1347663455397452,
+          0.2610118150311753,
+          -1.2619417505536297
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "environment": null,
+      "memory": {
+        "geometries": 4,
+        "textures": 4
+      },
+      "materials": [
+        {
+          "name": "Material",
+          "type": "MeshStandardMaterial",
+          "opacity": 0.8335263497945898,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "emissiveIntensity": 2.118101693262303,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 1024,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        },
+        {
+          "name": "Material",
+          "type": "MeshStandardMaterial",
+          "opacity": 0.8335263497945898,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "emissiveIntensity": 2.118101693262303,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 1024,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 122.70000000006985,
+      "cameraSeconds": 5
+    },
+    {
+      "file": "camera-motion-nebula-15s.png",
+      "id": "nebula",
+      "configuration": [
+        {
+          "file": "nebula.glb",
+          "sky": true
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          -21.918694623886978,
+          0.5436967240485917,
+          -2.892704352003957
+        ],
+        "target": [
+          0.1961845533501574,
+          0.5500715651219428,
+          -3.055543191682133
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 45
+      },
+      "environment": null,
+      "memory": {
+        "geometries": 4,
+        "textures": 4
+      },
+      "materials": [
+        {
+          "name": "Material",
+          "type": "MeshStandardMaterial",
+          "opacity": 0.8335263497945898,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "emissiveIntensity": 2.118101693262303,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 1024,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        },
+        {
+          "name": "Material",
+          "type": "MeshStandardMaterial",
+          "opacity": 0.8335263497945898,
+          "depthWrite": false,
+          "side": 2,
+          "roughness": 0,
+          "metalness": 0,
+          "emissiveIntensity": 2.118101693262303,
+          "normalScale": [
+            1,
+            -1
+          ],
+          "emissiveTexture": {
+            "width": 1024,
+            "height": 512,
+            "type": 1009,
+            "colorSpace": "srgb"
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 122.70000000006985,
+      "cameraSeconds": 15
+    },
+    {
+      "file": "camera-motion-space-0s.png",
+      "id": "space",
+      "configuration": [
+        {
+          "file": "space.glb",
+          "spin": 0.01,
+          "bloomThreshold": 0
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          1.0174579248398166,
+          2.027580277807106,
+          -1.4223919090520416
+        ],
+        "target": [
+          1.471854549334694,
+          1.3397235401344074,
+          -1.4785699995975425
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 105.3448275862
+      },
+      "environment": null,
+      "memory": {
+        "geometries": 3,
+        "textures": 14
+      },
+      "materials": [
+        {
+          "name": "",
+          "type": "PointsMaterial",
+          "opacity": 1,
+          "depthWrite": false,
+          "side": 0,
+          "baseTexture": {
+            "width": 64,
+            "height": 64
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 146.80000000004657,
+      "cameraSeconds": 0
+    },
+    {
+      "file": "camera-motion-space-5s.png",
+      "id": "space",
+      "configuration": [
+        {
+          "file": "space.glb",
+          "spin": 0.01,
+          "bloomThreshold": 0
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          1.031145773761729,
+          2.008125072514545,
+          -1.417599929503893
+        ],
+        "target": [
+          1.471854549334694,
+          1.3397235401344074,
+          -1.4785699995975425
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 105.3448275862
+      },
+      "environment": null,
+      "memory": {
+        "geometries": 3,
+        "textures": 14
+      },
+      "materials": [
+        {
+          "name": "",
+          "type": "PointsMaterial",
+          "opacity": 1,
+          "depthWrite": false,
+          "side": 0,
+          "baseTexture": {
+            "width": 64,
+            "height": 64
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 146.80000000004657,
+      "cameraSeconds": 5
+    },
+    {
+      "file": "camera-motion-space-15s.png",
+      "id": "space",
+      "configuration": [
+        {
+          "file": "space.glb",
+          "spin": 0.01,
+          "bloomThreshold": 0
+        }
+      ],
+      "quality": "maximum",
+      "viewport": [
+        960,
+        600
+      ],
+      "renderResolution": [
+        960,
+        600
+      ],
+      "captureScale": 1,
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "hdrSupported": true,
+      "camera": {
+        "position": [
+          1.0468654776366693,
+          1.98650760663888,
+          -1.4098004943606606
+        ],
+        "target": [
+          1.471854549334694,
+          1.3397235401344074,
+          -1.4785699995975425
+        ],
+        "up": [
+          0,
+          1,
+          2.220446049250313e-16
+        ],
+        "fov": 105.3448275862
+      },
+      "environment": null,
+      "memory": {
+        "geometries": 3,
+        "textures": 14
+      },
+      "materials": [
+        {
+          "name": "",
+          "type": "PointsMaterial",
+          "opacity": 1,
+          "depthWrite": false,
+          "side": 0,
+          "baseTexture": {
+            "width": 64,
+            "height": 64
+          }
+        }
+      ],
+      "shaderErrors": [],
+      "loadAndFirstFrameMs": 146.80000000004657,
+      "cameraSeconds": 15
+    }
+  ],
+  "errors": []
+}

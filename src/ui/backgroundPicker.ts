@@ -106,6 +106,7 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
     api,
     defs: BACKGROUNDS,
     engine: () => stage.backgroundEngine(),
+    motion: () => stage.backgroundMotion(),
     capture: () => stage.capture(),
     tune(id: string, patch: Partial<(typeof BACKGROUNDS)[number]>) {
       const def = backgroundById(id);

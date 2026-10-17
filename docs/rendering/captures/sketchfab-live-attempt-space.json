@@ -1,0 +1,19 @@
+{
+  "fixture": false,
+  "built": false,
+  "requestedSoftwareRenderer": true,
+  "errors": [],
+  "telemetryPolicy": "Only model/API/CDN resources allowed; telemetry and external sockets blocked",
+  "blockedOrigins": {
+    "https://sentry.io": 2
+  },
+  "engine": "three",
+  "scene": "space",
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "viewerText": [
+    "Need some space?\n\nModel is too heavy for your device and can not be rendered properly",
+    "Need some space?\n\nModel is too heavy for your device and can not be rendered properly\n\nclick & hold\nto rotate"
+  ],
+  "realViewerVerified": false,
+  "limit": "Real viewer did not become ready; local Three.js fallback rendered. Hardware verification remains required."
+}
