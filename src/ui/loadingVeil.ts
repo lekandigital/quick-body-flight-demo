@@ -3,18 +3,22 @@
 // flight. main.ts staggers the work behind it (the scene starts once the
 // tracker is in), so the first seconds aren't a fight for bandwidth and GPU.
 //
-// Like a device powering on: the wordmark above, then one small glass pill
-// per part with a single status light (grey waiting, amber working, green
-// ready, red failed), and the progress in its own glass bar.
+// In the settings panel's style: the wordmark above; a glass card with a
+// vertical list — one row per part, its status light on the left (grey
+// waiting, amber working, green ready, red failed), flat text — where the
+// sliding glass selector (ui/selector.ts) rests on the part loading now and
+// moves down as each comes in; the progress in its own glass bar below.
+
+import { createSelector } from './selector';
 
 export type LoadStep = 'camera' | 'tracking' | 'avatar' | 'scene';
 type StepState = 'waiting' | 'working' | 'done' | 'failed';
 
-const STEPS: Array<[LoadStep, string]> = [
-  ['camera', 'Camera'],
-  ['tracking', 'Tracking'],
-  ['avatar', 'Avatar'],
-  ['scene', 'Scene'],
+const STEPS: Array<[LoadStep, string, string]> = [
+  ['camera', 'Camera', 'waiting for the camera'],
+  ['tracking', 'Body tracking', 'the pose model'],
+  ['avatar', 'Avatar', 'your 3D model'],
+  ['scene', 'Scene', 'the 3D background'],
 ];
 
 export interface LoadingVeil {
@@ -33,54 +37,71 @@ export function createLoadingVeil(): LoadingVeil {
   const logo = document.createElement('div');
   logo.className = 'loading-logo';
   logo.textContent = 'bodyarcade';
-  const lights = document.createElement('div');
-  lights.className = 'loading-lights';
-  const pills = new Map<LoadStep, HTMLElement>();
-  for (const [id, label] of STEPS) {
-    const pill = document.createElement('div');
-    pill.className = 'loading-light';
-    pill.dataset.glass = 'navButton';
-    pill.dataset.state = 'waiting';
-    pill.innerHTML = `<span class="loading-dot" aria-hidden="true"></span><span>${label}</span>`;
-    lights.append(pill);
-    pills.set(id, pill);
+
+  const card = document.createElement('div');
+  card.className = 'loading-card';
+  card.dataset.glass = 'panel';
+  const hdr = document.createElement('div');
+  hdr.className = 'rail-hdr';
+  const count = document.createElement('span');
+  count.className = 'rail-val';
+  hdr.innerHTML = '<span>Starting up</span>';
+  hdr.append(count);
+  const list = document.createElement('div');
+  list.className = 'cards loading-rows';
+  const rows = new Map<LoadStep, { row: HTMLElement; note: HTMLElement; base: string }>();
+  for (const [id, label, base] of STEPS) {
+    const row = document.createElement('div');
+    row.className = 'card loading-row';
+    row.dataset.state = 'waiting';
+    row.innerHTML = `<div class="preview"><span class="loading-dot" aria-hidden="true"></span></div><div class="nm">${label}</div>`;
+    const note = document.createElement('div');
+    note.className = 'card-note';
+    note.textContent = base;
+    row.append(note);
+    list.append(row);
+    rows.set(id, { row, note, base });
   }
+  card.append(hdr, list);
+
   const track = document.createElement('div');
   track.className = 'loading-track';
   track.dataset.glass = 'bar';
   const fill = document.createElement('span');
   fill.className = 'loading-fill';
   track.append(fill);
-  const detail = document.createElement('div');
-  detail.className = 'loading-detail';
-  stack.append(logo, lights, track, detail);
+
+  stack.append(logo, card, track);
   veil.append(stack);
   document.body.append(veil);
   document.body.classList.add('loading');
+  createSelector(list, '.card');
 
   let finished = false;
-  function progress(): void {
-    const states = [...pills.values()].map((p) => p.dataset.state);
-    const settled = states.filter((s) => s === 'done' || s === 'failed').length;
-    fill.style.width = `${Math.max(6, (settled / STEPS.length) * 100)}%`;
+  /** the selector rests on the part loading now (else the next to come) */
+  function sync(): void {
+    const all = [...rows.values()];
+    const settled = all.filter(({ row }) => row.dataset.state === 'done' || row.dataset.state === 'failed').length;
+    count.textContent = `${settled}/${all.length}`;
+    fill.style.width = `${Math.max(6, (settled / all.length) * 100)}%`;
+    const current =
+      all.find(({ row }) => row.dataset.state === 'working') ?? all.find(({ row }) => row.dataset.state === 'waiting') ?? all[all.length - 1];
+    for (const { row } of all) row.classList.toggle('on', row === current.row);
   }
-  progress();
+  sync();
 
   const api: LoadingVeil = {
-    step(step, state, text = '') {
-      const pill = pills.get(step);
-      if (!pill) return;
-      pill.dataset.state = state;
-      pill.title = text;
-      if (state === 'working' || state === 'failed') detail.textContent = text;
-      else if (!document.querySelector('.loading-light[data-state="working"]')) detail.textContent = '';
-      progress();
+    step(step, state, detail) {
+      const r = rows.get(step);
+      if (!r) return;
+      r.row.dataset.state = state;
+      r.note.textContent = state === 'done' ? 'ready' : detail || r.base;
+      sync();
     },
     done() {
       if (finished) return;
       finished = true;
       fill.style.width = '100%';
-      detail.textContent = '';
       document.body.classList.remove('loading');
       veil.classList.add('gone');
       setTimeout(() => veil.remove(), 900);

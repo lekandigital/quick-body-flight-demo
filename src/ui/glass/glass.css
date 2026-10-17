@@ -674,35 +674,36 @@ body.glass-simple .glass > .glass-plate {
   border: 1px solid var(--glass-hair, rgba(255, 255, 255, 0.55));
 }
 
-/* the loading screen (src/ui/loadingVeil.ts): like a device powering on —
-   the wordmark, one nav-button glass pill per part with a single status
-   light, and the progress in its own bottom-bar glass */
+/* the loading screen (src/ui/loadingVeil.ts): the settings panel's style —
+   the wordmark, a panel-glass card listing each part with its status light
+   on the left and the sliding selector on the part loading now, and the
+   progress in its own bottom-bar glass. Its own dark tokens: the page's tone
+   isn't known yet. */
 .loading-veil {
   position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
   background: radial-gradient(120% 90% at 50% 40%, #1b2a44 0%, #0b0f18 60%, #07090f 100%);
   transition: opacity 0.8s ease, visibility 0s 0.8s;
+  --ink: #eef2f6; --ink-2: rgba(238, 242, 246, 0.72); --ink-3: rgba(238, 242, 246, 0.46);
+  --glass-ink-2: rgba(238, 242, 246, 0.6); --glass-hair: rgba(255, 255, 255, 0.16);
+  --panel-fill: rgba(12, 14, 20, 0.5); --glass-fill-hover: rgba(255, 255, 255, 0.13);
+  --rule: transparent; --rule-2: transparent;
 }
 .loading-veil.gone { opacity: 0; visibility: hidden; pointer-events: none; }
-.loading-stack { display: flex; flex-direction: column; align-items: center; gap: 18px; width: min(460px, calc(100vw - 32px)); }
-.loading-logo { font-family: var(--font-sans); font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: #f4f6fa; text-shadow: 0 2px 24px rgba(127, 211, 255, 0.18); }
-.loading-lights { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.loading-light {
-  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px 0 12px; border-radius: 18px;
-  font-family: var(--font-sans); font-size: 13px; font-weight: 600; color: rgba(238, 242, 246, 0.55);
-  --glass-fill: rgba(255, 255, 255, 0.06); --glass-fill-hover: rgba(255, 255, 255, 0.1);
-  transition: color 0.3s;
-}
-.loading-light[data-state="working"], .loading-light[data-state="done"] { color: #eef2f6; }
+.loading-stack { display: flex; flex-direction: column; align-items: stretch; gap: 14px; width: min(340px, calc(100vw - 32px)); }
+.loading-logo { align-self: center; margin-bottom: 6px; font-family: var(--font-sans); font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: #f4f6fa; text-shadow: 0 2px 24px rgba(127, 211, 255, 0.18); }
+.loading-card { padding: 18px 14px 12px; border-radius: 28px; --glass-fill: var(--panel-fill); }
+.loading-card .rail-hdr { padding: 0 6px 10px; }
+.glass-ui .loading-rows .card { cursor: default; }
+.glass-ui .loading-rows .card .preview { display: grid; place-items: center; height: 22px; }
 /* the status light: an LED behind its own lens */
-.loading-dot { width: 8px; height: 8px; border-radius: 50%; background: #5d6170; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25); transition: background-color 0.3s, box-shadow 0.3s; }
-.loading-light[data-state="working"] .loading-dot { background: #e0b341; box-shadow: 0 0 6px 1px #e0b34199, inset 0 1px 1px rgba(255, 255, 255, 0.4); animation: loading-pulse 1.2s ease-in-out infinite; }
-.loading-light[data-state="done"] .loading-dot { background: #3bbf4e; box-shadow: 0 0 8px 1px #3bbf4eaa, inset 0 1px 1px rgba(255, 255, 255, 0.45); }
-.loading-light[data-state="failed"] .loading-dot { background: #e5484d; box-shadow: 0 0 8px 1px #e5484d99, inset 0 1px 1px rgba(255, 255, 255, 0.4); }
+.loading-dot { width: 9px; height: 9px; border-radius: 50%; background: #5d6170; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25); transition: background-color 0.3s, box-shadow 0.3s; }
+.loading-row[data-state="working"] .loading-dot { background: #e0b341; box-shadow: 0 0 6px 1px #e0b34199, inset 0 1px 1px rgba(255, 255, 255, 0.4); animation: loading-pulse 1.2s ease-in-out infinite; }
+.loading-row[data-state="done"] .loading-dot { background: #3bbf4e; box-shadow: 0 0 8px 1px #3bbf4eaa, inset 0 1px 1px rgba(255, 255, 255, 0.45); }
+.loading-row[data-state="failed"] .loading-dot { background: #e5484d; box-shadow: 0 0 8px 1px #e5484d99, inset 0 1px 1px rgba(255, 255, 255, 0.4); }
 @keyframes loading-pulse { 50% { opacity: 0.45; } }
-.loading-track { position: relative; width: min(340px, 100%); height: 18px; border-radius: 9px; padding: 7px 9px; --glass-fill: rgba(255, 255, 255, 0.05); }
+.loading-track { position: relative; height: 18px; border-radius: 9px; padding: 7px 9px; --glass-fill: rgba(255, 255, 255, 0.05); }
 .loading-fill { display: block; height: 4px; width: 6%; border-radius: 2px; background: linear-gradient(90deg, #7fd3ff, #3bbf4e); box-shadow: 0 0 10px #3bbf4e66; transition: width 0.5s ease; }
-.loading-detail { min-height: 14px; font-family: var(--font-mono); font-size: 11px; color: rgba(238, 242, 246, 0.45); }
-@media (prefers-reduced-motion: reduce) { .loading-light[data-state="working"] .loading-dot { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .loading-row[data-state="working"] .loading-dot { animation: none; } }
 .glass-ui #ppc-states { gap: 4px; max-width: 190px; }
 /* [D] form demo field, light context: rounded-[20px] border bg-transparent text-sm */
 .glass-ui .gfield { border-radius: 14px; border: 1px solid var(--glass-hair); }

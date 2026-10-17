@@ -18,7 +18,7 @@ type Callback = (error?: unknown) => void;
 interface ViewerApi {
   start(callback?: Callback): void;
   stop(callback?: Callback): void;
-  addEventListener(event: string, callback: () => void): void;
+  addEventListener(event: string, callback: (...args: any[]) => void): void;
   setUserInteraction(enabled: boolean, callback?: Callback): void;
   setTextureQuality(quality: 'hd' | 'sd' | 'ld', callback?: Callback): void;
   setCameraEasing(easing: string): void;
@@ -193,6 +193,7 @@ export class SketchfabBackground {
       cameraError: null, cancel: () => abort.abort(),
     };
     this.pending = viewer;
+    const loaded = { model: false, textures: false, textureSeen: 0 };
     try {
       const Constructor = await loadSdk(frame, abort.signal);
       if (token !== this.token) { this.release(viewer); return false; }
@@ -210,6 +211,13 @@ export class SketchfabBackground {
           success: (api) => {
             if (token !== this.token) { api.stop(); finish(undefined, true); return; }
             viewer.api = api;
+            // Sketchfab's "ready" can come while the model and its textures still
+            // stream in (its own "Loading 3D model" screen): track both
+            api.addEventListener('modelLoadProgress', (e?: { progress?: number }) => { if ((e?.progress ?? 0) >= 1) loaded.model = true; });
+            api.addEventListener('textureLoadProgress', (e?: { progress?: number }) => {
+              loaded.textureSeen = performance.now();
+              if ((e?.progress ?? 0) >= 0.999) loaded.textures = true;
+            });
             api.addEventListener('viewerready', () => {
               if (finished) return;
               if (token !== this.token) { finish(undefined, true); return; }
@@ -238,17 +246,34 @@ export class SketchfabBackground {
         });
       });
       if (!ready || token !== this.token) { this.release(viewer); return false; }
-      this.pauseCamera();
-      this.release(this.current);
-      this.current = viewer; this.pending = undefined;
-      this.sentFov = viewer.camera?.fov ?? NaN;
+      // wait until the model and its textures are in (a model without textures
+      // reports none: give it a moment), at most 20 s — the previous scene
+      // keeps playing meanwhile
+      const readyAt = performance.now();
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          const now = performance.now();
+          const quietTextures = loaded.model && now - Math.max(loaded.textureSeen, readyAt) > 1200;
+          if (token !== this.token || loaded.textures || quietTextures || now - readyAt > 20000) resolve();
+          else setTimeout(check, 100);
+        };
+        check();
+      });
+      if (token !== this.token) { this.release(viewer); return false; }
       // open on the loading-screen camera's first pose, not the authored view
       await new Promise<void>((resolve) => {
         const timer = setTimeout(resolve, 1500);
         this.sendCamera(viewer, 0, true, () => { clearTimeout(timer); resolve(); });
       });
-      if (this.current !== viewer) return false;
+      if (token !== this.token) { this.release(viewer); return false; }
+      // cross-fade from the previous scene
+      const previous = this.current;
+      this.pauseCamera();
+      this.current = viewer; this.pending = undefined;
+      this.sentFov = viewer.camera?.fov ?? NaN;
+      frame.style.transition = 'opacity 0.7s ease';
       frame.style.opacity = '1';
+      if (previous) setTimeout(() => this.release(previous), 800);
       this.updateVisibility();
       return true;
     } catch (error) {
