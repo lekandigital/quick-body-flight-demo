@@ -25,6 +25,26 @@ All original/optimized GLB pairs in this archive have matching vertex counts. La
 
 These assets retain the CC BY 4.0 attribution in `ASSETS.md` and on screen. Runtime and source provenance stay separate.
 
+## Accessing all eight backgrounds
+
+The earlier feature build still behaved like production: `?backgrounds=all` worked only in the Vite development server, and the package script removed the six experimental GLBs even from branch previews. This prevented the committed/deployed fidelity branch from exposing its work through the normal picker.
+
+Development now exposes all eight scenes by default. The fidelity branch and ordinary Vercel previews compile the full catalog and package all eight model/settings files. The isolated [fidelity preview](https://bodyarcade-sketchfab-fidelity.vercel.app/bodyarcade) is also recognized when Vercel labels that separate project's deployment `production`. This does not refer to the live BodyArcade project. The live `bodyarcade-flight-fable` branch and the actual production project continue to compile/package only Galaxy and Nebula. Initial random selection still uses those two; the picker exposes the other six for deliberate testing. There is no timed switching.
+
+One shared build policy drives both the UI and asset filter. `background-catalog.json` records the resulting package. `?backgrounds=live` reproduces the two-scene picker during development; `?backgrounds=all` cannot unlock additional scenes in the live production profile. `BODYARCADE_BACKGROUND_CATALOG=live` explicitly makes a local production-catalog build.
+
+The deployed preview uses the runtime assets committed in this repository. The local Maximum originals profile additionally needs `BODYARCADE_ORIGINALS_DIR`; the large ZIP, source packages, 16K maps and reference-only HDR have not been copied into the deployed package. The all-eight comparison distinguishes these two asset profiles rather than implying that externally stored originals are deployed. None of the six experimental scenes is claimed to have reached Sketchfab parity.
+
+```bash
+# Normal feature-branch preview: eight scenes, no query flag required
+node scripts/build-bodyarcade.mjs
+# Live-production catalog, built locally without deploying
+VERCEL_ENV=production BODYARCADE_BASE=/bodyarcade-production-check/ node scripts/build-bodyarcade.mjs
+node tools/rendering/check-catalog.mjs
+```
+
+The built-app check clicks every preview background and checks its credit, then checks that the production package offers only the two live backgrounds even with `?backgrounds=all`. Separate tests cover Vercel's isolated fidelity project and the production guard.
+
 ## Implemented foundation
 
 - Material instances are cloned from `GLTFLoader`, retaining their actual material classes, glTF extension properties, texture transforms, vertex colors, alpha modes, transmission, IOR, specular colors, and normal-map signs. Generic reconstruction of every material has been removed.
@@ -119,7 +139,7 @@ python3 tools/rendering/prepare-environment.py /path/to/extracted-originals
 BODYARCADE_ORIGINALS_DIR=/path/to/extracted-originals npm run arcade
 ```
 
-Open `/dev/rendering.html` for fixed-camera captures. Open `/?backgrounds=all` to test the full library in the application. Both are development-only. Maximum mode discovers prepared originals through a local allowlist; source paths and the archive never enter the production build.
+Open `/dev/rendering.html` for fixed-camera captures. The full library is available in the normal development picker and fidelity preview without a URL flag. Maximum mode discovers prepared originals through a local development allowlist; source paths and the archive never enter the production build.
 
 ```bash
 node --test tests/rendering/*.test.mjs

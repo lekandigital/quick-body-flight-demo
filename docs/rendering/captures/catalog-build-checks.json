@@ -1,0 +1,58 @@
+{
+  "preview": {
+    "catalog": {
+      "catalog": "all",
+      "files": [
+        "corridor.glb",
+        "earth-agullo.glb",
+        "earth-airstudios.glb",
+        "galaxy.glb",
+        "gallery.glb",
+        "hangar.glb",
+        "nebula.glb",
+        "space.glb"
+      ]
+    },
+    "available": [
+      "nebula",
+      "galaxy",
+      "space",
+      "earth",
+      "orbit",
+      "hangar",
+      "corridor",
+      "gallery"
+    ],
+    "selected": [
+      "galaxy",
+      "nebula",
+      "earth",
+      "orbit",
+      "hangar",
+      "corridor",
+      "gallery",
+      "space"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "production": {
+    "catalog": {
+      "catalog": "live",
+      "files": [
+        "galaxy.glb",
+        "nebula.glb"
+      ]
+    },
+    "available": [
+      "nebula",
+      "galaxy"
+    ],
+    "selected": [
+      "galaxy",
+      "nebula"
+    ],
+    "errors": [],
+    "warnings": []
+  }
+}

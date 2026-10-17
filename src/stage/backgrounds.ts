@@ -136,11 +136,12 @@ export const LIBRARY: BackgroundDef[] = [
 /**
  * What production offers: only these two (Lekan, 2026-10-16). The other scenes
  * stay in LIBRARY and public/backgrounds/ for development but are not
- * selectable, and scripts/build-bodyarcade.mjs leaves their files out of the
- * build (keep its LIVE_BACKGROUNDS in step with this list).
+ * selectable in production. Development and fidelity preview builds expose
+ * LIBRARY by default; the build policy packages the matching scene files.
  */
 export const LIVE_IDS = ['galaxy', 'nebula'];
-export const BACKGROUNDS: BackgroundDef[] = import.meta.env.DEV && new URLSearchParams(location.search).get('backgrounds') === 'all'
+export const FIDELITY_CATALOG=import.meta.env.DEV||import.meta.env.VITE_BODYARCADE_BACKGROUND_CATALOG==='all';
+export const BACKGROUNDS: BackgroundDef[] = FIDELITY_CATALOG && new URLSearchParams(location.search).get('backgrounds') !== 'live'
   ? LIBRARY
   : LIBRARY.filter((b) => LIVE_IDS.includes(b.id));
 
@@ -153,5 +154,6 @@ export function backgroundById(id: string): BackgroundDef | undefined {
 
 /** A different random 3D background every page load. */
 export function randomBackgroundId(): string {
-  return BACKGROUNDS[Math.floor(Math.random() * BACKGROUNDS.length)].id;
+  const initial=LIBRARY.filter((b)=>LIVE_IDS.includes(b.id));
+  return initial[Math.floor(Math.random() * initial.length)].id;
 }

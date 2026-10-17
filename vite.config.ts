@@ -4,6 +4,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import { renderingCapture } from './tools/rendering/capturePlugin';
 import { originalAssets } from './tools/rendering/originalAssetsPlugin';
+import { buildBackgroundCatalog } from './tools/rendering/backgroundCatalog.mjs';
 
 const FLIGHT_DIST = fileURLToPath(new URL('./apps/flight/client/dist', import.meta.url));
 
@@ -80,6 +81,7 @@ function flightStatic(): Plugin {
 export default defineConfig({
   // BODYARCADE_BASE: the path the app is served from (soarlabs build: /bodyarcade/)
   base: process.env.BODYARCADE_BASE ?? '/',
+  define:{'import.meta.env.VITE_BODYARCADE_BACKGROUND_CATALOG':JSON.stringify(buildBackgroundCatalog())},
   plugins: [flightStatic(), renderingCapture(), originalAssets()],
   resolve: {
     alias: {
