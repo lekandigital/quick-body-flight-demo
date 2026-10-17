@@ -2,6 +2,7 @@
 // credit label opens it; the background on screen is listed first.
 
 import { LIBRARY, backgroundById } from '../stage/backgrounds';
+import { createSelector } from './selector';
 
 interface Line { what: string; who: string; whoUrl?: string; terms: string; termsUrl?: string; link?: string }
 interface Group { title: string; note?: string; lines: Line[] }
@@ -56,24 +57,26 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 const a = (text: string, href?: string) =>
   href ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${esc(text)}</a>` : esc(text);
 const line = (l: Line) =>
-  `<li><b>${a(l.what, l.link)}</b><span>${a(l.who, l.whoUrl)} · ${a(l.terms, l.termsUrl)}</span></li>`;
+  `<li><span class="nm">${a(l.what, l.link)}</span><span class="card-note">${a(l.who, l.whoUrl)} · ${a(l.terms, l.termsUrl)}</span></li>`;
 
-/** (Re)draw the credits page; `currentBg` is the background on screen. */
+/** (Re)draw the credits page in the rail's style; `currentBg` is the
+ *  background on screen, shown first as the selected card. */
 export function renderCredits(el: HTMLElement, currentBg: string | null): void {
   const bg = currentBg ? backgroundById(currentBg) : undefined;
   const now = bg
-    ? `<section class="credits-group credits-now"><h4>On screen now</h4><ul>${line({
-        what: bg.credits[0].title,
-        link: bg.credits[0].source,
-        who: bg.credits[0].author,
-        whoUrl: bg.credits[0].authorUrl,
-        terms: 'CC BY 4.0',
-        termsUrl: CC_BY,
-      })}</ul></section>`
+    ? `<section class="rail-sec"><div class="rail-hdr"><span>On screen now</span></div><div class="cards credits-now"><div class="card on">` +
+      `<div class="preview">${esc(bg.glyph)}</div><div class="nm">${a(bg.credits[0].title, bg.credits[0].source)}</div>` +
+      `<div class="card-note">by ${a(bg.credits[0].author, bg.credits[0].authorUrl)} · ${a('CC BY 4.0', CC_BY)} · shown in Sketchfab’s viewer</div></div></div></section>`
     : '';
   el.innerHTML =
     now +
     GROUPS()
-      .map((g) => `<section class="credits-group"><h4>${esc(g.title)}</h4>${g.note ? `<p>${esc(g.note)}</p>` : ''}<ul>${g.lines.map(line).join('')}</ul></section>`)
+      .map(
+        (g) =>
+          `<section class="rail-sec"><div class="rail-hdr"><span>${esc(g.title)}</span><span class="rail-val">${String(g.lines.length).padStart(2, '0')}</span></div>` +
+          `${g.note ? `<div class="card-note credit-group-note">${esc(g.note)}</div>` : ''}<ul class="credit-list">${g.lines.map(line).join('')}</ul></section>`,
+      )
       .join('');
+  const card = el.querySelector<HTMLElement>('.credits-now');
+  if (card) createSelector(card, '.card');
 }

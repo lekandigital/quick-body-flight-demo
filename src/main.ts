@@ -1361,7 +1361,7 @@ async function boot() {
     { id: 'theme', label: 'theme · toggle light / dark', key: 't',
       run: () => setConfig('theme', config.theme === 'dark' ? 'light' : 'dark') },
     { id: 'engineering', label: 'engineering view · toggle', key: 'd',
-      run: () => document.getElementById('panel')!.classList.toggle('hidden') },
+      run: () => document.getElementById('settings')!.classList.toggle('hidden') },
     { id: 'mirror', label: 'mirror · toggle', key: 'm', run: toggleCmd('mirror') },
     { id: 'smoothing', label: 'smoothing · toggle', run: toggleCmd('smoothing') },
     { id: 'legs', label: 'full body (legs) · toggle', key: 'f',

@@ -607,90 +607,65 @@ body.glass-ui[data-tone="dark"] .selector { --glass-fill-hover: rgba(255, 255, 2
 .glass-ui .chain .sep { display: none; }
 
 /* ── engineering panel: [D] bottom bar holding [S] .ctl rows ───────── */
-.glass-ui #panel {
+/* settings: centred, in the home rail's style — its glass panel, sections,
+   switches, sliders, and choices as cards under the sliding selector */
+.glass-ui #settings {
   position: fixed;
-  right: var(--gap);
-  top: calc(var(--gap) * 2 + var(--bar-h));
+  left: 50%;
+  top: 50%;
+  right: auto;
   bottom: auto;
-  z-index: 30;
-  width: 320px;
-  max-height: calc(100vh - 2 * (var(--gap) * 2 + var(--bar-h)));
-  padding: 18px 18px 16px;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  width: min(440px, calc(100vw - 2 * var(--gap)));
+  max-height: min(740px, calc(100vh - 2 * (var(--gap) * 2 + var(--bar-h))));
+  padding: 20px 14px 10px;
   border: 0;
   border-radius: 28px;
   background: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   font-family: var(--font-sans);
-  font-size: var(--step--1);
   letter-spacing: 0;
   color: var(--ink);
-  gap: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   --glass-fill: var(--panel-fill);
 }
-.glass-ui #panel.hidden { display: none; }
-.glass-ui .panel-scroll { overflow-y: auto; min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; scrollbar-width: none; margin: 0 -4px; padding: 0 4px; }
-.glass-ui .panel-scroll::-webkit-scrollbar { display: none; }
-.glass-ui .panel-scroll > * { flex-shrink: 0; }
-.glass-ui #panel::before {
-  content: none; /* the tabs head the panel now */
-  font-family: var(--font-sans);
-  font-size: var(--step--1);
-  font-weight: 650;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-  border-bottom: 0;
-  padding-bottom: 6px;
-}
-.glass-ui .panel-row { padding: var(--space-1) 0; border-bottom: 1px solid var(--glass-hair); min-height: 40px; }
-.glass-ui .panel-row:last-of-type { border-bottom: 0; }
-.glass-ui .panel-row > span { font-family: var(--font-mono); font-size: var(--step--1); font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink); }
-.glass-ui .panel-slider { flex: 1; justify-content: flex-end; gap: 8px; }
-.glass-ui .panel-slider .gslider { width: 120px; }
-.glass-ui .panel-slider em { font-family: var(--font-mono); font-style: normal; font-size: var(--step--1); color: var(--ink-2); min-width: 4.5ch; text-align: right; font-variant-numeric: tabular-nums; }
-.glass-ui .panel-scroll > button { margin-top: 10px; align-self: flex-start; }
-.glass-ui .panel-row:has(#ppc-states) { align-items: flex-start; }
-.glass-ui #panel .panel-row button { height: 28px; }
-
-/* tabs: Settings · Quality · Credits — the sliding selector marks the open one */
+.glass-ui #settings.hidden { display: none; }
+.glass-ui .panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 0 2px 0 6px; flex: none; }
+.glass-ui .panel-head .exp-hdr { padding: 6px 0 10px; }
+.glass-ui .panel-close { flex: none; }
+/* tabs: the sliding selector marks the open one */
 .glass-ui .panel-tabs { display: flex; gap: 4px; padding: 0 0 12px; flex: none; }
-.glass-ui .panel-tabs button { flex: 1; height: 34px; padding: 0 10px; font-size: 13px; color: var(--ink-2); }
+.glass-ui .panel-tabs button { flex: 1; height: 36px; padding: 0 10px; border-radius: 18px; font-size: 13px; color: var(--ink-2); }
 .glass-ui .panel-tabs button.on { color: var(--ink); }
+.glass-ui .panel-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 2px 6px 6px; scrollbar-width: none; }
+.glass-ui .panel-body::-webkit-scrollbar { display: none; }
 .glass-ui .panel-page { display: flex; flex-direction: column; }
 .glass-ui .panel-page[hidden] { display: none; }
-.glass-ui .panel-note { margin: 0 0 10px; font-size: 12px; line-height: 1.45; color: var(--ink-2); }
-.glass-ui .panel-sub { margin: 16px 0 2px; font-size: 11px; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-2); }
 .has-selector > button:not(.on):hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
-
-/* Quality: the level as three cards (the selector slides between them), then each item's own value */
-.glass-ui .quality-levels { display: flex; flex-direction: column; gap: 4px; }
-.glass-ui .quality-levels button { height: auto; padding: 9px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; }
-.glass-ui .quality-levels button b { font-size: 13px; font-weight: 620; color: var(--ink); }
-.glass-ui .quality-levels button:not(.on) b { color: var(--ink-2); }
-.glass-ui .quality-levels button small { font-size: 11.5px; font-weight: 400; color: var(--ink-3); }
-.glass-ui .quality-item { display: flex; flex-direction: column; align-items: stretch; gap: 7px; padding: 10px 0; border-bottom: 1px solid var(--glass-hair); }
-.glass-ui .quality-item:last-child { border-bottom: 0; }
-.glass-ui .quality-item > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.glass-ui .quality-item b { font-size: 13px; font-weight: 600; color: var(--ink); }
-.glass-ui .quality-item small { font-size: 11px; line-height: 1.35; color: var(--ink-3); }
-.glass-ui .quality-item select { width: 100%; max-width: none; }
-
-/* Credits: every attribution, the scene on screen first */
-.glass-ui .credits-group { padding: 10px 0; border-bottom: 1px solid var(--glass-hair); }
-.glass-ui .credits-group:last-child { border-bottom: 0; }
-.glass-ui .credits-group h4 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-2); }
-.glass-ui .credits-group p { margin: 0 0 6px; font-size: 11.5px; line-height: 1.4; color: var(--ink-3); }
-.glass-ui .credits-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
-.glass-ui .credits-group li { display: flex; flex-direction: column; gap: 1px; }
-.glass-ui .credits-group li b { font-size: 12.5px; font-weight: 600; color: var(--ink); }
-.glass-ui .credits-group li span { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); }
-.glass-ui .credits-group a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--glass-hair); }
-.glass-ui .credits-group a:hover { color: var(--accent); }
-.glass-ui .credits-now { padding: 10px 12px; margin-bottom: 4px; border-bottom: 0; border-radius: 14px; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+/* a slider inside a section: its name and value, then the rail slider */
+.glass-ui .panel-slider-block { padding: 6px 0 4px; }
+.glass-ui .panel-slider-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 2px; font-size: 13px; color: var(--ink); }
+.glass-ui .panel-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+.glass-ui .panel-actions button { height: 32px; }
+.glass-ui #settings .card-note { font-size: 11.5px; line-height: 1.45; color: var(--ink-3); }
+.glass-ui #settings .rail-toggle select { max-width: 170px; }
+/* a compact row of options (Quality → Adjust one thing) */
+.glass-ui .seg { display: flex; gap: 2px; margin: 6px 0 5px; }
+.glass-ui .seg button { flex: 1 1 0; min-width: 0; height: 32px; padding: 0 6px; border-radius: 16px; font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.glass-ui .seg button.on { color: var(--ink); }
+.glass-ui .quality-item { padding: 6px 0 8px; }
+.glass-ui .quality-item + .quality-item { border-top: 1px solid var(--glass-hair); padding-top: 10px; }
+/* credits: entries in the card-text style */
+.glass-ui .credit-group-note { margin: -4px 0 8px; }
+.glass-ui .credit-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.glass-ui .credit-list li { display: flex; flex-direction: column; gap: 1px; }
+.glass-ui .credit-list .nm { font-size: var(--step--1); font-weight: 620; color: var(--ink); }
+.glass-ui #settings a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--glass-hair); }
+.glass-ui #settings a:hover { color: var(--accent); }
 
 /* Quality → Glass effects → Simple blur: the glass library's own fallback look */
 body.glass-simple .glass > .glass-plate {
@@ -837,7 +812,7 @@ body.glass-ui.playing #topbar,
 body.glass-ui.playing #takebar,
 body.glass-ui.playing #rail,
 body.glass-ui.playing #experiences,
-body.glass-ui.playing #panel,
+body.glass-ui.playing #settings,
 body.glass-ui.playing .stage-backdrop,
 body.glass-ui.playing #stage-pane > .link-chip,
 body.glass-ui.playing .stage-label { visibility: hidden; }
