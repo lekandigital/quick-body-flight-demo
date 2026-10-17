@@ -5,8 +5,8 @@
 // logo in the bottom ~140 px of the viewer. The viewer renders CROP_PX larger
 // than the stage on every side (same aspect, centred) with a matching wider
 // field of view, so the visible framing is unchanged and that strip falls
-// outside the stage. Sketchfab and each model's author are credited in the
-// stage's credit line instead. Lekan has permission for this (2026-10-17);
+// outside the stage. Sketchfab and each model's author are credited in
+// Settings → Credits (the stage's credit label opens it) instead. Lekan has permission for this (2026-10-17);
 // Sketchfab's terms otherwise reserve hiding the logo to Premium/Enterprise.
 import type { BackgroundDef } from './backgrounds';
 import type { BackgroundQuality } from './backgroundQuality';
@@ -105,7 +105,7 @@ export class SketchfabBackground {
   /** the turn both cameras take — the visitor's plus the loading-screen camera
    * (./viewTurn.ts) — `ahead` seconds from now; `opening`: for a scene about
    * to appear */
-  private turnAt: (ahead: number, opening?: boolean) => ViewTurn = () => NO_TURN;
+  private turnAt: (ahead: number, opening: boolean, def: BackgroundDef) => ViewTurn = () => NO_TURN;
   private sentAt = 0;
   /** the field of view the scene should show (before the crop's widening) */
   private sentFov = NaN;
@@ -267,7 +267,7 @@ export class SketchfabBackground {
     return this.quality === 'maximum' ? 'hd' : this.quality === 'balanced' ? 'sd' : 'ld';
   }
 
-  setTurnSource(source: (ahead: number, opening?: boolean) => ViewTurn): void {
+  setTurnSource(source: (ahead: number, opening: boolean, def: BackgroundDef) => ViewTurn): void {
     this.turnAt = source;
   }
 
@@ -277,7 +277,7 @@ export class SketchfabBackground {
     const drifted = viewer.def.drift
       ? backgroundViewAt(viewer.camera!, viewer.def.drift, viewer.clock.seconds(performance.now()) + ahead, [0, 0, 1], sky)
       : viewer.camera!;
-    return turnView(drifted, this.turnAt(ahead, opening), [0, 0, 1], lookAround(viewer.def));
+    return turnView(drifted, this.turnAt(ahead, opening, viewer.def), [0, 0, 1], lookAround(viewer.def));
   }
 
   /** how far the drift has carried the view now, for the avatar to follow */

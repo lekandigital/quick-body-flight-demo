@@ -1,7 +1,97 @@
-// Debug/settings panel (plain DOM). Writes config via setConfig; the hot
-// loop reads config directly. Toggle with the ⚙ button or "d".
+// Settings panel (plain DOM): three tabs — Settings (tracking and rig),
+// Quality (one level for the page, with per-item overrides) and Credits
+// (every attribution). Writes config via setConfig; the hot loop reads
+// config directly. Toggle with the ⚙ button or "d"; openPanel(tab) opens a
+// tab directly (the stage's credit label opens Credits).
 
 import { config, setConfig, resetConfig, onConfigChange, type Config } from '../config';
+import { ITEMS, LEVELS, qualityLevel, qualityOf, qualityOverride, setQualityLevel, setQualityOverride, onQualityChange, type QualityItem } from '../quality';
+import { renderCredits } from './attributions';
+import { createSelector } from './selector';
+
+export type PanelTab = 'settings' | 'quality' | 'credits';
+const TABS: Array<[PanelTab, string]> = [['settings', 'Settings'], ['quality', 'Quality'], ['credits', 'Credits']];
+
+/** Open the panel on a tab. */
+export function openPanel(tab: PanelTab = 'settings'): void {
+  const host = document.getElementById('panel');
+  if (!host) return;
+  host.classList.remove('hidden');
+  showTab(tab);
+}
+
+function showTab(tab: PanelTab): void {
+  for (const b of document.querySelectorAll<HTMLElement>('#panel .panel-tabs button')) {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', String(on));
+  }
+  for (const page of document.querySelectorAll<HTMLElement>('#panel .panel-page')) page.hidden = page.dataset.tab !== tab;
+  if (tab === 'credits') {
+    const page = document.querySelector<HTMLElement>('#panel .panel-page[data-tab="credits"]');
+    const bg = document.body.dataset.bg;
+    if (page) renderCredits(page, bg && bg !== 'sky' ? bg : null);
+  }
+}
+
+/** Settings → Quality: the level, then each item's own value. */
+function qualityPage(page: HTMLElement): void {
+  const head = document.createElement('p');
+  head.className = 'panel-note';
+  head.textContent = 'One setting for the whole page. Lower it if tracking or the scene stutters.';
+  const levels = document.createElement('div');
+  levels.className = 'quality-levels';
+  levels.setAttribute('role', 'radiogroup');
+  levels.setAttribute('aria-label', 'quality');
+  for (const l of LEVELS) {
+    const b = document.createElement('button');
+    b.dataset.glass = 'none'; // the sliding selector is the glass
+    b.dataset.level = l.id;
+    b.setAttribute('role', 'radio');
+    b.innerHTML = `<b>${l.label}</b><small>${l.note}</small>`;
+    b.onclick = () => setQualityLevel(l.id);
+    levels.append(b);
+  }
+  const sub = document.createElement('div');
+  sub.className = 'panel-sub';
+  sub.textContent = 'Adjust one thing';
+  const rows = document.createElement('div');
+  rows.className = 'quality-items';
+  const selects = new Map<QualityItem, HTMLSelectElement>();
+  for (const item of Object.keys(ITEMS) as QualityItem[]) {
+    const def = ITEMS[item];
+    const sel = document.createElement('select');
+    sel.setAttribute('aria-label', def.label);
+    sel.onchange = () => setQualityOverride(item, sel.value === 'auto' ? null : sel.value);
+    selects.set(item, sel);
+    const r = document.createElement('div');
+    r.className = 'quality-item';
+    r.innerHTML = `<span><b>${def.label}</b><small>${def.note}</small></span>`;
+    r.append(sel);
+    rows.append(r);
+  }
+  function sync(): void {
+    for (const b of levels.querySelectorAll<HTMLElement>('button')) {
+      const on = b.dataset.level === qualityLevel();
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-checked', String(on));
+    }
+    for (const [item, sel] of selects) {
+      const def = ITEMS[item];
+      const auto = def.options[def.byLevel[qualityLevel()]];
+      sel.replaceChildren(
+        new Option(`Auto (${auto})`, 'auto'),
+        ...Object.entries(def.options).map(([v, label]) => new Option(label, v)),
+      );
+      sel.value = qualityOverride(item) ?? 'auto';
+      sel.title = `in force: ${def.options[qualityOf(item)]}`;
+    }
+  }
+  sync();
+  onQualityChange(sync);
+  page.append(head, levels, sub, rows);
+  createSelector(levels, 'button');
+}
 import type { BoneName } from '../rig/types';
 import type { PpcGroupInfo } from '../pose/continuity';
 
@@ -99,9 +189,31 @@ export function createPanel(rig?: PanelRigApi): void {
   host.dataset.glass = 'panel';
   host.classList.add('hidden');
   // rows live in an inner scroller: the glass plate stays put while it scrolls
-  const body = document.createElement('div');
-  body.className = 'panel-scroll';
-  host.append(body);
+  const tabs = document.createElement('div');
+  tabs.className = 'panel-tabs';
+  tabs.setAttribute('role', 'tablist');
+  for (const [id, label] of TABS) {
+    const b = document.createElement('button');
+    b.dataset.glass = 'none'; // the sliding selector is the glass
+    b.dataset.tab = id;
+    b.setAttribute('role', 'tab');
+    b.textContent = label;
+    b.onclick = () => showTab(id);
+    tabs.append(b);
+  }
+  const scroll = document.createElement('div');
+  scroll.className = 'panel-scroll';
+  host.append(tabs, scroll);
+  const page = (tab: PanelTab) => {
+    const el = document.createElement('div');
+    el.className = 'panel-page';
+    el.dataset.tab = tab;
+    scroll.append(el);
+    return el;
+  };
+  const body = page('settings');
+  qualityPage(page('quality'));
+  page('credits').classList.add('credits');
 
   const fullBody = document.createElement('input');
   fullBody.type = 'checkbox';
@@ -130,17 +242,6 @@ export function createPanel(rig?: PanelRigApi): void {
     row('relax sec', slider('relaxSec', 0.2, 2, 0.1)),
     row('wrist gain', slider('wristGain', 0.5, 2.0, 0.05)),
   );
-
-  const modelSel = document.createElement('select');
-  for (const v of ['full', 'lite']) {
-    const o = document.createElement('option');
-    o.value = v;
-    o.textContent = v;
-    if (config.model === v) o.selected = true;
-    modelSel.append(o);
-  }
-  modelSel.onchange = () => setConfig('model', modelSel.value as Config['model']);
-  body.append(row('model', modelSel));
 
   if (rig) {
     const calBtn = document.createElement('button');
@@ -215,6 +316,8 @@ export function createPanel(rig?: PanelRigApi): void {
   body.append(reset);
 
   document.body.append(host);
+  createSelector(tabs, 'button');
+  showTab('settings');
 
   let btn = document.getElementById('panel-toggle');
   if (!btn) {

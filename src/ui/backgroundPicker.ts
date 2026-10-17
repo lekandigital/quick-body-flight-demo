@@ -4,41 +4,27 @@
 // random 3D background; picks don't persist.
 
 import type { Stage } from '../stage/scene';
-import { BACKGROUNDS, SKY_ID, backgroundById, type Credit } from '../stage/backgrounds';
-import { isBackgroundQuality, type BackgroundQuality } from '../stage/backgroundQuality';
+import { BACKGROUNDS, SKY_ID, backgroundById } from '../stage/backgrounds';
 import { createSelector } from './selector';
+import { openPanel } from './panel';
 
 export interface BackgroundPicker {
   current(): string;
-  pick(id: string): void;
+  /** resolves once the scene shows (or has fallen back to the sky) */
+  pick(id: string): Promise<void>;
   next(): void;
   ids(): string[];
-  quality(value:BackgroundQuality):void;
+  /** load the first scene, for a picker made with { deferred: true } */
+  start(): Promise<void>;
 }
 
 const ALL = BACKGROUNDS;
 
-function creditHtml(c: Credit): string {
-  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  // only the title may be shortened: the author, licence and viewer always show
-  return `<a class="bg-credit-title" href="${c.source}" target="_blank" rel="noopener noreferrer">${esc(c.title)}</a><span class="bg-credit-keep">&nbsp;by <a href="${c.authorUrl}" target="_blank" rel="noopener noreferrer">${esc(c.author)}</a></span>`;
-}
 
-export function createBackgroundPicker(stage: Stage, initial: string): BackgroundPicker {
+export function createBackgroundPicker(stage: Stage, initial: string, opts: { deferred?: boolean } = {}): BackgroundPicker {
   const host = document.getElementById('bg-cards');
   const count = document.getElementById('bg-count');
   const credit = document.getElementById('bg-credit');
-  let qualitySelect:HTMLSelectElement|null=null;
-  if (host) {
-    const label = document.createElement('label'); label.className = 'background-quality';
-    label.textContent = 'Quality ';
-    const select = document.createElement('select'); select.setAttribute('aria-label', 'Background quality');
-    for (const [value, title] of [['maximum', 'Maximum'], ['balanced', 'Balanced'], ['mobile', 'Mobile']]) select.add(new Option(title, value));
-    select.value = stage.backgroundQuality();
-    qualitySelect=select;
-    select.onchange = () => { if (isBackgroundQuality(select.value)) api.quality(select.value); };
-    label.append(select); host.before(label);
-  }
   if (count) count.textContent = String(ALL.length).padStart(2, '0');
   let current = '';
   const cards = new Map<string, HTMLButtonElement>();
@@ -69,6 +55,17 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
   }
 
   if (host) createSelector(host, '.card');
+  if (credit) {
+    credit.setAttribute('role', 'button');
+    credit.tabIndex = 0;
+    credit.onclick = () => openPanel('credits');
+    credit.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openPanel('credits');
+      }
+    };
+  }
 
   function paint(): void {
     for (const [id, el] of cards) {
@@ -82,28 +79,31 @@ export function createBackgroundPicker(stage: Stage, initial: string): Backgroun
       return;
     }
     credit.hidden = false;
-    credit.innerHTML = `${bg.credits.map(creditHtml).join('<span class="bg-credit-keep">&nbsp;·&nbsp;</span>')}<span class="bg-credit-keep">&nbsp;· <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a></span><span class="bg-credit-keep bg-credit-viewer">&nbsp;· rendered by <a href="https://sketchfab.com" target="_blank" rel="noopener noreferrer">Sketchfab</a></span>`;
+    credit.textContent = `© ${bg.credits[0].author} · credits`;
+    credit.title = `${bg.credits[0].title} by ${bg.credits[0].author} (CC BY 4.0) — all credits`;
   }
 
   const api: BackgroundPicker = {
-    quality(value) {stage.setBackgroundQuality(value);if(qualitySelect) qualitySelect.value=value;},
     current: () => current,
     ids: () => ALL.map((d) => d.id),
     pick(id) {
-      if (id === current) return;
+      if (id === current) return Promise.resolve();
       current = id;
       paint();
-      void stage.setBackground(id === SKY_ID ? null : (backgroundById(id) ?? null)).catch((err) => {
+      return stage.setBackground(id === SKY_ID ? null : (backgroundById(id) ?? null)).catch((err) => {
         console.warn(`background "${id}" failed to load`, err);
-        if (current === id) api.pick(SKY_ID);
+        if (current === id) return api.pick(SKY_ID);
       });
+    },
+    start() {
+      return current ? Promise.resolve() : api.pick(initial);
     },
     next() {
       const ids = api.ids();
       api.pick(ids[(ids.indexOf(current) + 1) % ids.length]);
     },
   };
-  api.pick(initial);
+  if (!opts.deferred) void api.pick(initial);
   // tuning hook (framing the scenes against their Sketchfab views):
   // __bodyarcadeBg.tune('corridor', { camera: {...}, parts: [...] })
   (window as unknown as { __bodyarcadeBg: unknown }).__bodyarcadeBg = {

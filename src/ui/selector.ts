@@ -26,8 +26,10 @@ export function createSelector(list: HTMLElement, itemSelector: string): void {
     if (!card.isConnected || card.parentElement !== list) list.prepend(card);
     const item = items().find((el) => el.matches(SELECTED)) ?? null;
     if (!item || !item.offsetWidth) {
+      // nothing selected, or the list is hidden (the resize observer places
+      // the card when it shows)
       card.classList.add('empty');
-      current = null;
+      current = item;
       return;
     }
     // first appearance: no slide in from the corner
@@ -46,7 +48,9 @@ export function createSelector(list: HTMLElement, itemSelector: string): void {
   }
 
   // follow selection changes and rebuilt lists
-  new MutationObserver(() => {
+  new MutationObserver((records) => {
+    // the card's own class changes (and its glass plate) aren't selection changes
+    if (records.every((r) => r.target === card || card.contains(r.target))) return;
     const next = items().find((el) => el.matches(SELECTED)) ?? null;
     if (next !== current || !card.isConnected) place(true);
   }).observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'aria-pressed'] });

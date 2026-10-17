@@ -294,13 +294,15 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
   // (cinematicTurn), which both cameras take like the visitor's own turn
   let cineClock = 0;
   /** the turn both cameras take: the visitor's, plus the loading-screen camera */
-  const sceneTurn = (): ViewTurn => combineTurns(shown, cinematicTurn(cineClock));
+  // scenes with walls or a model fly in from outside; skies open wide instead
+  const outsideIn = (def: BackgroundDef | null) => !!def && !def.parts.some((part) => part.sky);
+  const sceneTurn = (): ViewTurn => combineTurns(shown, cinematicTurn(cineClock, outsideIn(bgDef)));
   /** someone is dragging or zooming, or the view is still easing after it */
   const interacting = () =>
     pointers.size > 0 || Math.abs(view.yaw - shown.yaw) > 1e-4 || Math.abs(view.pitch - shown.pitch) > 1e-4 || Math.abs(view.zoom - shown.zoom) > 1e-4;
   // Sketchfab's viewer glides between camera updates, so it asks ahead
-  externalBackground?.setTurnSource((ahead, opening) =>
-    combineTurns(ahead > 0.5 ? view : shown, cinematicTurn((opening ? 0 : cineClock) + ahead)));
+  externalBackground?.setTurnSource((ahead, opening, def) =>
+    combineTurns(ahead > 0.5 ? view : shown, cinematicTurn((opening ? 0 : cineClock) + ahead, outsideIn(def))));
 
   function stepView(dt: number): void {
     const k = 1 - Math.exp(-dt * 12);
@@ -348,7 +350,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     qPitch.setFromAxisAngle(right.normalize(), frameTurn.pitch);
     qYaw.setFromAxisAngle(UP, frameTurn.yaw);
     qYaw.multiply(qPitch);
-    off.applyQuaternion(qYaw).multiplyScalar(frameTurn.zoom);
+    off.applyQuaternion(qYaw).multiplyScalar(frameTurn.zoom * (frameTurn.dolly ?? 1));
     camera.position.copy(pivot).add(off);
     camera.quaternion.premultiply(qYaw);
     camera.updateMatrixWorld();

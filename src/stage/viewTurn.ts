@@ -5,13 +5,16 @@ import type { BackgroundView } from './backgroundMotion';
  * camera and the background camera so the two always move as one.
  * yaw: the view direction's turn about the up axis (right-handed), radians.
  * pitch: positive raises the camera / tilts the view down, radians.
- * zoom: distance factor (> 1 is further out). */
-export interface ViewTurn { yaw: number; pitch: number; zoom: number }
+ * zoom: distance factor (> 1 is further out); look-around scenes widen the
+ *   field of view instead.
+ * dolly: the eye pulled back along its line of sight in every scene (the
+ *   opening flies in from outside with it); 1 = in place. */
+export interface ViewTurn { yaw: number; pitch: number; zoom: number; dolly?: number }
 
 export const NO_TURN: ViewTurn = { yaw: 0, pitch: 0, zoom: 1 };
 
 export function combineTurns(a: ViewTurn, b: ViewTurn): ViewTurn {
-  return { yaw: a.yaw + b.yaw, pitch: a.pitch + b.pitch, zoom: a.zoom * b.zoom };
+  return { yaw: a.yaw + b.yaw, pitch: a.pitch + b.pitch, zoom: a.zoom * b.zoom, dolly: (a.dolly ?? 1) * (b.dolly ?? 1) };
 }
 
 /** Skies and interiors look around from where the camera stands (orbiting
@@ -23,15 +26,33 @@ export function lookAround(def: { kind: string; parts: Array<{ sky?: boolean }> 
 
 /** seconds the opening sweep takes to settle into the slow cruise */
 export const OPENING_SECONDS = 7;
+/** the outside-in opening: how far out it starts, and how long it flies */
+export const OUTSIDE_DOLLY = 6;
+export const OUTSIDE_SECONDS = 10;
 
 /** The loading-screen camera, deterministic in the seconds since a scene
  * appeared: it opens further out, raised and turned ~35° away, sweeps in over
  * OPENING_SECONDS, then keeps a slow, wide sweep (±20°, a little rise and
  * fall, a slow push in and out). */
-export function cinematicTurn(seconds: number): ViewTurn {
+export function cinematicTurn(seconds: number, outside = false): ViewTurn {
   const t = Math.max(0, seconds);
   const wave = (period: number) => Math.sin((t * 2 * Math.PI) / period);
   const cruise = { yaw: 0.35 * wave(48), pitch: 0.06 * wave(34), zoom: 1 + 0.1 * wave(28) };
+  if (outside) {
+    // Outside-in: the scene opens seen from well outside it — a room from
+    // beyond its walls, a planet small in space — raised and turned, then
+    // flies in (ease in and out; distance eased in log space so the approach
+    // reads evenly) and settles into the cruise.
+    const k = Math.min(t / OUTSIDE_SECONDS, 1);
+    const e = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
+    const turn = 1 - (1 - k) ** 3;
+    return {
+      yaw: -0.45 + (cruise.yaw + 0.45) * turn,
+      pitch: 0.3 + (cruise.pitch - 0.3) * turn,
+      zoom: 1 + (cruise.zoom - 1) * k,
+      dolly: OUTSIDE_DOLLY ** (1 - e),
+    };
+  }
   const opening = { yaw: -0.6, pitch: 0.22, zoom: 1.55 };
   const k = Math.min(t / OPENING_SECONDS, 1);
   const ease = 1 - (1 - k) ** 3;
@@ -77,7 +98,10 @@ export function turnView(view: BackgroundView, turn: ViewTurn, up: number[], loo
     direction.applyAxisAngle(right, -turn.pitch);
     const fov = view.fov === undefined ? undefined
       : Math.min(FOV_MAX, Math.max(FOV_MIN, 2 * Math.atan(Math.tan((view.fov * Math.PI) / 360) * turn.zoom) * 180 / Math.PI));
-    return { ...view, target: position.clone().addScaledVector(direction, length).toArray(), ...(fov === undefined ? {} : { fov }) };
+    // the look point stays; a dolly backs the eye away from it along the view
+    const look = position.clone().addScaledVector(direction, length);
+    const eye = look.clone().addScaledVector(direction, -length * (turn.dolly ?? 1));
+    return { ...view, position: eye.toArray(), target: look.toArray(), ...(fov === undefined ? {} : { fov }) };
   }
   const offset = position.clone().sub(target);
   offset.applyAxisAngle(axis, turn.yaw);
@@ -86,7 +110,7 @@ export function turnView(view: BackgroundView, turn: ViewTurn, up: number[], loo
   const next = Math.max(-MAX_ELEVATION, Math.min(MAX_ELEVATION, elevation + turn.pitch));
   const side = offset.clone().cross(axis);
   if (side.lengthSq() > 1e-12) offset.applyAxisAngle(side.normalize(), next - elevation);
-  offset.multiplyScalar(turn.zoom);
+  offset.multiplyScalar(turn.zoom * (turn.dolly ?? 1));
   return { ...view, position: target.clone().add(offset).toArray() };
 }
 

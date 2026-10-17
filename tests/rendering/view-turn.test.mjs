@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { NO_TURN, OPENING_SECONDS, cinematicTurn, lookAround, turnView, turnBetween } from '../../src/stage/viewTurn.ts';
+import { NO_TURN, OPENING_SECONDS, OUTSIDE_DOLLY, OUTSIDE_SECONDS, cinematicTurn, lookAround, turnView, turnBetween } from '../../src/stage/viewTurn.ts';
 
 const near = (a, b, eps = 1e-9) => a.every((v, i) => Math.abs(v - b[i]) < eps);
 
@@ -61,4 +61,20 @@ test('skies and interiors look around; scenes with a model orbit it', () => {
   // looking around never moves the eye: an interior's walls stay where they are
   const room = { position: [0, 1, 0], target: [0, 1, -10], fov: 50 };
   assert.ok(near(turnView(room, cinematicTurn(0), [0, 1, 0], true).position, room.position));
+});
+
+test('the outside-in opening starts outside, flies in smoothly and lands on the cruise', () => {
+  assert.ok(Math.abs(cinematicTurn(0, true).dolly - OUTSIDE_DOLLY) < 1e-9);
+  assert.ok(Math.abs(cinematicTurn(OUTSIDE_SECONDS, true).dolly - 1) < 1e-9);
+  let prev = cinematicTurn(0, true);
+  for (let t = 0.05; t <= OUTSIDE_SECONDS + 5; t += 0.05) {
+    const turn = cinematicTurn(t, true);
+    assert.ok(turn.dolly <= prev.dolly + 1e-9, 'never backs out again');
+    assert.ok(Math.abs(turn.yaw - prev.yaw) < 0.02, `smooth at ${t}`);
+    prev = turn;
+  }
+  // a room: the eye starts well behind where it ends, on the same line of sight
+  const room = { position: [0, 1, 0], target: [0, 1, -10], fov: 50 };
+  const start = turnView(room, { yaw: 0, pitch: 0, zoom: 1, dolly: OUTSIDE_DOLLY }, [0, 1, 0], true);
+  assert.ok(near(start.target, room.target) && near(start.position, [0, 1, 50]));
 });

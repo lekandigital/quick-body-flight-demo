@@ -30,14 +30,17 @@ import { glassifyAll, watchGlass, upgradeControls } from '@bodyarcade/glass';
 import { createLink } from './ui/link';
 import { createCameraPeek } from './ui/cameraPeek';
 import { createSelector } from './ui/selector';
+import { createLoadingVeil } from './ui/loadingVeil';
 import { asset } from './base';
 import { BACKGROUNDS, backgroundById, initialBackgroundId } from './stage/backgrounds';
 import { createBackgroundPicker } from './ui/backgroundPicker';
 import { createDirector } from './director/director';
 import { TAKE_SCRIPTS } from './director/scripts';
 import type { HandPuppetId } from './hand/types';
-import { createPanel, updatePpcStates } from './ui/panel';
+import { createPanel, openPanel, updatePpcStates } from './ui/panel';
 import { config, onConfigChange, setConfig } from './config';
+import { qualityOf, onQualityChange, setQualityLevel } from './quality';
+import { isBackgroundQuality, type BackgroundQuality } from './stage/backgroundQuality';
 import { createDetector, type ModelVariant } from './pose/detector';
 import { drawSkeleton } from './overlay/skeleton';
 import { LM } from './pose/indices';
@@ -163,6 +166,10 @@ async function boot() {
   statusEl.setAttribute('data-testid', 'camera-status');
 
   const params = new URLSearchParams(location.search);
+  // the loading screen: up until the scene shows (src/ui/loadingVeil.ts)
+  const veil = createLoadingVeil();
+  let resolveAvatarReady!: (p: Promise<unknown>) => void;
+  const avatarReady = new Promise<unknown>((r) => (resolveAvatarReady = r)).then((p) => p);
   const evalFixture = params.get('eval');
   // eval measures retargeting with a STATIC camera — the screen-space sync
   // metric is only meaningful when the projection doesn't move. VFX stays
@@ -246,13 +253,44 @@ async function boot() {
   const coach = createCoach();
   const receipt = createReceipt();
   const stage = createStage(stageCanvas);
+
+  // one quality setting (Settings → Quality) drives the scene detail, the
+  // tracking model and the glass; ?quality=<maximum|balanced|mobile> pins the
+  // scene for testing
+  const pinnedScene = params.get('quality');
+  function applyQuality(): void {
+    if (!isBackgroundQuality(pinnedScene)) {
+      const scene = qualityOf('scene') as BackgroundQuality;
+      if (stage.backgroundQuality() !== scene) stage.setBackgroundQuality(scene);
+    }
+    const model = qualityOf('tracking') as typeof config.model;
+    if (config.model !== model) setConfig('model', model);
+    document.body.classList.toggle('glass-simple', qualityOf('glass') === 'simple');
+  }
+  applyQuality();
+  onQualityChange(applyQuality);
   stage.setTheme(config.theme);
   // a different 3D background every load (?bg=<id> pins one; ?bg=sky = the grid)
   const bgParam = params.get('bg');
+  // the scene loads behind the loading screen once the tracker is in (or the
+  // camera fails, or after 6 s): the camera and the pose model get the
+  // bandwidth and GPU first, and the scene's opening flight is the reveal
   const backgrounds = createBackgroundPicker(
     stage,
     bgParam && backgroundById(bgParam) ? bgParam : initialBackgroundId(),
+    { deferred: true },
   );
+  let sceneStarted = false;
+  const startScene = () => {
+    if (sceneStarted) return;
+    sceneStarted = true;
+    veil.step('scene', 'working', 'loading the background');
+    void backgrounds.start().then(() => {
+      veil.step('scene', 'done');
+      void avatarReady.then(() => veil.done());
+    });
+  };
+  setTimeout(startScene, 6000);
   onConfigChange((key) => {
     if (key === 'theme') stage.setTheme(config.theme);
   });
@@ -897,6 +935,10 @@ async function boot() {
 
   // the model appears while the camera prompt is up, not after it
   const initialAvatar = config.avatar !== 'robot' ? setAvatar(config.avatar) : Promise.resolve();
+  veil.step('avatar', 'working');
+  void initialAvatar.finally(() => veil.step('avatar', 'done'));
+  resolveAvatarReady(initialAvatar.catch(() => undefined));
+  veil.step('camera', 'working', videoSrc ? 'opening the video' : 'waiting for camera access');
 
   link.set('starting', 'Connecting', videoSrc ? 'opening the video…' : 'waiting for camera access…');
   for (;;) {
@@ -914,10 +956,13 @@ async function boot() {
       window.__PP.videoReady = true;
       window.__PP.cameraError = null;
       layoutOverlay(els);
+      veil.step('camera', 'done');
       break;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       window.__PP.cameraError = msg;
+      veil.step('camera', 'failed', 'no camera yet — the page will ask again');
+      startScene();
       statusEl.textContent = `camera unavailable: ${msg} — allow camera access and reload`;
       // no camera, no body to follow: say so, and retry on click
       await new Promise<void>((resolve) =>
@@ -993,11 +1038,14 @@ async function boot() {
   await initialAvatar;
 
   link.set('starting', 'Connecting', 'loading the pose model…');
+  veil.step('tracking', 'working', 'loading the pose model');
   statusEl.textContent = 'loading pose model…';
   statusEl.classList.remove('hidden');
   const detector = await createDetector(modelVariant);
   statusEl.classList.add('hidden');
   window.__PP.poseFps = () => detector.poseFps();
+  veil.step('tracking', 'done');
+  startScene();
 
   // every boot asset (model, wasm, fonts, avatar) is now in — from here on
   // the privacy receipt counts every network request, truthfully
@@ -1348,9 +1396,10 @@ async function boot() {
       run: () => onboarding.show() },
     { id: 'vfx', label: 'velocity vfx · toggle', run: toggleCmd2('vfx') },
     { id: 'bg-next', label: 'background · next', key: 'n', run: () => backgrounds.next() },
-    { id: 'quality-maximum', label: 'background quality · maximum', run: () => backgrounds.quality('maximum') },
-    { id: 'quality-balanced', label: 'background quality · balanced', run: () => backgrounds.quality('balanced') },
-    { id: 'quality-mobile', label: 'background quality · mobile', run: () => backgrounds.quality('mobile') },
+    { id: 'quality-maximum', label: 'quality · maximum', run: () => setQualityLevel('maximum') },
+    { id: 'quality-balanced', label: 'quality · balanced', run: () => setQualityLevel('balanced') },
+    { id: 'quality-saver', label: 'quality · saver', run: () => setQualityLevel('saver') },
+    { id: 'credits', label: 'credits · all attributions', run: () => openPanel('credits') },
     ...BACKGROUNDS.map((b) => ({ id: `bg-${b.id}`, label: `background · ${b.label.toLowerCase()}`, run: () => backgrounds.pick(b.id) })),
     { id: 'autocam', label: 'auto-director camera · toggle', run: toggleCmd2('autoCam') },
     { id: 'fly', label: 'fly · bodyarcade flight (body streams into the game)',

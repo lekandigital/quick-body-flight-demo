@@ -140,9 +140,6 @@ body.glass-ui::after { display: none; }
 .sketchfab-background { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .sketchfab-background[hidden] { display: none; }
 .sketchfab-background iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
-/* the viewer's own logo is cropped (sketchfabBackground.ts): credit Sketchfab in the credit line */
-.bg-credit-viewer { display: none; }
-body[data-background-renderer="sketchfab"] .bg-credit-viewer { display: inline; }
 .glass-ui .camera-pane {
   position: fixed; left: 0; top: 0; width: 160px;
   opacity: 0; pointer-events: none; z-index: -1; border: 0; background: none;
@@ -639,7 +636,7 @@ body.glass-ui[data-tone="dark"] .selector { --glass-fill-hover: rgba(255, 255, 2
 .glass-ui .panel-scroll::-webkit-scrollbar { display: none; }
 .glass-ui .panel-scroll > * { flex-shrink: 0; }
 .glass-ui #panel::before {
-  content: "Engineering";
+  content: none; /* the tabs head the panel now */
   font-family: var(--font-sans);
   font-size: var(--step--1);
   font-weight: 650;
@@ -658,6 +655,73 @@ body.glass-ui[data-tone="dark"] .selector { --glass-fill-hover: rgba(255, 255, 2
 .glass-ui .panel-scroll > button { margin-top: 10px; align-self: flex-start; }
 .glass-ui .panel-row:has(#ppc-states) { align-items: flex-start; }
 .glass-ui #panel .panel-row button { height: 28px; }
+
+/* tabs: Settings · Quality · Credits — the sliding selector marks the open one */
+.glass-ui .panel-tabs { display: flex; gap: 4px; padding: 0 0 12px; flex: none; }
+.glass-ui .panel-tabs button { flex: 1; height: 34px; padding: 0 10px; font-size: 13px; color: var(--ink-2); }
+.glass-ui .panel-tabs button.on { color: var(--ink); }
+.glass-ui .panel-page { display: flex; flex-direction: column; }
+.glass-ui .panel-page[hidden] { display: none; }
+.glass-ui .panel-note { margin: 0 0 10px; font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+.glass-ui .panel-sub { margin: 16px 0 2px; font-size: 11px; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-2); }
+.has-selector > button:not(.on):hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
+/* Quality: the level as three cards (the selector slides between them), then each item's own value */
+.glass-ui .quality-levels { display: flex; flex-direction: column; gap: 4px; }
+.glass-ui .quality-levels button { height: auto; padding: 9px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; }
+.glass-ui .quality-levels button b { font-size: 13px; font-weight: 620; color: var(--ink); }
+.glass-ui .quality-levels button:not(.on) b { color: var(--ink-2); }
+.glass-ui .quality-levels button small { font-size: 11.5px; font-weight: 400; color: var(--ink-3); }
+.glass-ui .quality-item { display: flex; flex-direction: column; align-items: stretch; gap: 7px; padding: 10px 0; border-bottom: 1px solid var(--glass-hair); }
+.glass-ui .quality-item:last-child { border-bottom: 0; }
+.glass-ui .quality-item > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.glass-ui .quality-item b { font-size: 13px; font-weight: 600; color: var(--ink); }
+.glass-ui .quality-item small { font-size: 11px; line-height: 1.35; color: var(--ink-3); }
+.glass-ui .quality-item select { width: 100%; max-width: none; }
+
+/* Credits: every attribution, the scene on screen first */
+.glass-ui .credits-group { padding: 10px 0; border-bottom: 1px solid var(--glass-hair); }
+.glass-ui .credits-group:last-child { border-bottom: 0; }
+.glass-ui .credits-group h4 { margin: 0 0 6px; font-size: 11px; font-weight: 650; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-2); }
+.glass-ui .credits-group p { margin: 0 0 6px; font-size: 11.5px; line-height: 1.4; color: var(--ink-3); }
+.glass-ui .credits-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.glass-ui .credits-group li { display: flex; flex-direction: column; gap: 1px; }
+.glass-ui .credits-group li b { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.glass-ui .credits-group li span { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); }
+.glass-ui .credits-group a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--glass-hair); }
+.glass-ui .credits-group a:hover { color: var(--accent); }
+.glass-ui .credits-now { padding: 10px 12px; margin-bottom: 4px; border-bottom: 0; border-radius: 14px; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
+/* Quality → Glass effects → Simple blur: the glass library's own fallback look */
+body.glass-simple .glass > .glass-plate {
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+  border: 1px solid var(--glass-hair, rgba(255, 255, 255, 0.55));
+}
+
+/* the loading screen (src/ui/loadingVeil.ts): panel glass over a dusk
+   gradient, fading into the scene's opening flight */
+.loading-veil {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+  background: radial-gradient(120% 90% at 50% 40%, #1b2a44 0%, #0b0f18 60%, #07090f 100%);
+  transition: opacity 0.8s ease, visibility 0s 0.8s;
+}
+.loading-veil.gone { opacity: 0; visibility: hidden; pointer-events: none; }
+.loading-card { width: min(320px, calc(100vw - 32px)); padding: 22px 22px 18px; border-radius: 28px; color: #eef2f6; --glass-fill: rgba(12, 14, 20, 0.48); }
+.loading-brand { margin: 4px 0 16px; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
+.loading-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
+.loading-steps li { display: grid; grid-template-columns: 12px 1fr; column-gap: 10px; align-items: center; font-size: 13px; color: rgba(238, 242, 246, 0.55); }
+.loading-steps li b { font-weight: 600; }
+.loading-steps li small { grid-column: 2; font-family: var(--font-mono); font-size: 10.5px; color: rgba(238, 242, 246, 0.45); }
+.loading-steps li small:empty { display: none; }
+.loading-steps li[data-state="working"], .loading-steps li[data-state="done"] { color: #eef2f6; }
+.loading-dot { width: 8px; height: 8px; border-radius: 50%; background: #94949f; box-shadow: 0 0 0 3px #94949f33; }
+.loading-steps li[data-state="working"] .loading-dot { background: #e0b341; box-shadow: 0 0 0 4px #e0b34133; animation: link-search 1.4s ease-in-out infinite; }
+.loading-steps li[data-state="done"] .loading-dot { background: #3bbf4e; box-shadow: 0 0 0 3px #3bbf4e33; }
+.loading-steps li[data-state="failed"] .loading-dot { background: #e5484d; box-shadow: 0 0 0 3px #e5484d33; }
+.loading-bar { margin-top: 18px; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.loading-bar span { display: block; height: 100%; width: 8%; border-radius: 3px; background: linear-gradient(90deg, #7fd3ff, #3bbf4e); transition: width 0.5s ease; }
+@media (prefers-reduced-motion: reduce) { .loading-steps li[data-state="working"] .loading-dot { animation: none; } }
 .glass-ui #ppc-states { gap: 4px; max-width: 190px; }
 /* [D] form demo field, light context: rounded-[20px] border bg-transparent text-sm */
 .glass-ui .gfield { border-radius: 14px; border: 1px solid var(--glass-hair); }
@@ -950,20 +1014,21 @@ body.glass-ui[data-bg]:not([data-bg="sky"]) .stage-backdrop { display: none; }
   z-index: 12;
   max-width: min(46vw, 560px);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.6;
   color: var(--ink-3);
   background: var(--badge-bg);
-  padding: 2px 9px;
+  padding: 1px 8px;
   border-radius: 999px;
   border: 1px solid var(--rule);
   white-space: nowrap;
-  display: flex;
-  align-items: baseline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: color 0.15s;
 }
+.glass-ui .bg-credit:hover, .glass-ui .bg-credit:focus-visible { color: var(--ink); }
 .glass-ui .bg-credit[hidden] { display: none; }
-.glass-ui .bg-credit .bg-credit-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.glass-ui .bg-credit .bg-credit-keep { flex: none; }
 .glass-ui .bg-credit a { color: var(--ink-2); text-decoration: none; }
 .glass-ui .bg-credit a:hover { color: var(--accent); }
 body.glass-ui.playing .bg-credit { visibility: hidden; }
@@ -975,6 +1040,5 @@ body.glass-ui.playing .bg-credit { visibility: hidden; }
 @media (max-width: 900px) {
   /* the Experiences panel fills the bottom on phones: the credit sits under the link chip */
   .glass-ui .bg-credit { left: var(--gap); right: auto; max-width: calc(100vw - 2 * var(--gap)); bottom: auto; top: calc(var(--gap) * 3 + var(--bar-h) + 48px);
-    flex-wrap: wrap; border-radius: 12px; }
-  .glass-ui .bg-credit .bg-credit-title { max-width: 100%; }
+    }
 }
