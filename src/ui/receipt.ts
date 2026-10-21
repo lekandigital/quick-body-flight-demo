@@ -20,8 +20,8 @@ export function createReceipt(): Receipt {
   function render(): void {
     el.textContent = externalBackgroundUsed ? 'LOCAL TRACKING · SKETCHFAB BACKGROUNDS' : `LOCAL · ${n} EXTERNAL REQUEST${n === 1 ? '' : 'S'} SINCE LOAD`;
     el.title = externalBackgroundUsed
-      ? 'Tracking stays on your device. Sketchfab loads backgrounds externally; its iframe requests cannot be counted by this page. No camera frames or landmarks are sent to it.'
-      : 'External resource requests observed by this page after startup.';
+      ? 'Tracking stays on your device. Sketchfab loads backgrounds externally; its iframe requests cannot be counted by this page. No camera frames or landmarks are sent to it. Page visits and clicks go to PostHog analytics.'
+      : 'External resource requests observed by this page after startup, PostHog analytics included.';
     el.classList.toggle('dirty', n > 0 || externalBackgroundUsed);
   }
 
@@ -35,7 +35,9 @@ export function createReceipt(): Receipt {
 
   function isExternal(url: string): boolean {
     try {
-      return new URL(url, location.href).origin !== location.origin;
+      const u = new URL(url, location.href);
+      // /x9/ is same-origin but relays to PostHog, so it counts as leaving
+      return u.origin !== location.origin || u.pathname.startsWith('/x9/');
     } catch {
       return true; // unparseable → assume the worst, count it
     }

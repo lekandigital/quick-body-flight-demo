@@ -12,10 +12,11 @@ honest avatar boundaries, and a seeded architecture for future
 body-controlled play.
 
 **Privacy: all inference runs in your browser. No frame, landmark, or
-recording ever leaves your machine.** No backend, no analytics, no
-telemetry. The command bar carries a live receipt — `LOCAL · 0 EXTERNAL
-REQUESTS SINCE LOAD` — backed by a real counter that flags any
-cross-origin request the moment it happens. Models, WASM, and fonts are
+recording ever leaves your machine.** No backend. The hosted page sends
+page visits and clicks to PostHog analytics (session replay off). The
+command bar carries a live receipt — `LOCAL · 0 EXTERNAL REQUESTS SINCE
+LOAD` — backed by a real counter that flags any cross-origin request, and
+any PostHog request through the `/x9` relay, the moment it happens. Models, WASM, and fonts are
 served same-origin.
 
 ## Setup

@@ -9,7 +9,7 @@ const STEPS: Array<[string, string]> = [
   ['Calibrate', 'Click Setup (or press c) and hold your neutral pose through the countdown.'],
   ['Hands', 'Keep both hands inside the frame — the puppet mirrors what the camera can see.'],
   ['Record', 'The red rec button captures a composite clip. Raise both arms to start a guided take hands-free.'],
-  ['Private', 'Tracking runs in this browser. No camera frame, landmark, or recording is uploaded. Background services are listed in the privacy indicator.'],
+  ['Private', 'Tracking runs in this browser. No camera frame, landmark, or recording is uploaded. Page visits and clicks go to PostHog analytics. Background services are listed in the privacy indicator.'],
 ];
 
 export function createOnboarding(): { show(): void } {
