@@ -706,12 +706,16 @@ body.glass-simple .glass > .glass-plate {
 .loading-row[data-state="working"] .loading-dot { background: #e0b341; box-shadow: 0 0 6px 1px #e0b34199, inset 0 1px 1px rgba(255, 255, 255, 0.4); animation: loading-pulse 1.2s ease-in-out infinite; }
 .loading-row[data-state="done"] .loading-dot { background: #3bbf4e; box-shadow: 0 0 8px 1px #3bbf4eaa, inset 0 1px 1px rgba(255, 255, 255, 0.45); }
 .loading-row[data-state="failed"] .loading-dot { background: #e5484d; box-shadow: 0 0 8px 1px #e5484d99, inset 0 1px 1px rgba(255, 255, 255, 0.4); }
+.loading-row[data-state="skipped"] .loading-dot { background: #a9c7b6; box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4); }
 @keyframes loading-pulse { 50% { opacity: 0.45; } }
 .loading-progress { padding: 16px 20px 18px; }
 .loading-progress .rail-hdr { padding: 0 0 10px; }
 .loading-track { height: 6px; border-radius: 3px; background: rgba(170, 205, 178, 0.14); overflow: hidden; }
 .loading-fill { display: block; height: 100%; width: 4%; border-radius: 3px; background: linear-gradient(90deg, #2f9fb0, #3bbf4e); box-shadow: 0 0 8px rgba(59, 191, 78, 0.45); transition: width 0.5s ease; }
-@media (prefers-reduced-motion: reduce) { .loading-row[data-state="working"] .loading-dot { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .loading-row[data-state="working"] .loading-dot { animation: none; }
+  .selector, .loading-veil, .loading-fill, .loading-dot { transition: none; }
+}
 .glass-ui #ppc-states { gap: 4px; max-width: 190px; }
 /* [D] form demo field, light context: rounded-[20px] border bg-transparent text-sm */
 .glass-ui .gfield { border-radius: 14px; border: 1px solid var(--glass-hair); }

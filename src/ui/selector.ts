@@ -10,14 +10,14 @@ import { glassify } from '@bodyarcade/glass';
 
 const SELECTED = '[aria-pressed="true"], .on';
 
-export function createSelector(list: HTMLElement, itemSelector: string): void {
-  if (list.classList.contains('has-selector')) return;
+export function createSelector(list: HTMLElement, itemSelector: string): () => void {
+  if (list.classList.contains('has-selector')) return () => {};
   list.classList.add('has-selector');
   const card = document.createElement('div');
   card.className = 'selector empty on';
   card.setAttribute('aria-hidden', 'true');
   list.prepend(card);
-  glassify(card, 'navButton');
+  const glass = glassify(card, 'navButton');
 
   const items = () => [...list.querySelectorAll<HTMLElement>(`:scope > ${itemSelector}`)];
   let current: HTMLElement | null = null;
@@ -77,4 +77,12 @@ export function createSelector(list: HTMLElement, itemSelector: string): void {
   list.addEventListener('pointerleave', release);
 
   place(false);
+
+  return () => {
+    mo.disconnect();
+    ro.disconnect();
+    glass.destroy();
+    card.remove();
+    list.classList.remove('has-selector');
+  };
 }

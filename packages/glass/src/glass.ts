@@ -3,7 +3,8 @@
 // picked from glass-projects-lab's web-glass showcase. Same SVG filter graph,
 // same primitives in the same order with the same `result` names, same pure
 // math (./liquid-lib.ts, vendored verbatim), same border-radius probe, same
-// Safari/Firefox fallback, same spring constants as the library's own demo.
+// spring constants as the library's own demo. Safari/Firefox use the same
+// highlights and interaction states with native backdrop blur (no SVG refraction).
 //
 // Two deliberate structural differences, both about nesting:
 //  - the backdrop-filter sits on a `.glass-plate` layer *behind* the content
@@ -103,7 +104,12 @@ const BASE_CSS = `
 .glass-navButton:hover>.glass-plate,.glass-navButton.glass-lit>.glass-plate,
 .glass-navButton[aria-pressed="true"]>.glass-plate,.glass-navButton.on>.glass-plate{background:var(--glass-fill-hover,rgba(255,255,255,.35))}
 .glass-bar>.glass-plate{box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
-.glass-fallback>.glass-plate{border:1px solid var(--glass-hair,rgba(255,255,255,.55));-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.glass-fallback>.glass-plate{
+  -webkit-backdrop-filter:blur(var(--glass-blur,3.5px)) saturate(1.3);
+  backdrop-filter:blur(var(--glass-blur,3.5px)) saturate(1.3)}
+.glass-fallback>.glass-plate::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:var(--glass-specular-image) center/100% 100% no-repeat;opacity:var(--glass-specular-opacity,.9);
+  box-shadow:inset 0 0 0 1px var(--glass-hair,rgba(255,255,255,.2))}
 `;
 function injectBaseCss(): void {
   if (document.getElementById('bodyarcade-glass-base')) return;
@@ -227,17 +233,11 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
 
   const live = liquidSupported();
   if (!live) {
-    // LiquidDiv fallback: a border + 4px backdrop blur, nothing else
+    // SVG backdrop displacement is unavailable in WebKit. Keep the material's
+    // tint, specular rim, blur and live interactions instead of a flat 4px blur.
     el.classList.add('glass-fallback');
-    const h: GlassHandle = {
-      el, setFocused() {}, setScaleRatio() {}, setHovered() {}, refresh() {},
-      destroy: () => {
-        guard.disconnect();
-        plate.remove();
-      },
-    };
-    handles.set(el, h);
-    return h;
+    plate.style.setProperty('--glass-blur', `${m.blur}px`);
+    plate.style.setProperty('--glass-specular-opacity', String(m.specularOpacity));
   }
 
   const id = `glass-${++seq}`;
@@ -258,9 +258,11 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
   const blend1 = svgEl('feBlend', { in: 'specular_saturated', in2: 'displaced', mode: 'normal', result: 'withSaturation' });
   const blend2 = svgEl('feBlend', { in: 'specular_faded', in2: 'withSaturation', mode: 'normal' });
   filter.append(blur, dispImg, disp, sat, specImg, comp, xfer, blend1, blend2);
-  sharedDefs().append(filter);
-  plate.style.backdropFilter = `url(#${id})`;
-  plate.style.setProperty('-webkit-backdrop-filter', `url(#${id})`);
+  if (live) {
+    sharedDefs().append(filter);
+    plate.style.backdropFilter = `url(#${id})`;
+    plate.style.setProperty('-webkit-backdrop-filter', `url(#${id})`);
+  }
 
   const n = new Spring(m.refractiveIndex);
   const b = new Spring(m.blur);
@@ -284,7 +286,7 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
     // LiquidGlass passes dpr = window.devicePixelRatio
     const dpr = window.devicePixelRatio || 1;
     const key = `${w}|${h}|${r}|${dpr}|${n.value.toFixed(3)}`;
-    if (key !== mapKey) {
+    if (live && key !== mapKey) {
       mapKey = key;
       const { displacementMap, maximumDisplacement } = getDisplacementData({
         glassThickness: m.glassThickness,
@@ -308,11 +310,17 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
     if (sk !== specKey) {
       specKey = sk;
       // matches LiquidFilter: specular bezel hardcoded to 50, default angle
-      specImg.setAttribute('href', imageDataToUrl(calculateRefractionSpecular(w, h, r, 50, undefined, dpr)));
-      specImg.setAttribute('width', String(w));
-      specImg.setAttribute('height', String(h));
+      const specular = imageDataToUrl(calculateRefractionSpecular(w, h, r, 50, undefined, dpr));
+      if (live) {
+        specImg.setAttribute('href', specular);
+        specImg.setAttribute('width', String(w));
+        specImg.setAttribute('height', String(h));
+      } else {
+        plate.style.setProperty('--glass-specular-image', `url("${specular}")`);
+      }
     }
-    blur.setAttribute('stdDeviation', String(Math.max(0, b.value)));
+    if (live) blur.setAttribute('stdDeviation', String(Math.max(0, b.value)));
+    else plate.style.setProperty('--glass-blur', `${Math.max(0, b.value).toFixed(3)}px`);
   }
 
   function frame(now: number): void {
@@ -347,7 +355,7 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
     // handed the unscaled width/height the same way)
     const nw = Math.max(el.offsetWidth, 1);
     const nh = Math.max(el.offsetHeight, 1);
-    const nr = Math.max(borderRadiusOf(el, { width: nw, height: nh }), 0);
+    const nr = Math.min(Math.max(borderRadiusOf(el, { width: nw, height: nh }), 0), nw / 2, nh / 2);
     if (nw === w && nh === h && Math.abs(nr - r) < 0.5) return;
     w = nw;
     h = nh;
@@ -414,6 +422,7 @@ export function glassify(el: HTMLElement, name: MaterialName = 'panel'): GlassHa
       if (raf) cancelAnimationFrame(raf);
       filter.remove();
       plate.remove();
+      el.classList.remove('glass', `glass-${name}`, 'glass-fallback', 'glass-lit', 'glass-focused');
       el.removeEventListener('pointerenter', onEnter);
       el.removeEventListener('pointerleave', onLeave);
       el.removeEventListener('focusin', onFocusIn);

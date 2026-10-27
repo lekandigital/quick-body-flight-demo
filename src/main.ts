@@ -962,6 +962,7 @@ async function boot() {
       const msg = err instanceof Error ? err.message : String(err);
       window.__PP.cameraError = msg;
       veil.step('camera', 'failed', 'no camera yet — the page will ask again');
+      veil.step('tracking', 'skipped', 'available after camera access');
       startScene();
       statusEl.textContent = `camera unavailable: ${msg} — allow camera access and reload`;
       // no camera, no body to follow: say so, and retry on click

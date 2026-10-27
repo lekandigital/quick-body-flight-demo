@@ -15,7 +15,14 @@
 import { createSelector } from './selector';
 
 export type LoadStep = 'camera' | 'tracking' | 'avatar' | 'scene';
-type StepState = 'waiting' | 'working' | 'done' | 'failed';
+type StepState = 'waiting' | 'working' | 'done' | 'failed' | 'skipped';
+
+// Give the selector time to arrive (its slide takes 550 ms), then hold the
+// result under the glass before moving on. Asset loading still runs freely.
+const FOCUS_MS = 700;
+const RESULT_MS = 260;
+const FADE_MS = 900;
+const settled = (state: StepState) => state === 'done' || state === 'failed' || state === 'skipped';
 
 /** The stage backdrop's grid (24 px cells, drifting 15 px/s diagonally) with a
  * soft light sweeping across its lines — one path stroked with a moving
@@ -75,7 +82,7 @@ const STEPS: Array<[LoadStep, string, string]> = [
 
 export interface LoadingVeil {
   step(step: LoadStep, state: StepState, detail?: string): void;
-  /** fade out (idempotent) */
+  /** Request the reveal after every row has had its turn (idempotent). */
   done(): void;
 }
 
@@ -101,10 +108,14 @@ export function createLoadingVeil(): LoadingVeil {
   hdr.append(count);
   const list = document.createElement('div');
   list.className = 'cards loading-rows';
-  const rows = new Map<LoadStep, { row: HTMLElement; note: HTMLElement; base: string }>();
+  const rows = new Map<LoadStep, {
+    row: HTMLElement; note: HTMLElement; base: string;
+    actual: StepState; detail: string; presented: StepState;
+  }>();
   for (const [id, label, base] of STEPS) {
     const row = document.createElement('div');
     row.className = 'card loading-row';
+    row.dataset.step = id;
     row.dataset.state = 'waiting';
     row.innerHTML = `<div class="preview"><span class="loading-dot" aria-hidden="true"></span></div><div class="nm">${label}</div>`;
     const note = document.createElement('div');
@@ -112,7 +123,7 @@ export function createLoadingVeil(): LoadingVeil {
     note.textContent = base;
     row.append(note);
     list.append(row);
-    rows.set(id, { row, note, base });
+    rows.set(id, { row, note, base, actual: 'waiting', detail: base, presented: 'waiting' });
   }
   card.append(hdr, list);
 
@@ -141,56 +152,122 @@ export function createLoadingVeil(): LoadingVeil {
   const stopGrid = drawGrid(grid);
   document.body.append(veil);
   document.body.classList.add('loading');
-  createSelector(list, '.card');
+  const destroySelector = createSelector(list, '.card');
 
   let finished = false;
+  let revealRequested = false;
   const all = [...rows.values()];
-  const settled = (r: { row: HTMLElement }) => r.row.dataset.state === 'done' || r.row.dataset.state === 'failed';
-  // the selector steps one row at a time towards the first part still to
-  // come, pausing on each — however quickly the parts come in
   let shown = 0;
-  const target = () => {
-    const i = all.findIndex((r) => !settled(r));
-    return i < 0 ? all.length - 1 : i;
-  };
-  const place = () => all.forEach((r, i) => r.row.classList.toggle('on', i === shown));
-  place();
-  const stepper = window.setInterval(() => {
-    const t = target();
-    if (shown === t) return;
-    shown += shown < t ? 1 : -1;
-    place();
-  }, 650);
+  let focusedAt = performance.now();
+  let settledAt: number | null = null;
+  let timer = 0;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const focusMs = reduced ? 180 : FOCUS_MS;
+  const resultMs = reduced ? 120 : RESULT_MS;
+
+  function paint(): void {
+    all.forEach((r, i) => {
+      r.row.classList.toggle('on', i === shown);
+      r.row.dataset.state = r.presented;
+      if (i === shown) r.row.setAttribute('aria-current', 'step');
+      else r.row.removeAttribute('aria-current');
+      r.note.textContent = r.presented === 'done' ? 'ready'
+        : r.presented === 'waiting' ? r.base
+        : settled(r.presented) ? r.detail
+        : settled(r.actual) ? 'getting ready' : r.detail;
+    });
+    sync();
+  }
+
   function sync(): void {
-    const n = all.filter(settled).length;
+    const n = all.filter((r) => settled(r.presented)).length;
     count.textContent = `${n}/${all.length}`;
     const p = Math.round((n / all.length) * 100);
     pct.textContent = `${p}%`;
     fill.style.width = `${Math.max(4, p)}%`;
   }
-  sync();
+
+  function reveal(): void {
+    if (finished) return;
+    finished = true;
+    clearTimeout(timer);
+    clearTimeout(watchdog);
+    document.body.classList.remove('loading');
+    veil.classList.add('gone');
+    setTimeout(() => {
+      stopGrid();
+      destroySelector();
+      veil.remove();
+    }, reduced ? 0 : FADE_MS);
+  }
+
+  // A single forward-only presentation queue owns selection, status lights,
+  // progress and the reveal. Later results stay queued until their row gets
+  // focus; a result remains visible under the selector before it leaves.
+  function advance(): void {
+    if (finished) return;
+    clearTimeout(timer);
+    const now = performance.now();
+    const current = all[shown];
+    if (settledAt !== null) {
+      const remaining = resultMs - (now - settledAt);
+      if (remaining > 0) {
+        timer = window.setTimeout(advance, remaining);
+        return;
+      }
+      if (shown === all.length - 1) {
+        if (revealRequested) reveal();
+        return;
+      }
+      shown++;
+      focusedAt = now;
+      settledAt = null;
+      advance();
+      return;
+    }
+
+    current.presented = 'working';
+    if (settled(current.actual)) {
+      const remaining = focusMs - (now - focusedAt);
+      if (remaining > 0) timer = window.setTimeout(advance, remaining);
+      else {
+        current.presented = current.actual;
+        settledAt = now;
+        timer = window.setTimeout(advance, resultMs);
+      }
+    }
+    paint();
+  }
 
   const api: LoadingVeil = {
     step(step, state, detail) {
+      if (finished) return;
       const r = rows.get(step);
       if (!r) return;
-      r.row.dataset.state = state;
-      r.note.textContent = state === 'done' ? 'ready' : detail || r.base;
-      sync();
+      // A late retry/progress callback must not reopen a completed row or
+      // send the selector backwards. Retries remain visible on the page.
+      if (settled(r.presented)) return;
+      r.actual = state;
+      r.detail = detail || r.base;
+      advance();
     },
     done() {
       if (finished) return;
-      finished = true;
-      clearInterval(stepper);
-      setTimeout(stopGrid, 900);
-      fill.style.width = '100%';
-      pct.textContent = '100%';
-      document.body.classList.remove('loading');
-      veil.classList.add('gone');
-      setTimeout(() => veil.remove(), 900);
+      revealRequested = true;
+      advance();
     },
   };
-  // never hold the page hostage: show it whatever is still loading
-  setTimeout(() => api.done(), 25000);
+  // Never hold the page hostage. Still finish the visual sequence, but don't
+  // label a stalled task as ready just to release the screen.
+  const watchdog = window.setTimeout(() => {
+    for (const r of all) {
+      if (!settled(r.actual)) {
+        r.actual = 'skipped';
+        r.detail = 'continuing in the background';
+      }
+    }
+    api.done();
+  }, 25000);
+  advance();
   return api;
 }
